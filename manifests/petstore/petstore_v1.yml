@@ -3,6 +3,7 @@ info:
   version: 1.0.0
   title: "Long running API"
   description: Long running tasks interface
+  #comment
 paths:
   "/api/task/myTaskName":
     get:
