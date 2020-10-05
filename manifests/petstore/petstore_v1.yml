@@ -1,1 +1,378 @@
-OrderedMap { "swagger": "2.0", "info": OrderedMap { "description": "This is a sample server Petstore server.  You can find out more about     Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).      For this sample, you can use the api key `special-key` to test the authorization     filters.", "title": "Swagger Petstore Test", "version": "1", "termsOfService": "http://swagger.io/terms/", "contact": OrderedMap { "email": "apiteam@swagger.io" }, "license": OrderedMap { "name": "Apache 2.0", "url": "http://www.apache.org/licenses/LICENSE-2.0.html" } }, "host": "petstore.swagger.io", "basePath": "/v2", "tags": List [ OrderedMap { "name": "Pet", "description": "Everything about your Pets", "externalDocs": OrderedMap { "description": "Find out more", "url": "http://swagger.io" } }, OrderedMap { "name": "Store", "description": "Access to Petstore orders" }, OrderedMap { "name": "Userdddd", "description": "Operations about user", "externalDocs": OrderedMap { "description": "Find out more about our store", "url": "http://swagger.io" } } ], "schemes": List [ "https", "http" ], "paths": OrderedMap { "/pet": OrderedMap { "post": OrderedMap { "tags": List [ "pet" ], "summary": "Add a new pet to the store", "description": "", "consumes": List [ "application/json", "application/xml" ], "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "in": "body", "name": "body", "description": "Pet object that needs to be added to the store", "required": true, "schema": OrderedMap { "$ref": "#/definitions/Pet" } } ], "responses": OrderedMap { "405": OrderedMap { "description": "Invalid input" } }, "security": List [ OrderedMap { "petstore_auth": List [ "write:pets", "read:pets" ] } ] }, "put": OrderedMap { "tags": List [ "pet" ], "summary": "Update an existing pet", "description": "", "consumes": List [ "application/json", "application/xml" ], "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "in": "body", "name": "body", "description": "Pet object that needs to be added to the store", "required": true, "schema": OrderedMap { "$ref": "#/definitions/Pet" } } ], "responses": OrderedMap { "400": OrderedMap { "description": "Invalid ID supplied" }, "404": OrderedMap { "description": "Pet not found" }, "405": OrderedMap { "description": "Validation exception" } }, "security": List [ OrderedMap { "petstore_auth": List [ "write:pets", "read:pets" ] } ] } }, "/pet/findByStatus": OrderedMap { "get": OrderedMap { "tags": List [ "pet" ], "summary": "Finds Pets by status", "description": "Multiple status values can be provided with comma separated strings", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "status", "in": "query", "description": "Status values that need to be considered for filter", "required": true, "type": "array", "items": OrderedMap { "type": "string", "enum": List [ "available", "pending", "sold" ], "default": "available" }, "collectionFormat": "multi" } ], "responses": OrderedMap { "200": OrderedMap { "description": "successful operation", "schema": OrderedMap { "type": "array", "items": OrderedMap { "$ref": "#/definitions/Pet" } } }, "400": OrderedMap { "description": "Invalid status value" } }, "security": List [ OrderedMap { "petstore_auth": List [ "write:pets", "read:pets" ] } ] } }, "/pet/findByTags": OrderedMap { "get": OrderedMap { "tags": List [ "pet" ], "summary": "Finds Pets by tags", "description": "Muliple tags can be provided with comma separated strings. Use         tag1, tag2, tag3 for testing.", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "tags", "in": "query", "description": "Tags to filter by", "required": true, "type": "array", "items": OrderedMap { "type": "string" }, "collectionFormat": "multi" } ], "responses": OrderedMap { "200": OrderedMap { "description": "successful operation", "schema": OrderedMap { "type": "array", "items": OrderedMap { "$ref": "#/definitions/Pet" } } }, "400": OrderedMap { "description": "Invalid tag value" } }, "security": List [ OrderedMap { "petstore_auth": List [ "write:pets", "read:pets" ] } ], "deprecated": true } }, "/pet/{petId}": OrderedMap { "get": OrderedMap { "tags": List [ "pet" ], "summary": "Find pet by ID", "description": "Returns a single pet", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "petId", "in": "path", "description": "ID of pet to return", "required": true, "type": "integer", "format": "int64" } ], "responses": OrderedMap { "200": OrderedMap { "description": "successful operation", "schema": OrderedMap { "$ref": "#/definitions/Pet" } }, "400": OrderedMap { "description": "Invalid ID supplied" }, "404": OrderedMap { "description": "Pet not found" } }, "security": List [ OrderedMap { "api_key": List [] } ] }, "post": OrderedMap { "tags": List [ "pet" ], "summary": "Updates a pet in the store with form data", "description": "", "consumes": List [ "application/x-www-form-urlencoded" ], "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "petId", "in": "path", "description": "ID of pet that needs to be updated", "required": true, "type": "integer", "format": "int64" }, OrderedMap { "name": "name", "in": "formData", "description": "Updated name of the pet", "required": false, "type": "string" }, OrderedMap { "name": "status", "in": "formData", "description": "Updated status of the pet", "required": false, "type": "string" } ], "responses": OrderedMap { "405": OrderedMap { "description": "Invalid input" } }, "security": List [ OrderedMap { "petstore_auth": List [ "write:pets", "read:pets" ] } ] }, "delete": OrderedMap { "tags": List [ "pet" ], "summary": "Deletes a pet", "description": "", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "api_key", "in": "header", "required": false, "type": "string" }, OrderedMap { "name": "petId", "in": "path", "description": "Pet id to delete", "required": true, "type": "integer", "format": "int64" } ], "responses": OrderedMap { "400": OrderedMap { "description": "Invalid ID supplied" }, "404": OrderedMap { "description": "Pet not found" } }, "security": List [ OrderedMap { "petstore_auth": List [ "write:pets", "read:pets" ] } ] } }, "/pet/{petId}/uploadImage": OrderedMap { "post": OrderedMap { "tags": List [ "pet" ], "summary": "uploads an image", "description": "", "consumes": List [ "multipart/form-data" ], "produces": List [ "application/json" ], "parameters": List [ OrderedMap { "name": "petId", "in": "path", "description": "ID of pet to update", "required": true, "type": "integer", "format": "int64" }, OrderedMap { "name": "additionalMetadata", "in": "formData", "description": "Additional data to pass to server", "required": false, "type": "string" }, OrderedMap { "name": "file", "in": "formData", "description": "file to upload", "required": false, "type": "file" } ], "responses": OrderedMap { "200": OrderedMap { "description": "successful operation", "schema": OrderedMap { "$ref": "#/definitions/ApiResponse" } } }, "security": List [ OrderedMap { "petstore_auth": List [ "write:pets", "read:pets" ] } ] } }, "/store/inventory": OrderedMap { "get": OrderedMap { "tags": List [ "store" ], "summary": "Returns pet inventories by status", "description": "Returns a map of status codes to quantities", "produces": List [ "application/json" ], "parameters": List [], "responses": OrderedMap { "200": OrderedMap { "description": "successful operation", "schema": OrderedMap { "type": "object", "additionalProperties": OrderedMap { "type": "integer", "format": "int32" } } } }, "security": List [ OrderedMap { "api_key": List [] } ] } }, "/store/order": OrderedMap { "post": OrderedMap { "tags": List [ "store" ], "summary": "Place an order for a pet", "description": "", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "in": "body", "name": "body", "description": "order placed for purchasing the pet", "required": true, "schema": OrderedMap { "$ref": "#/definitions/Order" } } ], "responses": OrderedMap { "200": OrderedMap { "description": "successful operation", "schema": OrderedMap { "$ref": "#/definitions/Order" } }, "400": OrderedMap { "description": "Invalid Order" } } } }, "/store/order/{orderId}": OrderedMap { "get": OrderedMap { "tags": List [ "store" ], "summary": "Find purchase order by ID", "description": "For valid response try integer IDs with value >= 1 and <= 10.         Other values will generated exceptions", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "orderId", "in": "path", "description": "ID of pet that needs to be fetched", "required": true, "type": "integer", "maximum": 10, "minimum": 1, "format": "int64" } ], "responses": OrderedMap { "200": OrderedMap { "description": "successful operation", "schema": OrderedMap { "$ref": "#/definitions/Order" } }, "400": OrderedMap { "description": "Invalid ID supplied" }, "404": OrderedMap { "description": "Order not found" } } }, "delete": OrderedMap { "tags": List [ "store" ], "summary": "Delete purchase order by ID", "description": "For valid response try integer IDs with positive integer value.         Negative or non-integer values will generate API errors", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "orderId", "in": "path", "description": "ID of the order that needs to be deleted", "required": true, "type": "integer", "minimum": 1, "format": "int64" } ], "responses": OrderedMap { "400": OrderedMap { "description": "Invalid ID supplied" }, "404": OrderedMap { "description": "Order not found" } } } }, "/user": OrderedMap { "post": OrderedMap { "tags": List [ "user" ], "summary": "Create user", "description": "This can only be done by the logged in user.", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "in": "body", "name": "body", "description": "Created user object", "required": true, "schema": OrderedMap { "$ref": "#/definitions/User" } } ], "responses": OrderedMap { "default": OrderedMap { "description": "successful operation" } } } }, "/user/createWithArray": OrderedMap { "post": OrderedMap { "tags": List [ "user" ], "summary": "Creates list of users with given input array", "description": "", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "in": "body", "name": "body", "description": "List of user object", "required": true, "schema": OrderedMap { "type": "array", "items": OrderedMap { "$ref": "#/definitions/User" } } } ], "responses": OrderedMap { "default": OrderedMap { "description": "successful operation" } } } }, "/user/createWithList": OrderedMap { "post": OrderedMap { "tags": List [ "user" ], "summary": "Creates list of users with given input array", "description": "", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "in": "body", "name": "body", "description": "List of user object", "required": true, "schema": OrderedMap { "type": "array", "items": OrderedMap { "$ref": "#/definitions/User" } } } ], "responses": OrderedMap { "default": OrderedMap { "description": "successful operation" } } } }, "/user/login": OrderedMap { "get": OrderedMap { "tags": List [ "user" ], "summary": "Logs user into the system", "description": "", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "username", "in": "query", "description": "The user name for login", "required": true, "type": "string" }, OrderedMap { "name": "password", "in": "query", "description": "The password for login in clear text", "required": true, "type": "string" } ], "responses": OrderedMap { "200": OrderedMap { "description": "successful operation", "schema": OrderedMap { "type": "string" }, "headers": OrderedMap { "X-Rate-Limit": OrderedMap { "type": "integer", "format": "int32", "description": "calls per hour allowed by the user" }, "X-Expires-After": OrderedMap { "type": "string", "format": "date-time", "description": "date in UTC when token expires" } } }, "400": OrderedMap { "description": "Invalid username/password supplied" } } } }, "/user/logout": OrderedMap { "get": OrderedMap { "tags": List [ "user" ], "summary": "Logs out current logged in user session", "description": "", "produces": List [ "application/xml", "application/json" ], "parameters": List [], "responses": OrderedMap { "default": OrderedMap { "description": "successful operation" } } } }, "/user/{username}": OrderedMap { "get": OrderedMap { "tags": List [ "user" ], "summary": "Get user by user name", "description": "", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "username", "in": "path", "description": "The name that needs to be fetched. Use user1 for testing. ", "required": true, "type": "string" } ], "responses": OrderedMap { "200": OrderedMap { "description": "successful operation", "schema": OrderedMap { "$ref": "#/definitions/User" } }, "400": OrderedMap { "description": "Invalid username supplied" }, "404": OrderedMap { "description": "User not found" } } }, "put": OrderedMap { "tags": List [ "user" ], "summary": "Updated user", "description": "This can only be done by the logged in user.", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "username", "in": "path", "description": "name that need to be updated", "required": true, "type": "string" }, OrderedMap { "in": "body", "name": "body", "description": "Updated user object", "required": true, "schema": OrderedMap { "$ref": "#/definitions/User" } } ], "responses": OrderedMap { "400": OrderedMap { "description": "Invalid user supplied" }, "404": OrderedMap { "description": "User not found" } } }, "delete": OrderedMap { "tags": List [ "user" ], "summary": "Delete user", "description": "This can only be done by the logged in user.", "produces": List [ "application/xml", "application/json" ], "parameters": List [ OrderedMap { "name": "username", "in": "path", "description": "The name that needs to be deleted", "required": true, "type": "string" } ], "responses": OrderedMap { "400": OrderedMap { "description": "Invalid username supplied" }, "404": OrderedMap { "description": "User not found" } } } } }, "securityDefinitions": OrderedMap { "petstore_auth": OrderedMap { "type": "oauth2", "authorizationUrl": "http://petstore.swagger.io/oauth/dialog", "flow": "implicit", "scopes": OrderedMap { "write:pets": "modify pets in your account", "read:pets": "read your pets" } }, "api_key": OrderedMap { "type": "apiKey", "name": "api_key", "in": "header" } }, "definitions": OrderedMap { "Order": OrderedMap { "type": "object", "properties": OrderedMap { "id": OrderedMap { "type": "integer", "format": "int64" }, "petId": OrderedMap { "type": "integer", "format": "int64" }, "quantity": OrderedMap { "type": "integer", "format": "int32" }, "shipDate": OrderedMap { "type": "string", "format": "date-time" }, "status": OrderedMap { "type": "string", "description": "Order Status", "enum": List [ "placed", "approved", "delivered" ] }, "complete": OrderedMap { "type": "boolean", "default": false } }, "xml": OrderedMap { "name": "Order" } }, "Category": OrderedMap { "type": "object", "properties": OrderedMap { "id": OrderedMap { "type": "integer", "format": "int64" }, "name": OrderedMap { "type": "string" } }, "xml": OrderedMap { "name": "Category" } }, "User": OrderedMap { "type": "object", "properties": OrderedMap { "id": OrderedMap { "type": "integer", "format": "int64" }, "username": OrderedMap { "type": "string" }, "firstName": OrderedMap { "type": "string" }, "lastName": OrderedMap { "type": "string" }, "email": OrderedMap { "type": "string" }, "password": OrderedMap { "type": "string" }, "phone": OrderedMap { "type": "string" }, "userStatus": OrderedMap { "type": "integer", "format": "int32", "description": "User Status" } }, "xml": OrderedMap { "name": "User" } }, "Tag": OrderedMap { "type": "object", "properties": OrderedMap { "id": OrderedMap { "type": "integer", "format": "int64" }, "name": OrderedMap { "type": "string" } }, "xml": OrderedMap { "name": "Tag" } }, "Pet": OrderedMap { "type": "object", "required": List [ "name", "photoUrls" ], "properties": OrderedMap { "id": OrderedMap { "type": "integer", "format": "int64" }, "category": OrderedMap { "$ref": "#/definitions/Category" }, "name": OrderedMap { "type": "string", "example": "doggie" }, "photoUrls": OrderedMap { "type": "array", "xml": OrderedMap { "name": "photoUrl", "wrapped": true }, "items": OrderedMap { "type": "string" } }, "tags": OrderedMap { "type": "array", "xml": OrderedMap { "name": "tag", "wrapped": true }, "items": OrderedMap { "$ref": "#/definitions/Tag" } }, "status": OrderedMap { "type": "string", "description": "pet status in the store", "enum": List [ "available", "pending", "sold" ] } }, "xml": OrderedMap { "name": "Pet" } }, "ApiResponse": OrderedMap { "type": "object", "properties": OrderedMap { "code": OrderedMap { "type": "integer", "format": "int32" }, "type": OrderedMap { "type": "string" }, "message": OrderedMap { "type": "string" } } } }, "externalDocs": OrderedMap { "description": "Find out more about Swagger", "url": "http://swagger.io" } }
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: "Long running API"
+  description: Long running tasks interface
+paths:
+  "/api/task/myTaskName":
+    get:
+      tags:
+        - Long running task
+      operationId: test
+      summary: List of current tasks for taskName type
+      parameters: 
+        - in: query
+          name: limit
+          schema:
+            type: number
+            default: 100
+        - in: query
+          name: offset
+          
+          schema:
+            type: number
+            default: 0
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date-time
+          description: Default - `Today`
+        - in: query
+          name: status
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Status'
+      responses:
+        "200":
+          description: "List of all tasks with statuses"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaskMeta'
+                  meta:
+                    $ref: '#/components/schemas/CommonMeta'
+                  messages:
+                    $ref: '#/components/schemas/Messages'
+        "204":
+          description: No task with this id found
+        "400":
+          description: Task type is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Error fetching task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "503":
+          description: Queue is full, try later
+    post:
+      tags:
+        - Long running task
+      summary: Create long running task
+      description: "Create task endpoint, example1 - valid task handler name(name of callback)"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "object"
+              required: 
+                - task_payload
+              properties:
+                task_payload:
+                  $ref: '#/components/schemas/TaskMyTaskNamePayload'
+                task_id:
+                  type: string
+                  description: Custom task id, not required
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Id of task
+                  meta:
+                    $ref: '#/components/schemas/CommonMeta'
+                  messages:
+                    $ref: '#/components/schemas/Messages'
+        "400":
+          description: Task type is not valid, or task_payload is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Error fetching task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "503":
+          description: Queue is full, try later
+  "/api/task/myTaskName/{id}":
+    get:
+      tags:
+        - Long running task
+      summary: Get status of long running task
+      description: ""
+      parameters:
+        - in: path
+          name: id
+          description: Id of task
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status of task, model requires one of task status representations -
+            as number in range(progress), as status(status)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TaskMyTaskNameResponse'
+                  meta:
+                    allOf:
+                      - $ref: '#/components/schemas/TaskMeta'
+                      - $ref: '#/components/schemas/CommonMeta'
+                      - type: object
+                        required: 
+                          - id
+                          - finished
+                        properties:
+                          finished:
+                            type: boolean
+                            description: Boolean flag, indicates status finished or not
+                            example: false
+                          progress:
+                            $ref: '#/components/schemas/Progress'
+                  messages:
+                   $ref: "#/components/schemas/Messages"
+        "204":
+          description: No task with this id found
+        "400":
+          description: Task type is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Error fetching task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Long running task
+      summary: Cancel task status is InQueue
+      description: ""
+      parameters:
+        - in: path
+          name: id
+          description: Id of task
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status of task, model requires one of task status representations -
+            as number in range(progress), as status(status)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TaskMyTaskNameResponse'
+                  meta:
+                    allOf:
+                      - $ref: '#/components/schemas/TaskMeta'
+                      - $ref: '#/components/schemas/CommonMeta'
+                      - type: object
+                        required: 
+                          - id
+                          - finished
+                        properties:
+                          finished:
+                            type: boolean
+                            description: Boolean flag, indicates status finished or not
+                            example: false
+                          progress:
+                            $ref: '#/components/schemas/Progress'
+                  messages:
+                   $ref: "#/components/schemas/Messages"
+        "204":
+          description: No task with this id found
+        "400":
+          description: Task type is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Error fetching task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Long running task
+      summary: Delete task, task can be deleted if it is in Successeded or Canceled
+      description: ""
+      parameters:
+        - in: path
+          name: id
+          description: Id of task
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Meta info about task, it is required to add statuses array or pair
+            of progress_start and progress_end.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                  messages:
+                    $ref: '#/components/schemas/Messages'
+                  meta:
+                    $ref: '#/components/schemas/BaseMeta'
+        "204":
+          description: No task with this id found
+        "400":
+          description: Task type is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "405":
+          description: Delete API is not implemented for tasks of this type
+        "500":
+          description: Error deleting task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+servers:
+  - url: http://hostname
+components:
+  parameters:
+    taskId:
+      in: path
+      name: id
+      description: Id of task
+      required: true
+      schema:
+        type: string
+  schemas:
+    Status:
+      type: string
+      enum:
+        - InQueue
+        - InProgress
+        - Successeded
+        - Errored
+        - Canceled
+        - Paused
+    Progress:
+      type: object
+      properties:
+        progress_statuses:
+          type: array
+          items: 
+            type: string
+        progress_current:
+          type: string
+    BaseMeta:
+      type: object
+      properties:
+        ok: 
+          type: boolean
+          description: Flag imlicitly show success of task
+    CommonMeta:
+      allOf:
+        - $ref: '#/components/schemas/BaseMeta'
+        - type: object
+          properties:
+            timeout:
+              type: number
+              description: timeout in seconds fo this task, if specified, client must delete task after timeout 
+            progress:
+              $ref: '#/components/schemas/Progress'
+    TaskMeta:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          $ref: '#/components/schemas/Status'
+        created_at:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        meta:
+          allOf:
+            - $ref: '#/components/schemas/BaseMeta'
+            - type: object
+              properties:
+                ok:
+                  type: boolean
+                  example: false
+        messages: 
+          $ref: '#/components/schemas/Messages'
+    Messages:
+      type: array
+      items:
+        $ref: "#/components/schemas/Message"
+      description: "message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - info
+            - warning
+            - error
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    TaskMyTaskNamePayload:
+      type: object
+      properties:
+        field_1:
+          type: string
+        field_2:
+          type: number
+    TaskMyTaskNameResponse:
+      type: object
+      properties:
+        field_1:
+          type: string
+        field_2:
+          type: number
