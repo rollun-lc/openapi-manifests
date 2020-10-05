@@ -1,6 +1,6 @@
 # OpenAPI manifests for our APIs
 
-directory structure:
+### directory structure:
 
 ```
 openapi-manifests
@@ -16,11 +16,11 @@ openapi-manifests
 |       error_handling_v1.yml
 ```
 
-description
+### description
 
 - **manifests** - ready to denerate services from this manifests, folders inside **manifests** are groups of related APIs.
 - **components** - some components from OAS3, ready to be referenced in other manifests by permalinks.
 
-Branches:
+### Branches:
 - **master** - production ready solutions, cannot be modified. If You want to introduce some changes to manifest, release new version.
 - **develop** - can be modified at eny time, when ready, merge with **master**
