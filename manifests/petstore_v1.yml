@@ -1,0 +1,378 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: "Long running API"
+  description: Long running tasks interface
+paths:
+  "/api/task/myTaskName":
+    get:
+      tags:
+        - Long running task
+      operationId: test
+      summary: List of current tasks for taskName type
+      parameters: 
+        - in: query
+          name: limit
+          schema:
+            type: number
+            default: 100
+        - in: query
+          name: offset
+          
+          schema:
+            type: number
+            default: 0
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date-time
+          description: Default - `Today`
+        - in: query
+          name: status
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Status'
+      responses:
+        "200":
+          description: "List of all tasks with statuses"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaskMeta'
+                  meta:
+                    $ref: '#/components/schemas/CommonMeta'
+                  messages:
+                    $ref: '#/components/schemas/Messages'
+        "204":
+          description: No task with this id found
+        "400":
+          description: Task type is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Error fetching task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "503":
+          description: Queue is full, try later
+    post:
+      tags:
+        - Long running task
+      summary: Create long running task
+      description: "Create task endpoint, example1 - valid task handler name(name of callback)"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "object"
+              required: 
+                - task_payload
+              properties:
+                task_payload:
+                  $ref: '#/components/schemas/TaskMyTaskNamePayload'
+                task_id:
+                  type: string
+                  description: Custom task id, not required
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Id of task
+                  meta:
+                    $ref: '#/components/schemas/CommonMeta'
+                  messages:
+                    $ref: '#/components/schemas/Messages'
+        "400":
+          description: Task type is not valid, or task_payload is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Error fetching task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "503":
+          description: Queue is full, try later
+  "/api/task/myTaskName/{id}":
+    get:
+      tags:
+        - Long running task
+      summary: Get status of long running task
+      description: ""
+      parameters:
+        - in: path
+          name: id
+          description: Id of task
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status of task, model requires one of task status representations -
+            as number in range(progress), as status(status)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TaskMyTaskNameResponse'
+                  meta:
+                    allOf:
+                      - $ref: '#/components/schemas/TaskMeta'
+                      - $ref: '#/components/schemas/CommonMeta'
+                      - type: object
+                        required: 
+                          - id
+                          - finished
+                        properties:
+                          finished:
+                            type: boolean
+                            description: Boolean flag, indicates status finished or not
+                            example: false
+                          progress:
+                            $ref: '#/components/schemas/Progress'
+                  messages:
+                   $ref: "#/components/schemas/Messages"
+        "204":
+          description: No task with this id found
+        "400":
+          description: Task type is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Error fetching task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Long running task
+      summary: Cancel task status is InQueue
+      description: ""
+      parameters:
+        - in: path
+          name: id
+          description: Id of task
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status of task, model requires one of task status representations -
+            as number in range(progress), as status(status)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TaskMyTaskNameResponse'
+                  meta:
+                    allOf:
+                      - $ref: '#/components/schemas/TaskMeta'
+                      - $ref: '#/components/schemas/CommonMeta'
+                      - type: object
+                        required: 
+                          - id
+                          - finished
+                        properties:
+                          finished:
+                            type: boolean
+                            description: Boolean flag, indicates status finished or not
+                            example: false
+                          progress:
+                            $ref: '#/components/schemas/Progress'
+                  messages:
+                   $ref: "#/components/schemas/Messages"
+        "204":
+          description: No task with this id found
+        "400":
+          description: Task type is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Error fetching task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Long running task
+      summary: Delete task, task can be deleted if it is in Successeded or Canceled
+      description: ""
+      parameters:
+        - in: path
+          name: id
+          description: Id of task
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Meta info about task, it is required to add statuses array or pair
+            of progress_start and progress_end.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                  messages:
+                    $ref: '#/components/schemas/Messages'
+                  meta:
+                    $ref: '#/components/schemas/BaseMeta'
+        "204":
+          description: No task with this id found
+        "400":
+          description: Task type is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "405":
+          description: Delete API is not implemented for tasks of this type
+        "500":
+          description: Error deleting task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+servers:
+  - url: http://hostname
+components:
+  parameters:
+    taskId:
+      in: path
+      name: id
+      description: Id of task
+      required: true
+      schema:
+        type: string
+  schemas:
+    Status:
+      type: string
+      enum:
+        - InQueue
+        - InProgress
+        - Successeded
+        - Errored
+        - Canceled
+        - Paused
+    Progress:
+      type: object
+      properties:
+        progress_statuses:
+          type: array
+          items: 
+            type: string
+        progress_current:
+          type: string
+    BaseMeta:
+      type: object
+      properties:
+        ok: 
+          type: boolean
+          description: Flag imlicitly show success of task
+    CommonMeta:
+      allOf:
+        - $ref: '#/components/schemas/BaseMeta'
+        - type: object
+          properties:
+            timeout:
+              type: number
+              description: timeout in seconds fo this task, if specified, client must delete task after timeout 
+            progress:
+              $ref: '#/components/schemas/Progress'
+    TaskMeta:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          $ref: '#/components/schemas/Status'
+        created_at:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        meta:
+          allOf:
+            - $ref: '#/components/schemas/BaseMeta'
+            - type: object
+              properties:
+                ok:
+                  type: boolean
+                  example: false
+        messages: 
+          $ref: '#/components/schemas/Messages'
+    Messages:
+      type: array
+      items:
+        $ref: "#/components/schemas/Message"
+      description: "message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - info
+            - warning
+            - error
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    TaskMyTaskNamePayload:
+      type: object
+      properties:
+        field_1:
+          type: string
+        field_2:
+          type: number
+    TaskMyTaskNameResponse:
+      type: object
+      properties:
+        field_1:
+          type: string
+        field_2:
+          type: number
