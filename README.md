@@ -7,8 +7,24 @@ This repo stores manifests, created with our customized [swagger editor](https:/
 
 ### Features:
 
-1. Read files from this git repo to Your swagger editor
+1. Read/delete files from this git repo to Your swagger editor
 
-2. Delete files for git repo
+Using button **Open manifest**
+![](/docs/github-interop.png)
 
-3. Flush Your changes from swagger editor to this repo
+Select any manifest from list to edit (button **Use**), or delete (button **Delete**) <br/>
+If You did some changes to this git ropository for other swagger editor or using git, press **Force refetch manifests**, to fetch current manifests from scratch.
+![](/docs/read-delete-manifests.png)
+
+
+2. Flush Your changes from swagger editor to this repo
+
+Using button **Save current manifest
+![](/docs/github-interop.png)
+
+You will be prompted for save mode (Production or draft)
+Press **Save**, to flush Your current file to git
+If no such file on git, it will be created, if there is one, it will be updated.
+![](/docs/save-manifest.png)
+
+
