@@ -1,26 +1,14 @@
 # OpenAPI manifests for our APIs
 
-### Directory structure:
+This repo stores manifests, created with our customized [swagger editor](https://swagger-editor.rollun.net/)
 
-```
-openapi-manifests
-│   README.md
-└───manifests   
-│   └───group1
-|   |       orders_v1.yml
-|   |       orders_v2.yml
-|   |       products_v1.yml
-|   └───group2
-|           some_manifest_v1.yml
-└───components
-|       error_handling_v1.yml
-```
 
-### Description
+## Swagger editor
 
-- **manifests** - ready to denerate services from this manifests, folders inside **manifests** are groups of related APIs.
-- **components** - some components from OAS3, ready to be referenced in other manifests by permalinks.
+### Features:
 
-### Branches:
-- **master** - production ready solutions, cannot be modified. If You want to introduce some changes to manifest, release new version.
-- **develop** - can be modified at eny time, when ready, merge with **master**
+1. Read files from this git repo to Your swagger editor
+
+2. Delete files for git repo
+
+3. Flush Your changes from swagger editor to this repo
