@@ -5,6 +5,8 @@ This repo stores manifests, created with our customized [swagger editor](https:/
 
 ## Swagger editor
 
+Production ready files saved to master, drafts - to develop
+
 ### Features:
 
 1. Read/delete files from this git repo to Your swagger editor
