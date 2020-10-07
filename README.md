@@ -19,13 +19,14 @@ If You did some changes to this git ropository for other swagger editor or using
 
 2. Flush Your changes from swagger editor to this repo
 
-Using button **Save current manifest
+Using button **Save current manifest**
 ![](/docs/github-interop.png)
 
 You will be prompted for save mode (Production or draft)
 Press **Save**, to flush Your current file to git
 If no such file on git, it will be created,<br/>
 If there is one, it will be updated.
+
 ![](/docs/save-manifest.png)
 
 
