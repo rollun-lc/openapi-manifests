@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Long running API"
-  description: Long running tasks ;;;;;;;;poo
+  description: Long running tasksmn,. jk.kj
 paths:
   "/api/task/myTaskName":
     get:
