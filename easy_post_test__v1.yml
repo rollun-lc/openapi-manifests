@@ -6,7 +6,7 @@ info:
 servers:
   - url: http://hostname
 tags: 
-  - name: Track
+  - name: TrackingNumber
 paths:
   "/track/{id}":
     get:
@@ -27,14 +27,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/TrackResponse'
-                  messages:
-                   $ref: "#/components/schemas/Messages"
+                $ref: '#/components/schemas/TrackResponse'
         "204":
-          description: No track with this id found
+          description: Incorrect id
         "500":
           description: Error fetching task
           content:
@@ -42,24 +37,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
-  parameters:
-    taskId:
-      in: path
-      name: id
-      description: Id of task
-      required: true
-      schema:
-        type: string
   schemas:
     ErrorResponse:
       type: object
       properties:
         messages: 
-          $ref: '#/components/schemas/Messages'
-    Messages:
-      type: array
-      items:
-        $ref: "#/components/schemas/Message"
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
       description: "message field is not required"
     Message:
       type: object
@@ -73,10 +58,25 @@ components:
         text:
           type: string
           description: Message, that describes what went wrong
+    Response:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
     TrackResponse:
+      allOf:
+        - $ref: '#/components/schemas/Response'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Track'
+    Track:
       type: object
       properties:
         status:
           type: string
           description: Track status
           example: 'pre_transit'
+  
