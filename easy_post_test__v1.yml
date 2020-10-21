@@ -1,0 +1,82 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "EasyPost test"
+  description: Long running tasks interface
+servers:
+  - url: http://hostname
+tags: 
+  - name: Track
+paths:
+  "/track/{id}":
+    get:
+      tags:
+        - Track
+      summary: Get status of track
+      description: "Return status of track by tracknumber and carrier"
+      parameters:
+        - in: path
+          name: id
+          description: Composite id tracknumber:carrier
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status of track
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TrackResponse'
+                  messages:
+                   $ref: "#/components/schemas/Messages"
+        "204":
+          description: No track with this id found
+        "500":
+          description: Error fetching task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  parameters:
+    taskId:
+      in: path
+      name: id
+      description: Id of task
+      required: true
+      schema:
+        type: string
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        messages: 
+          $ref: '#/components/schemas/Messages'
+    Messages:
+      type: array
+      items:
+        $ref: "#/components/schemas/Message"
+      description: "message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - info
+            - warning
+            - error
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    TrackResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Track status
+          example: 'pre_transit'
