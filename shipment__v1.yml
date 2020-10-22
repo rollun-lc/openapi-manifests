@@ -1,0 +1,112 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Shipment"
+  description: Long running tasks interface
+servers:
+  - url: http://rollun-carriers/openapi/
+tags: 
+  - name: TrackingNumber
+paths:
+  "/TrackingNumber/{id}":
+    get:
+      tags:
+        - TrackingNumber
+      summary: 'Get status of tracking'
+      description: "Return status of tracking by tracknumber and carrier"
+      parameters:
+        - in: path
+          name: id
+          description: Composite id. Format - tracknumber|carrier
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Status of tracking'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackingNumberResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        messages: 
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - info
+            - warning
+            - error
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+    TrackingNumberResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TrackingNumber'
+    TrackingNumber:
+      type: object
+      properties:
+        tracknumber:
+          type: string
+          description: The tracking code provided by the carrier
+          example: '9400100000000000000000'
+        carrier:
+          type: string
+          description: The name of the carrier handling the shipment
+          example: USPS
+        ship_status:
+          type: string
+          description: The current status of the package
+          enum: 
+            - pre_transit
+            - in_transit
+            - out_for_delivery
+            - delivered
+            - return_to_sender
+            - failure
+            - unknown
+        weight:
+          type: number
+          format: float
+          nullable: true
+          description: The weight of the package as measured by the carrier in ounces (if available)
+        est_delivery_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: The estimated delivery date provided by the carrier (if available)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          
+  
