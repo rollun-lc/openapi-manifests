@@ -4,7 +4,7 @@ info:
   title: "Shipment"
   description: Long running tasks interface
 servers:
-  - url: http://rollun-carriers/openapi/Shipment/v1
+  - url: http://carriers/openapi/Shipment/v1
 tags: 
   - name: Tracker
 paths:
