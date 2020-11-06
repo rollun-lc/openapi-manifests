@@ -1,0 +1,207 @@
+openapi: 3.0.0
+info:
+  version: "2"
+  title: "Shipment"
+  description: Long running tasks interface
+servers:
+  - url: http://carriers/openapi/Shipment/v2
+tags: 
+  - name: Tracker
+paths:
+  "/Tracker/{id}":
+    get:
+      tags:
+        - Tracker
+      summary: 'Get status of tracking'
+      description: "Return status of tracking by trackNumber and carrier"
+      parameters:
+        - in: path
+          name: id
+          description: Composite id. Format - trackNumber|carrier
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Status of tracking'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackerResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        messages: 
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - info
+            - warning
+            - error
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+    TrackerResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Tracker'
+    Tracker:
+      type: object
+      required:
+        - trackNumber
+        - carrier
+        - shipStatus
+      properties:
+        trackNumber:
+          type: string
+          description: The tracking code provided by the carrier
+          example: '9400100000000000000000'
+        carrier:
+          type: string
+          description: The name of the carrier handling the shipment
+          enum: 
+            - AmazonMws
+            - APC
+            - Aramex
+            - ArrowXL
+            - Asendia
+            - AustraliaPost
+            - AxlehireV3
+            - BorderGuru
+            - Cainiao
+            - CanadaPost
+            - Canpar
+            - ColumbusLastMile
+            - Chronopost
+            - ColisPrive
+            - Colissimo
+            - CouriersPlease
+            - DaiPost
+            - Deliv
+            - DeutschePost
+            - DeutschePostUK
+            - DHLEcommerceAsia
+            - DHLExpress
+            - DHLFreight
+            - DHLGermany
+            - DHLGlobalMail
+            - DHLGlobalmailInternational
+            - Dicom
+            - DPD
+            - DPDUK
+            - ChinaEMS
+            - Estafeta
+            - Estes
+            - Fastway
+            - FedEx
+            - FedExCrossBorder
+            - FedExMailview
+            - FedExSameDayCity
+            - FedexSmartPost
+            - FirstMile
+            - Globegistics
+            - GSO
+            - Hermes
+            - HongKongPost
+            - InterlinkExpress
+            - JancoFreight
+            - JPPost
+            - KuronekoYamato
+            - LaPoste
+            - LaserShipV2
+            - Liefery
+            - LoomisExpress
+            - LSO
+            - Newgistics
+            - OnTrac
+            - OnTracDirectPost
+            - OsmWorldwide
+            - Parcelforce
+            - Passport
+            - Pilot
+            - PostNL
+            - Posten
+            - PostNord
+            - Purolator
+            - RoyalMail
+            - RRDonnelley
+            - Seko
+            - OmniParcel
+            - SingaporePost
+            - SpeeDee
+            - SprintShip
+            - StarTrack
+            - Toll
+            - TForce
+            - UDS
+            - Ukrposhta
+            - UPS
+            - UPSIparcel
+            - UPSMailInnovations
+            - USPS
+            - Veho
+            - Yanwen
+            - Yodel
+        shipStatus:
+          type: string
+          description: The current status of the package
+          enum: 
+            - pre_transit
+            - in_transit
+            - out_for_delivery
+            - delivered
+            - return_to_sender
+            - failure
+            - unknown
+        publicUrl:
+          type: string
+          format: url
+          example: 'https://google.com'
+          nullable: false
+          description: URL to a publicly-accessible html page that shows tracking details for this tracker
+        firstScan:
+          type: string
+          format: date-time
+          nullable: true
+          description: The timestamp when the first carrier tracking scan occurred
+        weight:
+          type: number
+          format: float
+          nullable: true
+          description: The weight of the package as measured by the carrier in ounces (if available)
+        estDeliveryDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: The estimated delivery date provided by the carrier (if available)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
