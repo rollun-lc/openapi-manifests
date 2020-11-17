@@ -1,0 +1,215 @@
+openapi: "3.0.0"
+info:
+  description: "Walmart orders"
+  version: "1"
+  title: "Orders"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+servers:
+  - url: "http://walmart-orders/openapi/Orders/v1"
+tags:
+  - name: Order
+    description: "Walmart orders"
+  - name: Tracknumber
+    description: "Walmart tracking numbers"
+paths:
+  /order:
+    get:
+      tags:
+        - Order
+      description: ""
+      parameters:
+        - in: query
+          name: "from_date"
+          description: "Get order list from date"
+          required: true
+          schema:
+            type: string
+        - in: "query"
+          name: "to_date"
+          description: "Get order list to date"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            aplication/json:
+              schema:
+                $ref: "#/components/schemas/OrderListResult"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  /order/{id}:
+    get:
+      tags:
+        - Order
+      description: "Get one order"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            aplication/json:
+              schema:
+                $ref: "#/components/schemas/OrderResult"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    Message:
+      type: object
+      required:
+        - level
+        - text
+      properties:
+        level:
+          type: string
+          description: 'Message level  (like in a logger)'
+          example: 'error'
+        text:
+          type: string
+          description: 'Message text'
+          example: 'Something wrong.'
+        context:
+          type: array
+          description: 'Message context (like in a logger)'
+          items:
+            type: string
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Result:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    Order:
+      type: "object"
+      required:
+        - buyer
+      properties:
+        id:
+          type: string
+        shipping_method:
+          type: "string"
+        buyer:
+          $ref: "#/components/schemas/Customer"
+        receiver:
+          $ref: "#/components/schemas/Customer"
+        paid_date:
+          type: string
+        ship_date:
+          type: string
+        delivery_date:
+          type: string
+        total_sum:
+          type: number
+        #itemSum:
+          #type: number
+#        shipping_price:
+#          type: number
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        status:
+          type: "string"
+          description: "Order Status"
+        note:
+          type: string
+    OrderItem:
+      type: object
+      properties:
+        mln:
+          type: string
+        msin:
+          type: string
+        rid:
+          type: string
+        price:
+          type: number
+        shipping_price:
+          type: number
+        quantity:
+          type: integer
+    OrderListResult:
+      allOf:
+        - $ref: '#/components/schemas/Result'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+    OrderResult:
+      allOf:
+        - $ref: '#/components/schemas/Result'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Order'
+    Customer:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        address:
+          $ref: "#/components/schemas/Address"
+    Address:
+      type: object
+      properties:
+        country:
+          type: string
+        state:
+          type: string
+        city:
+          type: string
+        postal_code:
+          type: string
+        address_1:
+          type: string
+        address_2:
+          type: string
