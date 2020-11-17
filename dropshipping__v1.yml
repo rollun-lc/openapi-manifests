@@ -1,0 +1,240 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Dropshipping"
+  description: Long running tasks interface
+servers:
+  - url: http://suppliers/openapi/Dropshipping/v1
+tags: 
+  - name: Order
+  - name: ShippingMethod
+  - name: Parcel
+paths:
+  "/Order/{id}":
+    get:
+      tags:
+        - Order
+      summary: 'Get info about order'
+      description: "Return information of order by orderId"
+      parameters:
+        - in: path
+          name: id
+          description: order id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        messages: 
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - info
+            - warning
+            - error
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+    OrderResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Order'
+    Address:
+      type: object
+      required: 
+        - name
+        - country
+        - state
+        - city
+        - postalCode
+        - address1
+      properties:
+        name:
+          type: string
+          description: Package receiver full name
+          example: Shawn Weisweaver
+        country:
+          type: string
+          description: "Country code by ISO 3166 aplha-2 code"
+          enum: 
+            - US
+        state:
+          type: string
+          description: US state code
+          example: CA
+        city:
+          type: string
+          description: Full city name
+          example: San Francisco
+        postalCode:
+          type: string
+          description: ZIP or postal code
+          example: "94104"
+        address1:
+          type: string
+          description: First line of the address
+          example: "417 Montgomery St"
+        address2:
+          type: string
+          nullable: true
+          description: Second line of the address
+          example: "Floor 5"
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person or organization
+          example: "415-123-4567"
+    Product:
+      type: object
+      required:
+        - code
+        - quantity
+      properties:
+        code:
+          type: string
+          description: Rollun Id
+          example: VW6A4
+        quantity:
+          type: integer
+          description: Quantity of products
+          example: 2
+    RockyCart:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Supplier name
+          enum:
+            - rockyCart
+        paymentCard:
+          type: string
+          description: Id of the card from which the payment is debited
+          example: "538364"
+    Autodist:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Supplier name
+          enum:
+            - autodist
+    PartsUnlimited:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Supplier name
+          enum:
+            - partsUnlimited
+    Supplier:
+      oneOf:
+        - $ref: '#/components/schemas/RockyCart'
+        - $ref: '#/components/schemas/Autodist'
+        - $ref: '#/components/schemas/PartsUnlimited'
+      type: object
+    OrderInfo:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/Address'
+        products:
+          type: array
+          description: List of products to delivery
+          items:
+            $ref: '#/components/schemas/Product'
+        supplier:
+          $ref: '#/components/schemas/Supplier'
+    Carrier:
+          type: string
+          enum:
+            - UPS
+            - USPS
+            - FedEx
+    ShippingMethod:
+      type: object
+      properties:
+        name:
+          # Probably enum specific for each supplier
+          type: string
+          description: Unique identificator of shipping method
+        carrier:
+          $ref: '#/components/schemas/Carrier'
+        price:
+          # TODO: decide to remove or keep this field
+          type: string
+          nullable: true
+          description: Price for this shipping method (if available)
+        estDeliveryDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: The estimated delivery date provided by the carrier (if available)
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identificator of order
+        shippingMethod:
+          type: string
+          description: Name of shipping method
+        orderInfo:
+          $ref: '#/components/schemas/OrderInfo'
+    Parcel:
+      type: object
+      properties:
+        carrier:
+          $ref: '#/components/schemas/Carrier'
+        trackNumber:
+          type: string
+          description: The tracking code provided by the carrier
+          example: '9400100000000000000000'
+        estDeliveryDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: The estimated delivery date provided by the carrier (if available)
+        products:
+          type: array
+          description: List of products in this parcel
+          items:
+            $ref: '#/components/schemas/Product'
