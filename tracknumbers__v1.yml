@@ -1,0 +1,212 @@
+openapi: 3.0.0
+info:
+  description: "Walmart tracking numbers"
+  version: "1"
+  title: "Tracknumbers"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+servers:
+  - url: "http://walmart-orders/openapi/Tracknumbers/v1"
+tags:
+  - name: Tracknumber
+paths:
+  /tracknumber:
+    post:
+      tags:
+        - Tracknumber
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostTrackNumber'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfoResult'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+    get:
+      tags:
+        - Tracknumber
+      parameters:
+        - name: order_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: tracknumber
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfoResult'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    Message:
+      type: object
+      required:
+        - level
+        - text
+      properties:
+        level:
+          type: string
+          description: 'Message level  (like in a logger)'
+          example: 'error'
+        text:
+          type: string
+          description: 'Message text'
+          example: 'Something wrong.'
+        context:
+          type: array
+          description: 'Message context (like in a logger)'
+          items:
+            type: string
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Result:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    PostTrackNumber:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: 'Order identifier'
+          example: 54534534535453
+        tracknumber:
+          type: string
+          description: ''
+          example: ''
+    TaskInfoResult:
+      allOf:
+        - $ref: '#/components/schemas/Result'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TaskInfo'
+    TaskInfo:
+      type: object
+      required:
+        - id
+        - timeout
+        - stage
+        - status
+      properties:
+        id:
+          type: string
+          example: 'qwerty123'
+        timeout:
+          type: integer
+          example: '3'
+        stage:
+          $ref: '#/components/schemas/Stage'
+        status:
+          $ref: '#/components/schemas/Status'
+        startTime:
+          type: string
+          description: 'Task start time UTC'
+          example: '2020-11-20T13:14:15Z'
+        result:
+          $ref: '#/components/schemas/TrackNumberResult'
+    TrackNumberResult:
+      allOf:
+        - $ref: '#/components/schemas/Result'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TrackNumber'
+    TrackNumber:
+      type: object
+      required:
+        - tracknumber
+        - order_id
+      properties:
+        tracknumber:
+          type: string
+          example: ''
+        order_id:
+          type: string
+          example: ''
+        date:
+          $ref: '#/components/schemas/Date'
+    Stage:
+      type: object
+      required:
+        - stage
+        - all
+      properties:
+        stage:
+          type: string
+          description: 'Current stage'
+          example: 'writing 2'
+        all:
+          type: array
+          description: 'All possible stages'
+          items:
+            type: string
+          example: [ 'writing 1','writing 2','writing 3','calc summary','done' ]
+    Status:
+      type: object
+      required:
+        - state
+        - all
+      properties:
+        state:
+          type: string
+          description: 'Current state'
+          example: 'pending'
+        all:
+          type: array
+          description: 'All possible states'
+          items:
+            type: string
+          example: [ 'pending','fulfilled','rejected' ]
+    DateTime:
+      type: object
+      properties:
+        date:
+          type: string
+        timezone:
+          type: string
