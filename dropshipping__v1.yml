@@ -10,6 +10,39 @@ tags:
   - name: ShippingMethod
   - name: Parcel
 paths:
+  "/Order":
+    post:
+      tags:
+        - Order
+      summary: "Make an order"
+      description: "To can make an order you need to specify order information: address, products, supplier and shipping method."
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSuccessResponse'
+        "409":
+          description: "Order with specified id already exist."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
   "/Order/{id}":
     get:
       tags:
@@ -19,7 +52,7 @@ paths:
       parameters:
         - in: path
           name: id
-          description: order id
+          description: Order id
           required: true
           schema:
             type: string
@@ -29,9 +62,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderResponse'
+                $ref: '#/components/schemas/OrderSuccessResponse'
+        "404":
+          description: "Order with specified id doesn't exist."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "500":
-          description: 'Some error'
+          description: 'Some internal error'
           content:
             application/json:
               schema:
@@ -45,7 +84,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Message"
-      description: "message field is not required"
+      description: "Message field is not required"
     Message:
       type: object
       properties:
@@ -65,13 +104,22 @@ components:
       properties:
         data:
           type: object
-    OrderResponse:
+    
+    ## Responses
+    OrderSuccessResponse:
       allOf:
         - $ref: '#/components/schemas/SuccessResponse'
       type: object
       properties:
         data:
           $ref: '#/components/schemas/Order'
+          
+    ## Requests
+    OrderCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/Order'
+          
+    ## Resources
     Address:
       type: object
       required: 
@@ -209,6 +257,8 @@ components:
           nullable: true
           description: The estimated delivery date provided by the carrier (if available)
     Order:
+      allOf:
+        - $ref: '#/components/schemas/OrderInfo'
       type: object
       properties:
         id:
@@ -217,8 +267,6 @@ components:
         shippingMethod:
           type: string
           description: Name of shipping method
-        orderInfo:
-          $ref: '#/components/schemas/OrderInfo'
     Parcel:
       type: object
       properties:
