@@ -126,6 +126,33 @@ paths:
   #           application/json:
   #             schema:
   #               $ref: '#/components/schemas/ErrorResponse'
+  "/Parcel":
+    get:
+      tags:
+        - Parcel
+      summary: "Get all parcels for order"
+      description: "Returns list of all parcels by order info."
+      parameters:
+        - in: query
+          name: orderId
+          description: "Order id"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParcelsListResponse'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
         
 components:
   schemas:
@@ -220,6 +247,16 @@ components:
     #     data:
     #       $ref: '#/components/schemas/ShippingMethod'        
     
+    ## Parcel Responses
+    ParcelsListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Parcel'
         
     ## Requests
     OrderCreateRequest:
