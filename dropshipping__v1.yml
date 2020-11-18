@@ -42,13 +42,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        
   "/Order/{id}":
     get:
       tags:
         - Order
       summary: 'Get info about order'
-      description: "Return information of order by orderId"
+      description: "Returns information of order by orderId"
       parameters:
         - in: path
           name: id
@@ -62,7 +61,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderSuccessResponse'
+                $ref: '#/components/schemas/OrderResponse'
         "404":
           description: "Order with specified id doesn't exist."
           content:
@@ -75,6 +74,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  "/ShippingMethod":
+    get:
+      tags:
+        - ShippingMethod
+      summary: "Get all allowed shipping methods for order"
+      description: "Returns list of all allowed shipping methods by order info."
+      parameters:
+        - in: query
+          name: "order"
+          description: "Get order list from date"
+          required: true
+          schema:
+            $ref: '#/components/schemas/OrderInfo'
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingMethodsListResponse'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  # "/ShippingMethod/{id}":
+  #   get:
+  #     tags:
+  #       - ShippingMethod
+  #     summary: "Get info about specific shipping method"
+  #     description: "Returns list of all allowed shipping methods by order info."
+  #     parameters:
+  #       - in: path
+  #         name: id
+  #         description: Shipping method id
+  #         required: true
+  #         schema:
+  #           type: string
+  #     responses:
+  #       "200":
+  #         description: 'Success'
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ShippingMethodResponse'
+  #       "500":
+  #         description: 'Some internal error'
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/ErrorResponse'
+        
 components:
   schemas:
     ErrorResponse:
@@ -105,8 +157,8 @@ components:
         data:
           type: object
     
-    ## Responses
-    OrderSuccessResponse:
+    ## Order Responses
+    OrderResponse:
       allOf:
         - $ref: '#/components/schemas/SuccessResponse'
       type: object
@@ -149,6 +201,25 @@ components:
       nullable: true
       allOf:
         - $ref: '#/components/schemas/Order'
+        
+    ## Shipping Method Responses
+    ShippingMethodsListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShippingMethod'
+    # ShippingMethodResponse:
+    #   allOf:
+    #     - $ref: '#/components/schemas/SuccessResponse'
+    #   type: object
+    #   properties:
+    #     data:
+    #       $ref: '#/components/schemas/ShippingMethod'        
+    
         
     ## Requests
     OrderCreateRequest:
@@ -202,7 +273,7 @@ components:
     ShippingMethod:
       type: object
       properties:
-        name:
+        id:
           # Probably enum specific for each supplier
           type: string
           description: Unique identificator of shipping method
