@@ -29,7 +29,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderSuccessResponse'
+                $ref: '#/components/schemas/OrderCreateResponse'
         "409":
           description: "Order with specified id already exist."
           content:
@@ -113,13 +113,186 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Order'
-          
+    OrderCreateResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/OrderCreateInfo'
+    OrderCreateInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identificator of task
+        timeout:
+          type: integer
+          example: '3'
+        stage:
+          type: string
+          description: 'Current stage'
+          enum: ['inQueue', 'inProgress', 'done']
+        state:
+          type: string
+          description: 'Current state'
+          enum: ['pending','fulfilled','rejected']
+        startTime:
+          type: string
+          description: 'Task start time UTC'
+          example: '2020-11-20T13:14:15Z'
+        result:
+          # how to make nullable ?
+          $ref: '#/components/schemas/OrderCreateResult'
+    OrderCreateResult:
+      type: object
+      nullable: true
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        
     ## Requests
     OrderCreateRequest:
       allOf:
         - $ref: '#/components/schemas/Order'
           
     ## Resources
+    Order:
+      allOf:
+        - $ref: '#/components/schemas/OrderInfo'
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identificator of order
+        shippingMethod:
+          type: string
+          description: Name of shipping method
+    Supplier:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/RockyCart'
+        - $ref: '#/components/schemas/Autodist'
+        - $ref: '#/components/schemas/PartsUnlimited'
+    RockyCart:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Supplier name
+          enum:
+            - rockyCart
+        paymentCard:
+          type: string
+          description: Id of the card from which the payment is debited
+          example: "538364"
+    OrderInfo:
+      type: object
+      properties:
+        receiver:
+          $ref: '#/components/schemas/Customer'
+        products:
+          type: array
+          description: List of products to delivery
+          items:
+            $ref: '#/components/schemas/Product'
+        supplier:
+          $ref: '#/components/schemas/Supplier'
+    ShippingMethod:
+      type: object
+      properties:
+        name:
+          # Probably enum specific for each supplier
+          type: string
+          description: Unique identificator of shipping method
+        carrier:
+          $ref: '#/components/schemas/Carrier'
+        price:
+          # TODO: decide to remove or keep this field
+          type: string
+          nullable: true
+          description: Price for this shipping method (if available)
+        estDeliveryDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: The estimated delivery date provided by the carrier (if available)
+    Autodist:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Supplier name
+          enum:
+            - autodist
+    PartsUnlimited:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Supplier name
+          enum:
+            - partsUnlimited
+    Parcel:
+      type: object
+      properties:
+        carrier:
+          $ref: '#/components/schemas/Carrier'
+        trackNumber:
+          type: string
+          description: The tracking code provided by the carrier
+          example: '9400100000000000000000'
+        estDeliveryDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: The estimated delivery date provided by the carrier (if available)
+        products:
+          type: array
+          description: List of products in this parcel
+          items:
+            $ref: '#/components/schemas/Product'
+    Carrier:
+          type: string
+          enum:
+            - UPS
+            - USPS
+            - FedEx
+    Product:
+      type: object
+      required:
+        - code
+        - quantity
+      properties:
+        code:
+          type: string
+          description: Rollun Id
+          example: VW6A4
+        quantity:
+          type: integer
+          description: Quantity of products
+          example: 2
+    Customer:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Full name
+          example: Shawn Weisweaver
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person
+          example: "415-123-4567"
+        email:
+          type: string
+        address:
+          $ref: "#/components/schemas/Address"
     Address:
       type: object
       required: 
@@ -130,10 +303,6 @@ components:
         - postalCode
         - address1
       properties:
-        name:
-          type: string
-          description: Package receiver full name
-          example: Shawn Weisweaver
         country:
           type: string
           description: "Country code by ISO 3166 aplha-2 code"
@@ -160,129 +329,3 @@ components:
           nullable: true
           description: Second line of the address
           example: "Floor 5"
-        phone:
-          type: string
-          nullable: true
-          description: Phone number to reach the person or organization
-          example: "415-123-4567"
-    Product:
-      type: object
-      required:
-        - code
-        - quantity
-      properties:
-        code:
-          type: string
-          description: Rollun Id
-          example: VW6A4
-        quantity:
-          type: integer
-          description: Quantity of products
-          example: 2
-    RockyCart:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          description: Supplier name
-          enum:
-            - rockyCart
-        paymentCard:
-          type: string
-          description: Id of the card from which the payment is debited
-          example: "538364"
-    Autodist:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          description: Supplier name
-          enum:
-            - autodist
-    PartsUnlimited:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          description: Supplier name
-          enum:
-            - partsUnlimited
-    Supplier:
-      oneOf:
-        - $ref: '#/components/schemas/RockyCart'
-        - $ref: '#/components/schemas/Autodist'
-        - $ref: '#/components/schemas/PartsUnlimited'
-      type: object
-    OrderInfo:
-      type: object
-      properties:
-        address:
-          $ref: '#/components/schemas/Address'
-        products:
-          type: array
-          description: List of products to delivery
-          items:
-            $ref: '#/components/schemas/Product'
-        supplier:
-          $ref: '#/components/schemas/Supplier'
-    Carrier:
-          type: string
-          enum:
-            - UPS
-            - USPS
-            - FedEx
-    ShippingMethod:
-      type: object
-      properties:
-        name:
-          # Probably enum specific for each supplier
-          type: string
-          description: Unique identificator of shipping method
-        carrier:
-          $ref: '#/components/schemas/Carrier'
-        price:
-          # TODO: decide to remove or keep this field
-          type: string
-          nullable: true
-          description: Price for this shipping method (if available)
-        estDeliveryDate:
-          type: string
-          format: date-time
-          nullable: true
-          description: The estimated delivery date provided by the carrier (if available)
-    Order:
-      allOf:
-        - $ref: '#/components/schemas/OrderInfo'
-      type: object
-      properties:
-        id:
-          type: string
-          description: Unique identificator of order
-        shippingMethod:
-          type: string
-          description: Name of shipping method
-    Parcel:
-      type: object
-      properties:
-        carrier:
-          $ref: '#/components/schemas/Carrier'
-        trackNumber:
-          type: string
-          description: The tracking code provided by the carrier
-          example: '9400100000000000000000'
-        estDeliveryDate:
-          type: string
-          format: date-time
-          nullable: true
-          description: The estimated delivery date provided by the carrier (if available)
-        products:
-          type: array
-          description: List of products in this parcel
-          items:
-            $ref: '#/components/schemas/Product'
