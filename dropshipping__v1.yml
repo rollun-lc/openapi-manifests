@@ -5,7 +5,7 @@ info:
   description: Long running tasks interface
 servers:
   - url: http://suppliers/openapi/Dropshipping/v1
-tags: 
+tags:
   - name: Order
   - name: ShippingMethod
   - name: Parcel
@@ -29,19 +29,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderCreateResponse'
+                $ref: '#/components/schemas/OrderCreateResult'
         "409":
           description: "Order with specified id already exist."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResult'
         "500":
           description: 'Some internal error'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResult'
   "/Order/{id}":
     get:
       tags:
@@ -61,19 +61,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderResponse'
+                $ref: '#/components/schemas/OrderResult'
         "404":
           description: "Order with specified id doesn't exist."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResult'
         "500":
           description: 'Some internal error'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResult'
   "/ShippingMethod":
     get:
       tags:
@@ -93,13 +93,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ShippingMethodsListResponse'
+                $ref: '#/components/schemas/ShippingMethodsListResult'
         "500":
           description: 'Some internal error'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResult'
   # "/ShippingMethod/{id}":
   #   get:
   #     tags:
@@ -119,13 +119,13 @@ paths:
   #         content:
   #           application/json:
   #             schema:
-  #               $ref: '#/components/schemas/ShippingMethodResponse'
+  #               $ref: '#/components/schemas/ShippingMethodResult'
   #       "500":
   #         description: 'Some internal error'
   #         content:
   #           application/json:
   #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
+  #               $ref: '#/components/schemas/ErrorResult'
   "/Parcel":
     get:
       tags:
@@ -145,21 +145,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParcelsListResponse'
+                $ref: '#/components/schemas/ParcelsListResult'
         "500":
           description: 'Some internal error'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
-        
+                $ref: '#/components/schemas/ErrorResult'
+
+
 components:
   schemas:
-    ErrorResponse:
+    ErrorResult:
       type: object
       properties:
-        messages: 
+        messages:
           type: array
           items:
             $ref: "#/components/schemas/Message"
@@ -176,25 +176,27 @@ components:
         text:
           type: string
           description: Message, that describes what went wrong
-    SuccessResponse:
+    SuccessResult:
       allOf:
-        - $ref: '#/components/schemas/ErrorResponse'
+        - $ref: '#/components/schemas/ErrorResult'
       type: object
       properties:
         data:
           type: object
-    
-    ## Order Responses
-    OrderResponse:
+
+    ## Order results
+    OrderResult:
       allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
+        - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
           $ref: '#/components/schemas/Order'
-    OrderCreateResponse:
+          
+    # OrderCreate results
+    OrderCreateResult:
       allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
+        - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
@@ -222,47 +224,47 @@ components:
           example: '2020-11-20T13:14:15Z'
         result:
           # how to make nullable ?
-          $ref: '#/components/schemas/OrderCreateResult'
-    OrderCreateResult:
+          $ref: '#/components/schemas/OrderCreateInfoResult'
+    OrderCreateInfoResult:
       type: object
       nullable: true
       allOf:
         - $ref: '#/components/schemas/Order'
-        
-    ## Shipping Method Responses
-    ShippingMethodsListResponse:
+
+    ## Shipping Method Results
+    ShippingMethodsListResult:
       allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
+        - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/ShippingMethod'
-    # ShippingMethodResponse:
+    # ShippingMethodResult:
     #   allOf:
-    #     - $ref: '#/components/schemas/SuccessResponse'
+    #     - $ref: '#/components/schemas/SuccessResult'
     #   type: object
     #   properties:
     #     data:
-    #       $ref: '#/components/schemas/ShippingMethod'        
-    
-    ## Parcel Responses
-    ParcelsListResponse:
+    #       $ref: '#/components/schemas/ShippingMethod'
+
+    ## Parcel Results
+    ParcelsListResult:
       allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
+        - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/Parcel'
-        
+
     ## Requests
     OrderCreateRequest:
       allOf:
         - $ref: '#/components/schemas/Order'
-          
+
     ## Resources
     Order:
       allOf:
@@ -272,26 +274,25 @@ components:
         id:
           type: string
           description: Unique identificator of order
-        shippingMethod:
+        shippingMethodId:
           type: string
-          description: Name of shipping method
+          description: Id of shipping method
+        options:
+          $ref: '#/components/schemas/OrderOptions'
     Supplier:
       type: object
-      oneOf:
-        - $ref: '#/components/schemas/RockyCart'
-        - $ref: '#/components/schemas/Autodist'
-        - $ref: '#/components/schemas/PartsUnlimited'
-    RockyCart:
-      type: object
-      required:
-        - name
       properties:
         name:
           type: string
           description: Supplier name
-          enum:
+          enum: 
+            - autodist
+            - partsUnlimited
             - rockyCart
-        paymentCard:
+    OrderOptions:
+      type: object
+      properties:
+        rockyCartPaymentCard:
           type: string
           description: Id of the card from which the payment is debited
           example: "538364"
@@ -317,7 +318,6 @@ components:
         carrier:
           $ref: '#/components/schemas/Carrier'
         price:
-          # TODO: decide to remove or keep this field
           type: string
           nullable: true
           description: Price for this shipping method (if available)
@@ -326,26 +326,6 @@ components:
           format: date-time
           nullable: true
           description: The estimated delivery date provided by the carrier (if available)
-    Autodist:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          description: Supplier name
-          enum:
-            - autodist
-    PartsUnlimited:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          description: Supplier name
-          enum:
-            - partsUnlimited
     Parcel:
       type: object
       properties:
@@ -366,11 +346,11 @@ components:
           items:
             $ref: '#/components/schemas/Product'
     Carrier:
-          type: string
-          enum:
-            - UPS
-            - USPS
-            - FedEx
+      type: string
+      enum:
+        - UPS
+        - USPS
+        - FedEx
     Product:
       type: object
       required:
@@ -403,7 +383,7 @@ components:
           $ref: "#/components/schemas/Address"
     Address:
       type: object
-      required: 
+      required:
         - name
         - country
         - state
@@ -414,7 +394,7 @@ components:
         country:
           type: string
           description: "Country code by ISO 3166 aplha-2 code"
-          enum: 
+          enum:
             - US
         state:
           type: string
