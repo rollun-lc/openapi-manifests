@@ -8,7 +8,6 @@ servers:
 tags:
   - name: Order
   - name: ShippingMethod
-  - name: Parcel
 paths:
   "/Order":
     post:
@@ -126,32 +125,6 @@ paths:
   #           application/json:
   #             schema:
   #               $ref: '#/components/schemas/ErrorResult'
-  "/Parcel":
-    get:
-      tags:
-        - Parcel
-      summary: "Get all parcels for order"
-      description: "Returns list of all parcels by order info."
-      parameters:
-        - in: query
-          name: orderId
-          description: "Order id"
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: 'Success'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ParcelsListResult'
-        "500":
-          description: 'Some internal error'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
 
 
 components:
@@ -191,7 +164,19 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/Order'
+          $ref: '#/components/schemas/OrderResultData'
+    
+    OrderResultData:
+      allOf:
+        - $ref: '#/components/schemas/Order'
+      properties:
+        parcels:
+          type: array
+          nullable: true
+          description: List of parcels with order items (if parcel has sent)
+          items:
+            $ref: '#/components/schemas/Parcel'
+          
           
     # OrderCreate results
     OrderCreateResult:
@@ -249,17 +234,6 @@ components:
     #     data:
     #       $ref: '#/components/schemas/ShippingMethod'
 
-    ## Parcel Results
-    ParcelsListResult:
-      allOf:
-        - $ref: '#/components/schemas/SuccessResult'
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Parcel'
-
     ## Requests
     OrderCreateRequest:
       allOf:
@@ -280,15 +254,12 @@ components:
         options:
           $ref: '#/components/schemas/OrderOptions'
     Supplier:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Supplier name
-          enum: 
-            - autodist
-            - partsUnlimited
-            - rockyCart
+      type: string
+      description: Supplier name
+      enum: 
+        - autodist
+        - partsUnlimited
+        - rockyCart
     OrderOptions:
       type: object
       properties:
