@@ -9,7 +9,7 @@ tags:
   - name: Order
   - name: CalculatedShippingMethod
 paths:
-  "/Order":
+  "/orders":
     post:
       tags:
         - Order
@@ -41,11 +41,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-  "/Order/{id}":
     get:
       tags:
         - Order
-      summary: 'Get info about order'
+      summary: "Get list of orders"
+      description: "Get list of orders"
+      parameters:
+        - in: query
+          name: "fromDate"
+          description: "Get order list from date"
+          required: true
+          schema:
+            type: string
+        - in: "query"
+          name: "toDate"
+          description: "Get order list to date"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            aplication/json:
+              schema:
+                $ref: "#/components/schemas/OrderListResult"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/orders/{id}":
+    get:
+      tags:
+        - Order
+      summary: 'Get info about specific order'
       description: "Returns information of order by orderId"
       parameters:
         - in: path
@@ -73,19 +110,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-  "/ClculatedShippingMethod":
+  "/calculatedShippingMethods":
     post:
       tags:
         - CalculatedShippingMethod
       summary: "Get all allowed shipping methods for order"
       description: "Returns list of all allowed shipping methods by order info."
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculatedShippingMethodPostRequest'
       responses:
         "200":
           description: 'Success'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CalculatedShippingMethodsResult'
+                $ref: '#/components/schemas/CalculatedShippingMethodResult'
         "500":
           description: 'Some internal error'
           content:
@@ -130,10 +174,19 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Order'
+    OrderListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
           
 
     ## Calculated Shipping Method Results
-    CalculatedShippingMethodsResult:
+    CalculatedShippingMethodResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
       type: object
@@ -145,8 +198,44 @@ components:
 
     ## Requests
     OrderPostRequest:
-      allOf:
-        - $ref: '#/components/schemas/Order'
+      type: object
+      required:
+        - id
+        - supplierCode
+        - shippingMethodName
+        - receiver
+        - items
+      properties:
+        id:
+          type: string
+          description: Unique identificator of order
+        supplierCode:
+          type: string
+          description: Supplier code
+        shippingMethodName:
+          type: string
+          description: Supplier shipping method name 
+        receiver:
+          $ref: '#/components/schemas/Customer'
+        items:
+          type: array
+          description: List of items to order
+          items:
+            $ref: '#/components/schemas/Item'
+    
+    CalculatedShippingMethodPostRequest:
+      type: object
+      required:
+        - receiver
+        - items
+      properties:
+        receiver:
+          $ref: '#/components/schemas/Customer'
+        items:
+          type: array
+          description: List of items to order
+          items:
+            $ref: '#/components/schemas/Item'
 
     ## Resources
     Order:
@@ -196,7 +285,8 @@ components:
             $ref: '#/components/schemas/OrderItem'
         shipments:
           type: array
-          description: List of all parcels that sent this order
+          nullable: true
+          description: List of all parcels that sent this order (if order items has sended)
           items:
             $ref: '#/components/schemas/Shipment'
         createdAt:
