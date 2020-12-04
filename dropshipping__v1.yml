@@ -7,7 +7,7 @@ servers:
   - url: http://suppliers/openapi/Dropshipping/v1
 tags:
   - name: Order
-  - name: ShippingMethod
+  - name: CalculatedShippingMethod
 paths:
   "/Order":
     post:
@@ -21,14 +21,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OrderCreateRequest'
+              $ref: '#/components/schemas/OrderPostRequest'
       responses:
         "200":
           description: "Order successfully created"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderCreateResult'
+                $ref: '#/components/schemas/OrderResult'
         "409":
           description: "Order with specified id already exist."
           content:
@@ -99,34 +99,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-  # "/ShippingMethod/{id}":
-  #   get:
-  #     tags:
-  #       - ShippingMethod
-  #     summary: "Get info about specific shipping method"
-  #     description: "Returns list of all allowed shipping methods by order info."
-  #     parameters:
-  #       - in: path
-  #         name: id
-  #         description: Shipping method id
-  #         required: true
-  #         schema:
-  #           type: string
-  #     responses:
-  #       "200":
-  #         description: 'Success'
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ShippingMethodResult'
-  #       "500":
-  #         description: 'Some internal error'
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResult'
-
-
 components:
   schemas:
     ErrorResult:
@@ -164,57 +136,8 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/OrderResultData'
-    
-    OrderResultData:
-      allOf:
-        - $ref: '#/components/schemas/Order'
-      properties:
-        parcels:
-          type: array
-          nullable: true
-          description: List of parcels with order items (if parcel has sent)
-          items:
-            $ref: '#/components/schemas/Parcel'
+          $ref: '#/components/schemas/Order'
           
-          
-    # OrderCreate results
-    OrderCreateResult:
-      allOf:
-        - $ref: '#/components/schemas/SuccessResult'
-      type: object
-      properties:
-        data:
-          $ref: '#/components/schemas/OrderCreateInfo'
-    OrderCreateInfo:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Unique identificator of task
-        timeout:
-          type: integer
-          example: '3'
-        stage:
-          type: string
-          description: 'Current stage'
-          enum: ['inQueue', 'inProgress', 'done']
-        state:
-          type: string
-          description: 'Current state'
-          enum: ['pending','fulfilled','rejected']
-        startTime:
-          type: string
-          description: 'Task start time UTC'
-          example: '2020-11-20T13:14:15Z'
-        result:
-          # how to make nullable ?
-          $ref: '#/components/schemas/OrderCreateInfoResult'
-    OrderCreateInfoResult:
-      type: object
-      nullable: true
-      allOf:
-        - $ref: '#/components/schemas/Order'
 
     ## Shipping Method Results
     ShippingMethodsListResult:
@@ -235,50 +158,65 @@ components:
     #       $ref: '#/components/schemas/ShippingMethod'
 
     ## Requests
-    OrderCreateRequest:
+    OrderPostRequest:
       allOf:
         - $ref: '#/components/schemas/Order'
 
     ## Resources
     Order:
-      allOf:
-        - $ref: '#/components/schemas/OrderInfo'
       type: object
       properties:
         id:
           type: string
           description: Unique identificator of order
-        shippingMethodId:
+        shippingMethodName:
           type: string
-          description: Id of shipping method
-        options:
-          $ref: '#/components/schemas/OrderOptions'
-    Supplier:
-      type: string
-      description: Supplier name
-      enum: 
-        - autodist
-        - partsUnlimited
-        - rockyCart
-    OrderOptions:
-      type: object
-      properties:
-        rockyCartPaymentCard:
+          example: USPS Priority
+          description: Name of shipping method
+        supplierCode:
           type: string
-          description: Id of the card from which the payment is debited
-          example: "538364"
-    OrderInfo:
-      type: object
-      properties:
+          example: autodist
+          description: Code of supplier
+        status:
+          type: string
+          enum: ['created', 'done']
+        shippingTotalPrice:
+          type: number
+          nullable: true
+          example: 9.45
+        itemsTotalPrice:
+          type: number
+          example: 20.94
+        itemsTax:
+          type: number
+          example: 0
+        totalTax:
+          type: number
+          example: 0
+        totalPrice: 
+          type: number
+          example: 30.39
+        originalOrder:
+          type: array
+          items:
+            type: object
         receiver:
           $ref: '#/components/schemas/Customer'
-        products:
+        items:
           type: array
-          description: List of products to delivery
+          description: List of ordered products
           items:
-            $ref: '#/components/schemas/Product'
-        supplier:
-          $ref: '#/components/schemas/Supplier'
+            $ref: '#/components/schemas/OrderItem'
+        shipments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shipment'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     ShippingMethod:
       type: object
       properties:
@@ -322,7 +260,20 @@ components:
         - UPS
         - USPS
         - FedEx
-    Product:
+    OrderItem:
+      allOf:
+        - $ref: '#/components/schemas/Item'
+      type: object
+      properties:
+        unitPrice:
+          type: number
+          example: 10.47
+          description: price for one unit of item
+        trackNumber:
+          type: string
+          description: The tracking code of the shipment this item is in
+          example: '9400100000000000000000'
+    Item:
       type: object
       required:
         - code
