@@ -73,26 +73,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-  "/ShippingMethod":
-    get:
+  "/ClculatedShippingMethod":
+    post:
       tags:
-        - ShippingMethod
+        - CalculatedShippingMethod
       summary: "Get all allowed shipping methods for order"
       description: "Returns list of all allowed shipping methods by order info."
-      parameters:
-        - in: query
-          name: "order"
-          description: "Get order list from date"
-          required: true
-          schema:
-            $ref: '#/components/schemas/OrderInfo'
       responses:
         "200":
           description: 'Success'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ShippingMethodsListResult'
+                $ref: '#/components/schemas/CalculatedShippingMethodsResult'
         "500":
           description: 'Some internal error'
           content:
@@ -139,8 +132,8 @@ components:
           $ref: '#/components/schemas/Order'
           
 
-    ## Shipping Method Results
-    ShippingMethodsListResult:
+    ## Calculated Shipping Method Results
+    CalculatedShippingMethodsResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
       type: object
@@ -148,14 +141,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/ShippingMethod'
-    # ShippingMethodResult:
-    #   allOf:
-    #     - $ref: '#/components/schemas/SuccessResult'
-    #   type: object
-    #   properties:
-    #     data:
-    #       $ref: '#/components/schemas/ShippingMethod'
+            $ref: '#/components/schemas/CalculatedShippingMethod'
 
     ## Requests
     OrderPostRequest:
@@ -179,6 +165,7 @@ components:
           description: Code of supplier
         status:
           type: string
+          # Not complete
           enum: ['created', 'done']
         shippingTotalPrice:
           type: number
@@ -209,6 +196,7 @@ components:
             $ref: '#/components/schemas/OrderItem'
         shipments:
           type: array
+          description: List of all parcels that sent this order
           items:
             $ref: '#/components/schemas/Shipment'
         createdAt:
@@ -217,44 +205,69 @@ components:
         updatedAt:
           type: string
           format: date-time
+    CalculatedShippingMethod:
+      type: object
+      properties:
+        supplierCode:
+          type: string
+          example: autodist
+          description: The code of the supplier whose shipping methods are listed
+        itemsTotalPrice:
+          type: number
+          example: 20.94
+          description: The total price for the goods of this supplier
+        shippingMethods:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShippingMethod'
     ShippingMethod:
       type: object
       properties:
-        id:
-          # Probably enum specific for each supplier
+        name:
           type: string
-          description: Unique identificator of shipping method
-        carrier:
-          $ref: '#/components/schemas/Carrier'
-        price:
+          description: Unique name for one supplier
+          example: "USPS Priority"
+        totalPrice:
           type: string
           nullable: true
           description: Price for this shipping method (if available)
+          example: 9.45
+        carrierCode:
+          $ref: '#/components/schemas/CarrierCode'
+        shippingSpeed:
+          $ref: '#/components/schemas/ShippingSpeed'
+    ShippingSpeed:
+      type: object
+      properties:
         estDeliveryDate:
           type: string
           format: date-time
+          description: The estimated delivery date
+        trackNumberReceiptDate:
+          type: string
+          format: date-time
           nullable: true
-          description: The estimated delivery date provided by the carrier (if available)
-    Parcel:
+          description: The estimated timestamp when the track number will be received (if available)
+        firstScanDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: The estimated timestamp when the first carrier tracking scan occurred (if available)
+    Shipment:
       type: object
       properties:
-        carrier:
-          $ref: '#/components/schemas/Carrier'
         trackNumber:
           type: string
           description: The tracking code provided by the carrier
           example: '9400100000000000000000'
-        estDeliveryDate:
-          type: string
-          format: date-time
+        shippingPrice:
+          type: number
+          description: "Total price of this shipment"
+          example: 9.45
           nullable: true
-          description: The estimated delivery date provided by the carrier (if available)
-        products:
-          type: array
-          description: List of products in this parcel
-          items:
-            $ref: '#/components/schemas/Product'
-    Carrier:
+        carrierCode:
+          $ref: '#/components/schemas/CarrierCode'
+    CarrierCode:
       type: string
       enum:
         - UPS
@@ -269,10 +282,12 @@ components:
           type: number
           example: 10.47
           description: price for one unit of item
+          nullable: true
         trackNumber:
           type: string
           description: The tracking code of the shipment this item is in
           example: '9400100000000000000000'
+          nullable: true
     Item:
       type: object
       required:
