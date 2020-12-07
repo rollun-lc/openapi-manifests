@@ -262,15 +262,19 @@ components:
           example: 9.45
         itemsTotalPrice:
           type: number
+          nullable: true
           example: 20.94
         itemsTax:
           type: number
+          nullable: true
           example: 0
         totalTax:
           type: number
+          nullable: true
           example: 0
         totalPrice: 
           type: number
+          nullable: true
           example: 30.39
         originalOrder:
           type: array
@@ -323,7 +327,9 @@ components:
           description: Price for this shipping method (if available)
           example: 9.45
         carrierCode:
-          $ref: '#/components/schemas/CarrierCode'
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CarrierCode'
         shippingSpeed:
           $ref: '#/components/schemas/ShippingSpeed'
     ShippingSpeed:
@@ -381,10 +387,10 @@ components:
     Item:
       type: object
       required:
-        - code
+        - roolunId
         - quantity
       properties:
-        code:
+        rollunId:
           type: string
           description: Rollun Id
           example: VW6A4
