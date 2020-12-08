@@ -338,7 +338,8 @@ components:
         estDeliveryDate:
           type: string
           format: date-time
-          description: The estimated delivery date
+          nullable: true
+          description: The estimated delivery date (if available)
         trackNumberReceiptDate:
           type: string
           format: date-time
