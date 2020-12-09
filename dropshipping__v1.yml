@@ -322,7 +322,7 @@ components:
           description: Unique name for one supplier
           example: "USPS Priority"
         totalPrice:
-          type: string
+          type: number
           nullable: true
           description: Price for this shipping method (if available)
           example: 9.45
