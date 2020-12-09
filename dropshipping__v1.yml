@@ -362,11 +362,91 @@ components:
         carrierCode:
           $ref: '#/components/schemas/CarrierCode'
     CarrierCode:
-      type: string
-      enum:
-        - UPS
-        - USPS
-        - FedEx
+          type: string
+          description: The name of the carrier handling the shipment
+          enum: 
+            - AmazonMws
+            - APC
+            - Aramex
+            - ArrowXL
+            - Asendia
+            - AustraliaPost
+            - AxlehireV3
+            - BorderGuru
+            - Cainiao
+            - CanadaPost
+            - Canpar
+            - ColumbusLastMile
+            - Chronopost
+            - ColisPrive
+            - Colissimo
+            - CouriersPlease
+            - DaiPost
+            - Deliv
+            - DeutschePost
+            - DeutschePostUK
+            - DHLEcommerceAsia
+            - DHLExpress
+            - DHLFreight
+            - DHLGermany
+            - DHLGlobalMail
+            - DHLGlobalmailInternational
+            - Dicom
+            - DPD
+            - DPDUK
+            - ChinaEMS
+            - Estafeta
+            - Estes
+            - Fastway
+            - FedEx
+            - FedExCrossBorder
+            - FedExMailview
+            - FedExSameDayCity
+            - FedexSmartPost
+            - FirstMile
+            - Globegistics
+            - GSO
+            - Hermes
+            - HongKongPost
+            - InterlinkExpress
+            - JancoFreight
+            - JPPost
+            - KuronekoYamato
+            - LaPoste
+            - LaserShipV2
+            - Liefery
+            - LoomisExpress
+            - LSO
+            - Newgistics
+            - OnTrac
+            - OnTracDirectPost
+            - OsmWorldwide
+            - Parcelforce
+            - Passport
+            - Pilot
+            - PostNL
+            - Posten
+            - PostNord
+            - Purolator
+            - RoyalMail
+            - RRDonnelley
+            - Seko
+            - OmniParcel
+            - SingaporePost
+            - SpeeDee
+            - SprintShip
+            - StarTrack
+            - Toll
+            - TForce
+            - UDS
+            - Ukrposhta
+            - UPS
+            - UPSIparcel
+            - UPSMailInnovations
+            - USPS
+            - Veho
+            - Yanwen
+            - Yodel
     OrderItem:
       allOf:
         - $ref: '#/components/schemas/Item'
