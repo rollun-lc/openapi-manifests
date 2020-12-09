@@ -6,13 +6,13 @@ info:
 servers:
   - url: http://suppliers/openapi/Dropshipping/v1
 tags:
-  - name: Order
-  - name: CalculatedShippingMethod
+  - name: Orders
+  - name: CalculatedShippingMethods
 paths:
   "/orders":
     post:
       tags:
-        - Order
+        - Orders
       summary: "Make an order"
       description: "To can make an order you need to specify order information: address, products, supplier and shipping method."
       requestBody:
@@ -43,7 +43,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResult'
     get:
       tags:
-        - Order
+        - Orders
       summary: "Get list of orders"
       description: "Get list of orders"
       parameters:
@@ -81,7 +81,7 @@ paths:
   "/orders/{id}":
     get:
       tags:
-        - Order
+        - Orders
       summary: 'Get info about specific order'
       description: "Returns information of order by orderId"
       parameters:
@@ -113,7 +113,7 @@ paths:
   "/calculatedShippingMethods":
     post:
       tags:
-        - CalculatedShippingMethod
+        - CalculatedShippingMethods
       summary: "Get all allowed shipping methods for order"
       description: "Returns list of all allowed shipping methods by order info."
       requestBody:
