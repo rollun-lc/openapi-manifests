@@ -338,18 +338,15 @@ components:
         estDeliveryDate:
           type: string
           format: date-time
-          nullable: true
-          description: The estimated delivery date (if available)
+          description: The estimated delivery date
         trackNumberReceiptDate:
           type: string
           format: date-time
-          nullable: true
-          description: The estimated timestamp when the track number will be received (if available)
+          description: The estimated timestamp when the track number will be received
         firstScanDate:
           type: string
           format: date-time
-          nullable: true
-          description: The estimated timestamp when the first carrier tracking scan occurred (if available)
+          description: The estimated timestamp when the first carrier tracking scan occurred
     Shipment:
       type: object
       properties:
@@ -384,6 +381,10 @@ components:
           type: string
           description: The tracking code of the shipment this item is in
           example: '9400100000000000000000'
+          nullable: true
+        warehouse:
+          type: string
+          description: Original warehouse field from supplier (if available)
           nullable: true
     Item:
       type: object
