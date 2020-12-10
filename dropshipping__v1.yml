@@ -398,6 +398,9 @@ components:
           example: 2
     Customer:
       type: object
+      required: 
+        - name
+        - address
       properties:
         name:
           type: string
@@ -415,7 +418,6 @@ components:
     Address:
       type: object
       required:
-        - name
         - country
         - state
         - city
