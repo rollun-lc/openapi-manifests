@@ -280,7 +280,8 @@ components:
           nullable: true
           example: 30.39
         originalOrder:
-          nullable: true
+          type: string
+          description: Serialized in json original response
         receiver:
           $ref: '#/components/schemas/Customer'
         items:
@@ -300,6 +301,7 @@ components:
         updatedAt:
           type: string
           format: date-time
+          nullable: true
     CalculatedShippingMethod:
       type: object
       properties:
