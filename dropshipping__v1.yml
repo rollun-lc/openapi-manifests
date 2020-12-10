@@ -183,7 +183,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Order'
-          
+
 
     ## Calculated Shipping Method Results
     CalculatedShippingMethodResult:
@@ -214,7 +214,7 @@ components:
           description: Supplier code
         shippingMethodName:
           type: string
-          description: Supplier shipping method name 
+          description: Supplier shipping method name
         receiver:
           $ref: '#/components/schemas/Customer'
         items:
@@ -222,7 +222,7 @@ components:
           description: List of items to order
           items:
             $ref: '#/components/schemas/Item'
-    
+
     CalculatedShippingMethodPostRequest:
       type: object
       required:
@@ -243,11 +243,14 @@ components:
       properties:
         id:
           type: string
-          description: Unique identificator of order
+          description: Unique identificator of order (received from client)
+        supplierOrderNumber:
+          type: string
+          description: Order number received from supplier
         shippingMethodName:
           type: string
           example: USPS Priority
-          description: Name of shipping method
+          description: Name of shipping method (same as name in shippingMethod)
         supplierCode:
           type: string
           example: autodist
@@ -272,14 +275,12 @@ components:
           type: number
           nullable: true
           example: 0
-        totalPrice: 
+        totalPrice:
           type: number
           nullable: true
           example: 30.39
         originalOrder:
-          type: array
-          items:
-            type: object
+          nullable: true
         receiver:
           $ref: '#/components/schemas/Customer'
         items:
@@ -398,7 +399,7 @@ components:
           example: 2
     Customer:
       type: object
-      required: 
+      required:
         - name
         - address
       properties:
