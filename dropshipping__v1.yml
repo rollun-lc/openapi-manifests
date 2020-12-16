@@ -253,12 +253,11 @@ components:
           description: Name of shipping method (same as name in shippingMethod)
         supplierCode:
           type: string
-          example: autodist
-          description: Code of supplier
+          example: Autodist
+          description: Code of supplier (same as id from https://rollun.net/suppliers)
         status:
           type: string
-          # Not complete
-          enum: ['created', 'done']
+          enum: ['ordered', 'back_ordered', 'tracknumber_received', 'picked_up', 'problem', 'canceled', 'not_found']
         shippingTotalPrice:
           type: number
           nullable: true
