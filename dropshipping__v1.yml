@@ -257,7 +257,7 @@ components:
           description: Code of supplier (same as id from https://rollun.net/suppliers)
         status:
           type: string
-          enum: ['ordered', 'back_ordered', 'tracknumber_received', 'picked_up', 'problem', 'canceled', 'not_found']
+          enum: ['Ordered', 'Back ordered', 'Tracknumber received', 'Picked up', 'Problem', 'Canceled', 'Not found']
         shippingTotalPrice:
           type: number
           nullable: true
