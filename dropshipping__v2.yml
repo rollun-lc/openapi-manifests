@@ -1,0 +1,455 @@
+openapi: 3.0.0
+info:
+  version: "2"
+  title: "Dropshipping"
+  description: Long running tasks interface
+servers:
+  - url: http://suppliers/openapi/Dropshipping/v2
+tags:
+  - name: Orders
+  - name: CalculatedShippingMethods
+paths:
+  "/orders":
+    post:
+      tags:
+        - Orders
+      summary: "Make an order"
+      description: "To can make an order you need to specify order information: address, products, supplier and shipping method."
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderPostRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResult'
+        "400":
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+    get:
+      tags:
+        - Orders
+      summary: "Get list of orders"
+      description: "Get list of orders"
+      parameters:
+        - in: query
+          name: "fromDate"
+          description: "Get order list from date"
+          required: true
+          schema:
+            type: string
+        - in: "query"
+          name: "toDate"
+          description: "Get order list to date"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            aplication/json:
+              schema:
+                $ref: "#/components/schemas/OrderListResult"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/orders/{id}":
+    get:
+      tags:
+        - Orders
+      summary: 'Get info about specific order'
+      description: "Returns information of order by orderId"
+      parameters:
+        - in: path
+          name: id
+          description: Id of order. If order was created manually you can get it by id in format "supplierCode | orderId"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResult'
+        "400":
+          description: "Bad request. See messages type field for details."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/calculatedShippingMethods":
+    post:
+      tags:
+        - CalculatedShippingMethods
+      summary: "Get all allowed shipping methods for order"
+      description: "Returns list of all allowed shipping methods by order info."
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculatedShippingMethodPostRequest'
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculatedShippingMethodResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - info
+            - warning
+            - error
+        type:
+          type: string
+          enum:
+            - ALREADY_EXIST
+            - UNDEFINED
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## Order results
+    OrderResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Order'
+    OrderListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+
+
+    ## Calculated Shipping Method Results
+    CalculatedShippingMethodResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculatedShippingMethod'
+
+    ## Requests
+    OrderPostRequest:
+      type: object
+      required:
+        - supplierCode
+        - shippingMethodName
+        - receiver
+        - items
+      properties:
+        supplierCode:
+          type: string
+          description: Supplier code
+        shippingMethodName:
+          type: string
+          description: Supplier shipping method name
+        receiver:
+          $ref: '#/components/schemas/Customer'
+        items:
+          type: array
+          description: List of items to order
+          items:
+            $ref: '#/components/schemas/Item'
+
+    CalculatedShippingMethodPostRequest:
+      type: object
+      required:
+        - receiver
+        - items
+      properties:
+        receiver:
+          $ref: '#/components/schemas/Customer'
+        items:
+          type: array
+          description: List of items to order
+          items:
+            $ref: '#/components/schemas/Item'
+
+    ## Resources
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identificator of order (generated by server). In format "supplierCode | orderId"
+        supplierOrderNumber:
+          type: string
+          description: Order number received from supplier
+        shippingMethodName:
+          type: string
+          example: USPS Priority
+          description: Name of shipping method (same as name in shippingMethod)
+        supplierCode:
+          type: string
+          example: Autodist
+          description: Code of supplier (same as id from https://rollun.net/suppliers)
+        status:
+          type: string
+          enum: ['ordered', 'back_ordered', 'tracknumber_received', 'picked_up', 'problem', 'canceled', 'not_found']
+        shippingTotalPrice:
+          type: number
+          nullable: true
+          example: 9.45
+        itemsTotalPrice:
+          type: number
+          nullable: true
+          example: 20.94
+        itemsTax:
+          type: number
+          nullable: true
+          example: 0
+        totalTax:
+          type: number
+          nullable: true
+          example: 0
+        totalPrice:
+          type: number
+          nullable: true
+          example: 30.39
+        originalOrder:
+          type: string
+          description: Serialized in json original response
+        receiver:
+          $ref: '#/components/schemas/Customer'
+        items:
+          type: array
+          description: List of ordered products
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shipments:
+          type: array
+          nullable: true
+          description: List of all parcels that sent this order (if order items has sended)
+          items:
+            $ref: '#/components/schemas/Shipment'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    CalculatedShippingMethod:
+      type: object
+      properties:
+        supplierCode:
+          type: string
+          example: autodist
+          description: The code of the supplier whose shipping methods are listed
+        itemsTotalPrice:
+          type: number
+          example: 20.94
+          description: The total price for the goods of this supplier
+        shippingMethods:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShippingMethod'
+    ShippingMethod:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Unique name for one supplier
+          example: "USPS Priority"
+        totalPrice:
+          type: number
+          nullable: true
+          description: Price for this shipping method (if available)
+          example: 9.45
+        carrierCode:
+          nullable: true
+          type: string
+          description: The name of the carrier handling the shipment
+        shippingSpeed:
+          $ref: '#/components/schemas/ShippingSpeed'
+    ShippingSpeed:
+      type: object
+      properties:
+        estDeliveryDate:
+          type: string
+          format: date-time
+          description: The estimated delivery date
+        trackNumberReceiptDate:
+          type: string
+          format: date-time
+          description: The estimated timestamp when the track number will be received
+        firstScanDate:
+          type: string
+          format: date-time
+          description: The estimated timestamp when the first carrier tracking scan occurred
+    Shipment:
+      type: object
+      properties:
+        trackNumber:
+          type: string
+          description: The tracking code provided by the carrier
+          example: '9400100000000000000000'
+        shippingPrice:
+          type: number
+          description: "Total price of this shipment"
+          example: 9.45
+          nullable: true
+        carrierCode:
+          # TODO: Move as separate enum component
+          type: string
+          description: The name of the carrier handling the shipment
+    OrderItem:
+      allOf:
+        - $ref: '#/components/schemas/Item'
+      type: object
+      properties:
+        unitPrice:
+          type: number
+          example: 10.47
+          description: price for one unit of item
+          nullable: true
+        trackNumber:
+          type: string
+          description: The tracking code of the shipment this item is in
+          example: '9400100000000000000000'
+          nullable: true
+        warehouse:
+          type: string
+          description: Original warehouse field from supplier (if available)
+          nullable: true
+    Item:
+      type: object
+      required:
+        - roolunId
+        - quantity
+      properties:
+        rollunId:
+          type: string
+          description: Rollun Id
+          example: VW6A4
+        quantity:
+          type: integer
+          description: Quantity of products
+          example: 2
+    Customer:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          description: Full name
+          example: Shawn Weisweaver
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person
+          example: "415-123-4567"
+        email:
+          type: string
+        address:
+          $ref: "#/components/schemas/Address"
+    Address:
+      type: object
+      required:
+        - country
+        - state
+        - city
+        - postalCode
+        - address1
+      properties:
+        country:
+          type: string
+          description: "Country code by ISO 3166 aplha-2 code"
+          enum:
+            - US
+        state:
+          type: string
+          description: US state code
+          example: CA
+        city:
+          type: string
+          description: Full city name
+          example: San Francisco
+        postalCode:
+          type: string
+          description: ZIP or postal code
+          example: "94104"
+        address1:
+          type: string
+          description: First line of the address
+          example: "417 Montgomery St"
+        address2:
+          type: string
+          nullable: true
+          description: Second line of the address
+          example: "Floor 5"
