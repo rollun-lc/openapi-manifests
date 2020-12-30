@@ -256,6 +256,9 @@ components:
           type: string
           example: Autodist
           description: Code of supplier (same as id from https://rollun.net/suppliers)
+        paymentCardNumber:
+          type: string
+          example: "op acct"
         status:
           type: string
           enum: ['ordered', 'back_ordered', 'tracknumber_received', 'picked_up', 'problem', 'canceled', 'not_found']
