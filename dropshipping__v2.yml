@@ -379,6 +379,9 @@ components:
         - $ref: '#/components/schemas/Item'
       type: object
       properties:
+        quantity:
+          type: string
+          description: The number of items that have been shipped or should be shipped (Autodist fills in the information about the shipped goods before they were actually shipped).
         unitPrice:
           type: number
           example: 10.47
