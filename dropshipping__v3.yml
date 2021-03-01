@@ -296,7 +296,7 @@ components:
         shipments:
           type: array
           nullable: true
-          description: List of all parcels that sent this order (if order items has sended)
+          description: List of all parcels that sent this order
           items:
             $ref: '#/components/schemas/Shipment'
         createdAt:
@@ -359,7 +359,7 @@ components:
       properties:
         trackNumber:
           type: string
-          description: The tracking code provided by the carrier
+          description: The tracking code provided by the carrier (if order items has sended)
           example: '9400100000000000000000'
           nullable: true
         shippingMethodName:
@@ -380,6 +380,9 @@ components:
         - $ref: '#/components/schemas/Item'
       type: object
       properties:
+        quantity:
+          type: string
+          description: The number of items that have been shipped or should be shipped (Autodist fills in the information about the shipped goods before they were actually shipped).
         unitPrice:
           type: number
           example: 10.47
