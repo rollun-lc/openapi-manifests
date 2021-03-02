@@ -262,7 +262,7 @@ components:
           example: "op acct"
         status:
           type: string
-          enum: ['ordered', 'back_ordered', 'tracknumber_received', 'picked_up', 'problem', 'canceled', 'not_found']
+          enum: ['Ordered', 'Back ordered', 'Tracknumber received', 'Picked up', 'Problem', 'Canceled', 'Not found']
         shippingTotalPrice:
           type: number
           nullable: true
