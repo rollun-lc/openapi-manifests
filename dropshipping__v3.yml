@@ -290,7 +290,7 @@ components:
           $ref: '#/components/schemas/Customer'
         items:
           type: array
-          description: List of ordered products
+          description: List of purchased items
           items:
             $ref: '#/components/schemas/OrderItem'
         shipments:
