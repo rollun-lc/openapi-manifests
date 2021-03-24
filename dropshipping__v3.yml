@@ -14,7 +14,7 @@ paths:
       tags:
         - Orders
       summary: "Make an order"
-      description: "To can make an order you need to specify order information: address, products, supplier and shipping method."
+      description: "To can make an order you need to specify order information: address, products, supplier and shipping method. Possible response errors: ITEMS_NOT_AVAILABLE"
       requestBody:
         description: ""
         required: true
@@ -160,6 +160,7 @@ components:
           enum:
             - ALREADY_EXIST
             - UNDEFINED
+            - ITEMS_NOT_AVAILABLE
         text:
           type: string
           description: Message, that describes what went wrong
