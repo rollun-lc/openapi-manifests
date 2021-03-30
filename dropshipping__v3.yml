@@ -14,7 +14,7 @@ paths:
       tags:
         - Orders
       summary: "Make an order"
-      description: "To can make an order you need to specify order information: address, products, supplier and shipping method."
+      description: "To can make an order you need to specify order information: address, products, supplier and shipping method. Possible response errors: ITEMS_NOT_AVAILABLE"
       requestBody:
         description: ""
         required: true
@@ -160,6 +160,7 @@ components:
           enum:
             - ALREADY_EXIST
             - UNDEFINED
+            - ITEMS_NOT_AVAILABLE
         text:
           type: string
           description: Message, that describes what went wrong
@@ -290,7 +291,7 @@ components:
           $ref: '#/components/schemas/Customer'
         items:
           type: array
-          description: List of ordered products
+          description: List of purchased items
           items:
             $ref: '#/components/schemas/OrderItem'
         shipments:
@@ -373,8 +374,11 @@ components:
           nullable: true
         carrierCode:
           # TODO: Move as separate enum component
-          type: string
-          description: The name of the carrier handling the shipment
+          allOf:
+            - $ref: '#/components/schemas/OptionalCarrier'
+          description: >
+            The name of the carrier handling the shipment
+            Unknown - when we cannot determine the carrier
     OrderItem:
       allOf:
         - $ref: '#/components/schemas/Item'
@@ -466,3 +470,176 @@ components:
           nullable: true
           description: Second line of the address
           example: "Floor 5"
+    OptionalCarrier:
+      type: string
+      description: The name of the carrier handling the shipment (also have unknown carrier)
+      enum: 
+        - AmazonMws
+        - APC
+        - Aramex
+        - ArrowXL
+        - Asendia
+        - AustraliaPost
+        - AxlehireV3
+        - BorderGuru
+        - Cainiao
+        - CanadaPost
+        - Canpar
+        - ColumbusLastMile
+        - Chronopost
+        - ColisPrive
+        - Colissimo
+        - CouriersPlease
+        - DaiPost
+        - Deliv
+        - DeutschePost
+        - DeutschePostUK
+        - DHLEcommerceAsia
+        - DHLExpress
+        - DHLFreight
+        - DHLGermany
+        - DHLGlobalMail
+        - DHLGlobalmailInternational
+        - Dicom
+        - DPD
+        - DPDUK
+        - ChinaEMS
+        - Estafeta
+        - Estes
+        - Fastway
+        - FedEx
+        - FedExCrossBorder
+        - FedExMailview
+        - FedExSameDayCity
+        - FedexSmartPost
+        - FirstMile
+        - Globegistics
+        - GSO
+        - Hermes
+        - HongKongPost
+        - InterlinkExpress
+        - JancoFreight
+        - JPPost
+        - KuronekoYamato
+        - LaPoste
+        - LaserShipV2
+        - Liefery
+        - LoomisExpress
+        - LSO
+        - Newgistics
+        - OnTrac
+        - OnTracDirectPost
+        - OsmWorldwide
+        - Parcelforce
+        - Passport
+        - Pilot
+        - PostNL
+        - Posten
+        - PostNord
+        - Purolator
+        - RoyalMail
+        - RRDonnelley
+        - Seko
+        - OmniParcel
+        - SingaporePost
+        - SpeeDee
+        - SprintShip
+        - StarTrack
+        - Toll
+        - TForce
+        - UDS
+        - Ukrposhta
+        - UPS
+        - UPSIparcel
+        - UPSMailInnovations
+        - USPS
+        - Veho
+        - Yanwen
+        - Yodel
+        - Unknown
+    Carrier:
+      type: string
+      description: The name of the carrier handling the shipment
+      enum: 
+        - AmazonMws
+        - APC
+        - Aramex
+        - ArrowXL
+        - Asendia
+        - AustraliaPost
+        - AxlehireV3
+        - BorderGuru
+        - Cainiao
+        - CanadaPost
+        - Canpar
+        - ColumbusLastMile
+        - Chronopost
+        - ColisPrive
+        - Colissimo
+        - CouriersPlease
+        - DaiPost
+        - Deliv
+        - DeutschePost
+        - DeutschePostUK
+        - DHLEcommerceAsia
+        - DHLExpress
+        - DHLFreight
+        - DHLGermany
+        - DHLGlobalMail
+        - DHLGlobalmailInternational
+        - Dicom
+        - DPD
+        - DPDUK
+        - ChinaEMS
+        - Estafeta
+        - Estes
+        - Fastway
+        - FedEx
+        - FedExCrossBorder
+        - FedExMailview
+        - FedExSameDayCity
+        - FedexSmartPost
+        - FirstMile
+        - Globegistics
+        - GSO
+        - Hermes
+        - HongKongPost
+        - InterlinkExpress
+        - JancoFreight
+        - JPPost
+        - KuronekoYamato
+        - LaPoste
+        - LaserShipV2
+        - Liefery
+        - LoomisExpress
+        - LSO
+        - Newgistics
+        - OnTrac
+        - OnTracDirectPost
+        - OsmWorldwide
+        - Parcelforce
+        - Passport
+        - Pilot
+        - PostNL
+        - Posten
+        - PostNord
+        - Purolator
+        - RoyalMail
+        - RRDonnelley
+        - Seko
+        - OmniParcel
+        - SingaporePost
+        - SpeeDee
+        - SprintShip
+        - StarTrack
+        - Toll
+        - TForce
+        - UDS
+        - Ukrposhta
+        - UPS
+        - UPSIparcel
+        - UPSMailInnovations
+        - USPS
+        - Veho
+        - Yanwen
+        - Yodel
