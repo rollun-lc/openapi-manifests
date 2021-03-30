@@ -335,9 +335,13 @@ components:
           description: Price for this shipping method (if available)
           example: 9.45
         carrierCode:
+          allOf:
+              - $ref: '#/components/schemas/Carrier'
+          description: >
+            The name of the carrier handling the shipment
+            null - when we cannot determine the carrier
           nullable: true
           type: string
-          description: The name of the carrier handling the shipment
         shippingSpeed:
           $ref: '#/components/schemas/ShippingSpeed'
     ShippingSpeed:
