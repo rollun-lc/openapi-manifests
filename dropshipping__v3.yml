@@ -160,7 +160,15 @@ components:
           enum:
             - ALREADY_EXIST
             - UNDEFINED
+            - LOGGER_MESSAGE
             - ITEMS_NOT_AVAILABLE
+            - ORDER_CREATION_IS_PENDING
+          description: >
+            ALREADY_EXIST - An order with the given idempotency key already exists (For special cases when we cannot determine the order number by its idempotency key.)
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined 
+            ITEMS_NOT_AVAILABLE - Cannot create order or calculate shipping methods because items not available
+            ORDER_CREATION_IS_PENDING - An order creation request has been sent and is awaiting creation from the supplier
         text:
           type: string
           description: Message, that describes what went wrong
