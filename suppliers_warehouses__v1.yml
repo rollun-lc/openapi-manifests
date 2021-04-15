@@ -4,7 +4,7 @@ info:
   title: "SuppliersWarehouses"
   description: Suppliers warehouses
 servers:
-  - url: http://suppliers/openapi/Suppliers/v1
+  - url: http://suppliers/openapi/SuppliersWarehouses/v1
 tags:
   - name: Warehouse
 paths:
