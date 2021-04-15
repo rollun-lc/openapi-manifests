@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "SuppliersWarehouses"
-  description: Long running tasks interface
+  description: Suppliers warehouses
 servers:
   - url: http://suppliers/openapi/Suppliers/v1
 tags:
