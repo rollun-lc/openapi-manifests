@@ -416,7 +416,7 @@ components:
     Item:
       type: object
       required:
-        - roolunId
+        - rollunId
         - quantity
       properties:
         rollunId:
