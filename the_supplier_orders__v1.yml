@@ -4,7 +4,7 @@ info:
   title: "TheSupplierOrders"
   description: Manifest for specific supplier
 servers:
-  - url: http://puorders/openapi/TheSupplierOrders/v1
+  - url: http://pu-orders/openapi/TheSupplierOrders/v1
 tags:
   - name: Orders
   - name: CalculatedShippingMethods
