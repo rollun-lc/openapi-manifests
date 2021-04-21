@@ -152,9 +152,14 @@ components:
         level:
           type: string
           enum:
-            - info
-            - warning
+            - emergency
+            - alert
+            - critical
             - error
+            - warning
+            - notice
+            - info
+            - debug
         type:
           type: string
           enum:
