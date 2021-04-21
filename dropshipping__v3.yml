@@ -457,9 +457,7 @@ components:
       properties:
         country:
           type: string
-          description: "Country code by ISO 3166 aplha-2 code"
-          enum:
-            - US
+          description: "Country code"
         state:
           type: string
           description: US state code
