@@ -146,9 +146,14 @@ components:
         level:
           type: string
           enum:
-            - info
-            - warning
+            - emergency
+            - alert
+            - critical
             - error
+            - warning
+            - notice
+            - info
+            - debug
         type:
           type: string
           enum:
@@ -435,9 +440,7 @@ components:
       properties:
         country:
           type: string
-          description: "Country code by ISO 3166 aplha-2 code"
-          enum:
-            - US
+          description: "Country code"
         state:
           type: string
           description: US state code
