@@ -57,7 +57,7 @@ paths:
         "200":
           description: "Success"
           content:
-            aplication/json:
+            application/json:
               schema:
                 $ref: "#/components/schemas/OrderListResult"
         "404":
@@ -427,6 +427,7 @@ components:
           example: "415-123-4567"
         email:
           type: string
+          nullable: true
         address:
           $ref: "#/components/schemas/Address"
     Address:
