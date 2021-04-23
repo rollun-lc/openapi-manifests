@@ -449,6 +449,9 @@ components:
           example: "415-123-4567"
         email:
           type: string
+          nullable: true
+          description: Email address to reach the person
+          example: "test@mail.loc"
         address:
           $ref: "#/components/schemas/Address"
     Address:
