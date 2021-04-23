@@ -63,7 +63,7 @@ paths:
         "200":
           description: "Success"
           content:
-            aplication/json:
+            application/json:
               schema:
                 $ref: "#/components/schemas/OrderListResult"
         "404":
