@@ -8,11 +8,13 @@ info:
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 servers:
   - url: "http://walmart-orders/openapi/Orders/v1"
+    #- url: "http://l.walmart-orders/openapi/Orders/v1"
+    #- url: "http://localhost:8096/openapi/Orders/v1"
 tags:
   - name: Order
     description: "Walmart orders"
   - name: Tracknumber
-    description: "Walmart tracking numbers"
+    description: "Walmart tracknumbers"
 paths:
   /order:
     get:
@@ -156,6 +158,10 @@ components:
           description: "Order Status"
         note:
           type: string
+#          enum:
+#            - "placed"
+#            - "approved"
+#            - "delivered"
     OrderItem:
       type: object
       properties:
