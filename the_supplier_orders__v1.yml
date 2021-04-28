@@ -298,7 +298,7 @@ components:
           $ref: '#/components/schemas/Customer'
         items:
           type: array
-          description: List of ordered products
+          description: List of purchased items
           items:
             $ref: '#/components/schemas/OrderItem'
         shipments:
@@ -363,8 +363,9 @@ components:
       properties:
         trackNumber:
           type: string
-          description: The tracking code provided by the carrier
+          description: The tracking code provided by the carrier (if order items has sended)
           example: '9400100000000000000000'
+          nullable: true
         shippingMethodName:
           type: string
           example: USPS Priority
@@ -401,7 +402,7 @@ components:
     Item:
       type: object
       required:
-        - roolunId
+        - rollunId
         - quantity
       properties:
         rollunId:
@@ -430,6 +431,8 @@ components:
         email:
           type: string
           nullable: true
+          description: Email address to reach the person
+          example: "test@mail.loc"
         address:
           $ref: "#/components/schemas/Address"
     Address:
