@@ -230,7 +230,6 @@ components:
         - idempotencyKey
         - supplierCode
         - shippingMethodName
-        - receiver
         - items
       properties:
         idempotencyKey:
@@ -241,7 +240,9 @@ components:
           description: Supplier code
         shippingMethodName:
           type: string
-          description: Supplier shipping method name
+          description: >
+            Supplier shipping method name
+            Pickup - for pickup orders. In this case, you do not need to define the recipient.
         receiver:
           $ref: '#/components/schemas/Customer'
         items:
