@@ -283,9 +283,12 @@ components:
         paymentCardNumber:
           type: string
           example: "op acct"
+        type:
+          type: string
+          enum: ['Dropship', 'Pickup']
         status:
           type: string
-          enum: ['Ordered', 'Back ordered', 'Tracknumber received', 'Picked up', 'Problem', 'Canceled', 'Not found']
+          enum: ['Ordered', 'Back ordered', 'Tracknumber received', 'Picked up', 'Problem', 'Canceled']
         shippingTotalPrice:
           type: number
           nullable: true
