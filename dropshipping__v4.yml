@@ -242,7 +242,7 @@ components:
           type: string
           description: >
             Supplier shipping method name
-            Pickup - for pickup orders. In this case, you do not need to define the recipient.
+            Pickup - for pickup of orders. In this case, you do not need to define a recipient, but a warehouse is required for each item.
         receiver:
           $ref: '#/components/schemas/Customer'
         items:
@@ -449,6 +449,14 @@ components:
           type: integer
           description: Quantity of products
           example: 2
+        warehouse:
+          type: string
+          nullable: true
+          description: >
+            The name of the warehouse from where you want to send the goods. Specific for each supplier
+            Required for pickup orders.
+            TuckerRocky - ['TX']
+            PartsUnlimited - ['NC']
     Customer:
       type: object
       required:
