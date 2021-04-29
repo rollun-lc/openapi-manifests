@@ -402,10 +402,12 @@ components:
           type: string
           description: The name of the carrier handling the shipment
     OrderItem:
-      allOf:
-        - $ref: '#/components/schemas/Item'
       type: object
       properties:
+        rollunId:
+          type: string
+          description: Rollun Id
+          example: VW6A4
         csn: 
           type: string
           description: Supplier internal item identifier
