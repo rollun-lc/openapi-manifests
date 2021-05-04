@@ -407,7 +407,7 @@ components:
     OrderItem:
       type: object
       properties:
-        rollunId:
+        rid:
           type: string
           description: Rollun Id
           example: VW6A4
@@ -443,10 +443,10 @@ components:
     Item:
       type: object
       required:
-        - rollunId
+        - rid
         - quantity
       properties:
-        rollunId:
+        rid:
           type: string
           description: Rollun Id
           example: VW6A4
