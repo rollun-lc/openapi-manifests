@@ -48,8 +48,26 @@ paths:
       description: "Get list of orders"
       parameters:
         - in: query
+          name: "fromDate"
+          description: "Get order list from date"
+          required: false
+          schema:
+            type: string
+        - in: "query"
+          name: "toDate"
+          description: "Get order list to date"
+          required: false
+          schema:
+            type: string
+        - in: query
           name: "idempotencyKey"
           description: "Returning orders with a specific idempotencyKey. This is a unique value, so it always returns at most one order."
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: "orderNumber"
+          description: "Returning orders with a specific orderNumber. This is a unique value, so it always returns at most one order."
           required: false
           schema:
             type: string
