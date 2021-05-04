@@ -313,7 +313,10 @@ components:
           type: string
           description: Serialized in json original response
         receiver:
-          $ref: '#/components/schemas/Customer'
+          allOf:
+            - $ref: '#/components/schemas/Customer'
+          nullable: true
+          description: Recipient of the order. (May be null for pickup orders.)
         items:
           type: array
           description: List of purchased items
