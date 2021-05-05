@@ -1,0 +1,56 @@
+openapi: 3.0.0
+info:
+  version: "1.0.1"
+  title: Test
+servers:
+  - url: http://localhost:8001/openapi/Test/v1_0_1
+paths:
+  /Test:
+    post:
+      tags:
+        - Test
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Test'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Test'
+  /Test/{id}:
+    get:
+      tags:
+        - Test
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: '5f51f78ccaa4c'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Test'
+components:
+  schemas:
+    Test:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          example: '5f51f78ccaa4c'
+        name:
+          type: string
+          example: 'Test'
