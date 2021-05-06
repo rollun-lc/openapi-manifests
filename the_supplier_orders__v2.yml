@@ -421,7 +421,10 @@ components:
           description: The number of items that should be shipped.
         qtyShipped:
           type: integer
-          description: The number of items that have been shipped.
+          description: >
+            Depends on order status
+              If the status is "Tracknumber received" or "Picked up", then the number of items that have been actually shipped or picked up,
+              If the status is not "sent", then the number of items that are intending to be sent
           nullable: true
         qtyBackOrdered:
           type: integer
