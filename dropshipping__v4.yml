@@ -48,6 +48,12 @@ paths:
       description: "Get list of orders"
       parameters:
         - in: query
+          name: "supplierCode"
+          description: "Code of supplier (same as id from https://rollun.net/suppliers)"
+          required: true
+          schema:
+            type: string
+        - in: query
           name: "fromDate"
           description: "Get order list from date"
           required: false
