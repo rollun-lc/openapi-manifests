@@ -285,6 +285,7 @@ components:
           example: "AP7734"
         orderNumber:
           type: string
+          nullable: true
           description: Order number received from supplier
         paymentCardNumber:
           type: string
