@@ -295,6 +295,7 @@ components:
           example: "Autodist | AP7734"
         orderNumber:
           type: string
+          nullable: true
           description: Order number received from supplier
         supplierCode:
           type: string
