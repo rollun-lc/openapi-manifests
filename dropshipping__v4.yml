@@ -194,7 +194,7 @@ components:
             ALREADY_EXIST - An order with the given idempotency key already exists (For special cases when we cannot determine the order number by its idempotency key.)
             UNDEFINED - Any undefined message type
             LOGGER_MESSAGE - Same as undefined 
-            ITEMS_NOT_AVAILABLE - Cannot create order or calculate shipping methods because items not available
+            ITEMS_NOT_AVAILABLE - Cannot create order in full or calculate shipping methods because items not available. May be several messages with this type - one message per item.
             ORDER_CREATION_IS_PENDING - An order creation request has been sent and is awaiting creation from the supplier
             ORDER_NOT_FOUND - Order not found by order number
             UNKNOWN_SHIPPING_METHOD - The selected supplier does not have this shipping method (or needs to be added)
