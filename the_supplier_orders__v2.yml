@@ -71,6 +71,19 @@ paths:
           required: false
           schema:
             type: string
+        - in: query
+          name: "id"
+          description: "Returning orders with a specific id. This is a unique value, so it always returns at most one order."
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: "cachedAt"
+          description: "Datetime when the order was created or it got into the cache (whichever is known). Can be passed along with the order ID to indicate that the order is in the cache and when it was created."
+          required: false
+          schema:
+            type: string
+            format: date-time
       responses:
         "200":
           description: "Success"
