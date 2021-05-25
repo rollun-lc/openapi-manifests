@@ -303,9 +303,11 @@ components:
           description: Code of supplier (same as id from https://rollun.net/suppliers)
         paymentCardNumber:
           type: string
+          nullable: true
           example: "op acct"
         type:
           type: string
+          nullable: true
           enum: ['Dropship', 'Pickup']
         status:
           type: string
