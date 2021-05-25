@@ -303,11 +303,9 @@ components:
           description: Code of supplier (same as id from https://rollun.net/suppliers)
         paymentCardNumber:
           type: string
-          nullable: true
           example: "op acct"
         type:
           type: string
-          nullable: true
           enum: ['Dropship', 'Pickup']
         status:
           type: string
@@ -357,6 +355,7 @@ components:
         updatedAt:
           type: string
           format: date-time
+          nullable: true
     CalculatedShippingMethod:
       type: object
       properties:
@@ -483,7 +482,9 @@ components:
           type: string
           nullable: true
           description: >
-            The name of the warehouse from where you want to send the goods. Specific for each supplier
+            The name of the warehouse from where you want to send the goods. Specific for each supplier.
+            If no warehouse has been specified, then the supplier can choose the appropriate one, depending on its distance to the client and the availability of items.
+            If a warehouse is specified, then the supplier must send from it, or report an error, why he cannot do this
             Required for pickup orders.
             TuckerRocky - ['TX']
             PartsUnlimited - ['NC']
