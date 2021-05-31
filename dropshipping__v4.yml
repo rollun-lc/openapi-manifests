@@ -296,7 +296,9 @@ components:
         orderNumber:
           type: string
           nullable: true
-          description: Order number received from supplier
+          description: >
+            The order number received from the supplier. 
+            According to it, the order can be found in the user interface on the supplier's website.
         supplierCode:
           type: string
           example: Autodist
@@ -305,6 +307,9 @@ components:
           type: string
           nullable: true
           example: "op acct"
+          description: >
+            The last 4 digits of the card with which the order was paid. 
+            Or the name of the payment method, if it was not paid by a card.
         type:
           type: string
           nullable: true
@@ -316,22 +321,29 @@ components:
           type: number
           nullable: true
           example: 9.45
+          description: >
+            Full shipping price (including all taxes and additional shipping costs)
+            For pickup orders it can be some service charge. 
         itemsTotalPrice:
           type: number
           nullable: true
           example: 20.94
+          description: Full price of all order items without taxes.
         itemsTax:
           type: number
           nullable: true
           example: 0
+          description: The total amount of taxes paid for items
         totalTax:
           type: number
           nullable: true
           example: 0
+          description: The total amount of all taxes (including shipping and any additional taxes)
         totalPrice:
           type: number
           nullable: true
           example: 30.39
+          description: The total price of the order including taxes and any additional costs
         originalOrder:
           type: string
           description: Serialized in json original response
@@ -354,10 +366,19 @@ components:
         createdAt:
           type: string
           format: date-time
+          nullable: true
+          description: >
+            Time when order was ordered. When the supplier has confirmed that the order has been created.
+            Examples
+              1. The time when we received a successful order creation response from the supplier API.
+              2. The time when the parser finished work and successfully created an order on the site.
         updatedAt:
           type: string
           format: date-time
           nullable: true
+          description: >
+            The time when the order information was changed in the cache. 
+            If the order has never changed since the moment it entered the cache, then the time will be equal to the time the order entry was created in the cache.
     CalculatedShippingMethod:
       type: object
       properties:
