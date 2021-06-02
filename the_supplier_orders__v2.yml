@@ -321,6 +321,13 @@ components:
         status:
           type: string
           enum: ['Ordered', 'Back ordered', 'Tracknumber received', 'Picked up', 'Problem', 'Canceled']
+          description: >
+            Ordered - The order has been successfully placed with the supplier, but has not yet been completed.
+            Back ordered - At least one of the ordered items was backordered.
+            Tracknumber received - For dropshipping orders which was fully complete. All parcels that the supplier was going to send were sent, and order has invoice.
+            Picked Up - For pickup orders which was complete. All items has picked up and the order has an invoice.
+            Problem - The order has at least one problem that is not described in the manifest.
+            Canceled - Order cancelled
         shippingTotalPrice:
           type: number
           nullable: true
