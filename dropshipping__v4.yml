@@ -183,6 +183,7 @@ components:
           enum:
             - ALREADY_EXIST
             - UNDEFINED
+            - INVALID_RESPONSE
             - LOGGER_MESSAGE
             - ITEMS_NOT_AVAILABLE
             - ORDER_CREATION_IS_PENDING
