@@ -412,8 +412,13 @@ components:
         totalPrice:
           type: number
           nullable: true
-          description: Price for this shipping method (if available)
+          description: Price for this shipping method without taxes (if available)
           example: 9.45
+        totalTax:
+          type: number
+          nullable: true
+          description: Expected total tax
+          example: 0
         carrierCode:
           nullable: true
           type: string
