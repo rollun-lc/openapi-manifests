@@ -191,6 +191,8 @@ components:
             - UNKNOWN_SHIPPING_METHOD
             - UNAVAILABLE_SHIPPING_METHOD
             - ORDER_SHIPMENTS_NOT_CREATED
+            - CSN_BY_RID_NOT_FOUND
+            - RID_BY_CSN_NOT_FOUND
           description: >
             ALREADY_EXIST - An order with the given idempotency key already exists (For special cases when we cannot determine the order number by its idempotency key.)
             UNDEFINED - Any undefined message type
@@ -201,7 +203,9 @@ components:
             ORDER_NOT_FOUND - Order not found by order number
             UNKNOWN_SHIPPING_METHOD - The selected supplier does not have this shipping method (or needs to be added)
             UNAVAILABLE_SHIPPING_METHOD - A shipping method exists but is not available for this order
-            ORDER_SHIPMENTS_NOT_CREATED -Tucker Rocky order exist, but information about it shipments is not returned
+            ORDER_SHIPMENTS_NOT_CREATED - Tucker Rocky order exist, but information about it shipments is not returned
+            CSN_BY_RID_NOT_FOUND - Cannot convert rid to csn.
+            RID_BY_CSN_NOT_FOUND - Cannot convert csn to rid. Rid in this case will be null.
         text:
           type: string
           description: Message, that describes what went wrong
@@ -467,8 +471,10 @@ components:
       properties:
         rid:
           type: string
-          description: Rollun Id
+          description: > 
+            Rollun Id. May be null if csn to rid match not found. in this case in messages will be warning message with type RID_BY_CSN_NOT_FOUND.
           example: VW6A4
+          nullable: true
         csn: 
           type: string
           description: Supplier internal item identifier
