@@ -11,7 +11,7 @@ paths:
   "/csnWithRid":
     get:
       tags:
-        - Resource
+        - CsnWithRid
       summary: "Get list of resource"
       description: "Get list of resource"
       parameters:
@@ -19,8 +19,17 @@ paths:
           name: "supplier"
           description: "Supplier name (same as id from https://rollun.net/suppliers)"
           required: true
+          example: "Autodist"
           schema:
             type: string
+        - in: query
+          name: "date"
+          description: "Supplier name (same as id from https://rollun.net/suppliers)"
+          required: true
+          example: "2020-07-21T17:32:28Z"
+          schema:
+            type: string
+            format: date-time
         - in: query
           name: "csn"
           description: "Find rid by csn."
