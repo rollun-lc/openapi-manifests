@@ -1,122 +1,504 @@
-openapi: "3.0.0"
+openapi: 3.0.0
 info:
-  description: "Walmart orders"
   version: "1"
   title: "Orders"
-  license:
-    name: "Apache 2.0"
-    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+  description: Long running tasks interface
 servers:
-  - url: "http://walmart-orders/openapi/Orders/v1"
-    #- url: "http://l.walmart-orders/openapi/Orders/v1"
-    #- url: "http://localhost:8096/openapi/Orders/v1"
+  - url: http://ebay-r-orders/openapi/Orders/v1
+  - url: http://ebay-p-orders/openapi/Orders/v1
 tags:
-  - name: Order
-    description: "Walmart orders"
-  - name: Tracknumber
-    description: "Walmart tracknumbers"
+  - name: Orders
+  - name: TrackNumbers
 paths:
-  /order:
+  "/orders":
     get:
       tags:
-        - Order
-      description: ""
+        - Orders
+      summary: "Get list of orders"
+      description: "Get list of orders"
       parameters:
         - in: query
-          name: "from_date"
+          name: "fromDate"
           description: "Get order list from date"
-          required: true
+          example: "2021-01-01 10:00:00"
+          required: false
           schema:
             type: string
         - in: "query"
-          name: "to_date"
+          name: "toDate"
           description: "Get order list to date"
-          required: true
+          example: "2021-02:01 09:59:59"
+          required: false
           schema:
             type: string
+        - in: query
+          name: "orderNumbers"
+          description: "Returning orders with a specific orderNumbers. This is a unique value, so it always returns at most one order."
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: number
       responses:
         "200":
-          description: "successful operation"
+          description: "Success"
           content:
-            aplication/json:
+            application/json:
               schema:
                 $ref: "#/components/schemas/OrderListResult"
-        "400":
-          description: Bad Request
+        "404":
+          description: "Not found"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResult"
         '500':
-          description: Internal error
+          description: "Internal error"
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-  /order/{id}:
+  "/orders/{id}":
     get:
       tags:
-        - Order
-      description: "Get one order"
+        - Orders
+      summary: 'Get info about specific order'
+      description: "Returns information of order by orderId"
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
+          description: Order identifier"
           required: true
           schema:
             type: string
       responses:
         "200":
-          description: "successful operation"
+          description: 'Success'
           content:
-            aplication/json:
+            application/json:
               schema:
-                $ref: "#/components/schemas/OrderResult"
+                $ref: '#/components/schemas/OrderResult'
         "400":
+          description: "Bad request. See messages type field for details."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/trackNumbers":
+    post:
+      tags:
+        - TrackNumbers
+      summary: "Set tracking number to marketplace order"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackNumberPostRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfoResult'
+        400:
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResult"
-        '404':
-          description: Not Found
+                $ref: '#/components/schemas/ErrorResult'
+        500:
+          description: 'Some internal error'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-        '500':
-          description: Internal error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
+
 components:
   schemas:
-    Message:
-      type: object
-      required:
-        - level
-        - text
-      properties:
-        level:
-          type: string
-          description: 'Message level  (like in a logger)'
-          example: 'error'
-        text:
-          type: string
-          description: 'Message text'
-          example: 'Something wrong.'
-        context:
-          type: array
-          description: 'Message context (like in a logger)'
-          items:
-            type: string
     ErrorResult:
       type: object
       properties:
         messages:
           type: array
           items:
-            $ref: '#/components/schemas/Message'
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - TRACKNUMBER_ALREADY_EXIST
+            - ORDER_NOT_FOUND
+            - UNKNOWN_SHIPPING_METHOD
+            - UNAVAILABLE_SHIPPING_METHOD
+          description: >
+            UNDEFINED - Any undefined message type
+            TRACKNUMBER_ALREADY_EXIST - A tracking number already exists
+            ORDER_NOT_FOUND - Order not found by order number
+            UNKNOWN_SHIPPING_METHOD - The selected supplier does not have this shipping method (or needs to be added)
+            UNAVAILABLE_SHIPPING_METHOD - A shipping method exists but is not available for this order
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## Order results
+    OrderResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Order'
+    OrderListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+    TrackNumberResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TrackNumber'
+
+    ## Requests
+
+    TrackNumberPostRequest:
+      type: object
+      required:
+        - orderId
+        - items
+        - trackNumber
+        - shippment
+      properties:
+        orderId:
+          type: string
+        items:
+          type: array
+          description: List of items to order
+          items:
+            $ref: '#/components/schemas/Item'
+        trackNumber:
+          type: string
+        shippment:
+          $ref: '#/components/schemas/Shipment'
+
+    Item:
+      type: object
+      required:
+        - orderItemId
+        - quantity
+      properties:
+        orderItemId:
+          type: string
+          description: Marketplace order item id
+          example: 283346427419
+        quantity:
+          type: integer
+          description: Quantity of products
+          example: 2
+
+    Shipment:
+      type: object
+      properties:
+        trackNumber:
+          type: string
+          description: The tracking code provided by the carrier (if order items has sended)
+          example: '9400100000000000000000'
+          nullable: true
+        shippingMethodName:
+          type: string
+          example: USPS Priority
+          description: Name of shipping method (same as name in shippingMethod)
+        shippingPrice:
+          type: number
+          description: "Total price of this shipment"
+          example: 9.45
+          nullable: true
+        carrierCode:
+          # TODO: Move as separate enum component
+          type: string
+          description: The name of the carrier handling the shipment
+
+    ## Resources
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identificator of marketplace order
+          example: 09-04655-72127
+        shippingMethod:
+          type: string
+          example: SecondDay
+        status:
+          type: string
+          description: "Order Status"
+          enum:
+            - "pending"
+            - "paid"
+            - "processing"
+            - "fulfilled"
+        totalTax:
+          type: number
+          nullable: true
+          example: 0
+        totalPrice:
+          type: number
+          nullable: true
+          example: 30.39
+          description: The total price of the order including taxes and any additional costs
+        itemsTax:
+          type: number
+          nullable: true
+          example: 0
+        shippingTotalPrice:
+          type: number
+          nullable: true
+          example: 9.45
+        itemsTotalPrice:
+          type: number
+          nullable: true
+          example: 20.94
+        totalMarketplaceFee:
+          type: number
+          nullable: true
+          example: 1.97
+        buyer:
+          description: Buyer of the order
+          allOf:
+            - $ref: '#/components/schemas/Buyer'
+        receiver:
+          allOf:
+            - $ref: '#/components/schemas/Receiver'
+          description: Receiver of products
+        items:
+          type: array
+          description: List of purchased items
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+        createdDate:
+          type: string
+          format: date-time
+        paidDate:
+          type: string
+          format: date-time
+        shipDate:
+          type: string
+          format: date-time
+        deliveryDate:
+          type: string
+          format: date-time
+
+        note:
+          type: string
+        shipments:
+          type: array
+          nullable: true
+          description: List of all parcels that sent this order
+          items:
+            $ref: '#/components/schemas/Shipment'
+
+#        createdAt:
+#          type: string
+#          format: date-time
+#        updatedAt:
+#          type: string
+#          format: date-time
+#          nullable: true
+    OrderItem:
+      type: object
+      properties:
+        mln:
+          type: string
+          description: Marketplace listing number
+          example: VW6A4
+        quantity:
+          type: integer
+          description: The number of items.
+        unitPrice:
+          type: number
+          example: 10.47
+          description: price for one unit of item
+          nullable: true
+        msin:
+          type: string
+        rid:
+          type: string
+        shippingPrice:
+          type: number
+#        trackNumber:
+#          type: string
+#          description: The tracking code of the shipment this item is in
+#          example: '9400100000000000000000'
+#          nullable: true
+    Buyer:
+      type: object
+      required:
+        - username
+        - address
+      properties:
+        username:
+          type: string
+        address:
+          $ref: "#/components/schemas/TaxAddress"
+    Receiver:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          description: Full name
+          example: Shawn Weisweaver
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person
+          example: "415-123-4567"
+        email:
+          type: string
+          nullable: true
+          description: Email address to reach the person
+          example: "test@mail.loc"
+        address:
+          $ref: "#/components/schemas/Address"
+    BaseAddress:
+      type: object
+      properties:
+        country:
+          type: string
+          description: "Country code"
+          nullable: true
+        state:
+          type: string
+          description: US state code
+          example: CA
+        city:
+          type: string
+          description: Full city name
+          example: San Francisco
+        postalCode:
+          type: string
+          description: ZIP or postal code
+          example: "94104"
+        address1:
+          type: string
+          description: First line of the address
+          example: "417 Montgomery St"
+        address2:
+          type: string
+          nullable: true
+          description: Second line of the address
+          example: "Floor 5"
+    Address:
+      allOf:
+        - $ref: "#/components/schemas/BaseAddress"
+        - type: object
+          required:
+            - country
+            - state
+            - city
+            - postalCode
+            - address1
+    TaxAddress:
+      allOf:
+        - $ref: "#/components/schemas/BaseAddress"
+        - type: object
+          required:
+            - country
+            - state
+            - postalCode
+    TrackNumber:
+      type: object
+      properties:
+        orderId:
+          type: string
+        items:
+          type: array
+          items:
+            type: string
+        trackNumber:
+          type: string
+        shippment:
+          $ref: '#/components/schemas/Shipment'
+
+
+    TaskInfoResult:
+      allOf:
+        - $ref: '#/components/schemas/Result'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TaskInfo'
+    TaskInfo:
+      type: object
+      required:
+        - id
+        - timeout
+        - stage
+        - status
+      properties:
+        id:
+          type: string
+          example: 'qwerty123'
+        timeout:
+          type: integer
+          example: '3'
+        stage:
+          $ref: '#/components/schemas/Stage'
+        status:
+          $ref: '#/components/schemas/Status'
+        startTime:
+          type: string
+          description: 'Task start time UTC'
+          example: '2020-11-20T13:14:15Z'
+        result:
+          $ref: '#/components/schemas/TrackNumberResult'
+
     Result:
       allOf:
         - $ref: '#/components/schemas/ErrorResult'
@@ -124,98 +506,35 @@ components:
       properties:
         data:
           type: object
-    Order:
-      type: "object"
+    Stage:
+      type: object
       required:
-        - buyer
+        - stage
+        - all
       properties:
-        id:
+        stage:
           type: string
-        shipping_method:
-          type: "string"
-        buyer:
-          $ref: "#/components/schemas/Customer"
-        receiver:
-          $ref: "#/components/schemas/Customer"
-        paid_date:
-          type: string
-        ship_date:
-          type: string
-        delivery_date:
-          type: string
-        total_sum:
-          type: number
-        #itemSum:
-          #type: number
-#        shipping_price:
-#          type: number
-        items:
+          description: 'Current stage'
+          example: 'writing 2'
+        all:
           type: array
+          description: 'All possible stages'
           items:
-            $ref: "#/components/schemas/OrderItem"
-        status:
-          type: "string"
-          description: "Order Status"
-        note:
-          type: string
-#          enum:
-#            - "placed"
-#            - "approved"
-#            - "delivered"
-    OrderItem:
+            type: string
+          example: [ 'writing 1','writing 2','writing 3','calc summary','done' ]
+    Status:
       type: object
+      required:
+        - state
+        - all
       properties:
-        mln:
-          type: string
-        msin:
-          type: string
-        rid:
-          type: string
-        price:
-          type: number
-        shipping_price:
-          type: number
-        quantity:
-          type: integer
-    OrderListResult:
-      allOf:
-        - $ref: '#/components/schemas/Result'
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Order'
-    OrderResult:
-      allOf:
-        - $ref: '#/components/schemas/Result'
-      type: object
-      properties:
-        data:
-          $ref: '#/components/schemas/Order'
-    Customer:
-      type: object
-      properties:
-        name:
-          type: string
-        phone:
-          type: string
-        email:
-          type: string
-        address:
-          $ref: "#/components/schemas/Address"
-    Address:
-      type: object
-      properties:
-        country:
-          type: string
         state:
           type: string
-        city:
-          type: string
-        postal_code:
-          type: string
-        address_1:
-          type: string
-        address_2:
-          type: string
+          description: 'Current state'
+          example: 'pending'
+        all:
+          type: array
+          description: 'All possible states'
+          items:
+            type: string
+          example: [ 'pending','fulfilled','rejected' ]
