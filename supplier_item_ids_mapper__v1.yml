@@ -16,7 +16,7 @@ paths:
       description: "Get list of resource"
       parameters:
         - in: query
-          name: "supplier"
+          name: "supplierName"
           description: "Supplier name (same as id from https://rollun.net/suppliers)"
           required: true
           example: "Autodist"
@@ -121,7 +121,7 @@ components:
           type: string
           description: Csn
           example: 'CSN01'
-        supplier:
+        supplierName:
           type: string
           description: Supplier name (same as id from https://rollun.net/suppliers)
           example: 'Autodist'
