@@ -24,7 +24,7 @@ paths:
             type: string
         - in: query
           name: "date"
-          description: "Supplier name (same as id from https://rollun.net/suppliers)"
+          description: "The date on which the compliance should be returned. (Sometimes matches change and one csn starts to match another)"
           required: true
           example: "2020-07-21T17:32:28Z"
           schema:
