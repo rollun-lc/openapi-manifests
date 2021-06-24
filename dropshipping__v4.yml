@@ -67,7 +67,7 @@ paths:
             type: string
         - in: query
           name: "idempotencyKey"
-          description: "Returning orders with a specific idempotencyKey. This is a unique value, so it always returns at most one order."
+          description: "Returning orders with a specific idempotencyKey. Although you cannot re-create an order with an existing idempotency key, there can still be two or more orders with the same idempotency key."
           required: false
           schema:
             type: string
