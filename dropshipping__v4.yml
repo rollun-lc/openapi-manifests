@@ -472,7 +472,8 @@ components:
         rid:
           type: string
           description: > 
-            Rollun Id. May be null if csn to rid match not found. in this case in messages will be warning message with type RID_BY_CSN_NOT_FOUND.
+            Rid, which corresponded to csn at the time of order creation. 
+            May be null if csn to rid match not found. in this case in messages will be warning message with type RID_BY_CSN_NOT_FOUND.
           example: VW6A4
           nullable: true
         csn: 
