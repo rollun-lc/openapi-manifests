@@ -42,6 +42,24 @@ paths:
           required: false
           schema:
             type: string
+        - in: query
+          name: "rids"
+          description: "Array of rollunId."
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              example: "RID01"
+        - in: query
+          name: "csns"
+          description: "Array of csn."
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              example: "CSN01"
       responses:
         "200":
           description: "Success"
