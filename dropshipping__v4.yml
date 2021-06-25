@@ -380,7 +380,9 @@ components:
         shipments:
           type: array
           nullable: true
-          description: List of all parcels that sent this order
+          description: >
+            Parcels that have been sent, or will be sent (differ in the presence of a track number)
+            For pikcup orders there also can be some parcels. For example, when a service fee is charged, this can be considered as the price for delivery. Another example when some items have been sent
           items:
             $ref: '#/components/schemas/Shipment'
         createdAt:
