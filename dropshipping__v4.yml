@@ -305,7 +305,7 @@ components:
           description: >
             The order number received from the supplier. 
             According to it, the order can be found in the user interface on the supplier's website.
-        associated_order_number:
+        associatedOrderNumbers:
           type: array
           items:
             type: string
