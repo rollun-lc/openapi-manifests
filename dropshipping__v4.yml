@@ -326,7 +326,7 @@ components:
         type:
           type: string
           nullable: true
-          enum: ['Dropship', 'Pickup']
+          enum: ['Dropship', 'Pickup', 'Other']
         status:
           type: string
           enum: ['Ordered', 'Back ordered', 'Tracknumber received', 'Picked up', 'Problem', 'Canceled']
