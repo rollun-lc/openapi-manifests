@@ -25,7 +25,7 @@ paths:
         - in: query
           name: "date"
           description: "The date on which the compliance should be returned. (Sometimes matches change and one csn starts to match another)"
-          required: false
+          required: true
           example: "2020-07-21T17:32:28Z"
           schema:
             type: string
@@ -44,20 +44,22 @@ paths:
             type: string
         - in: query
           name: "rids"
-          description: "Array of rollunId with date."
+          description: "Array of rollunId."
           required: false
           schema:
             type: array
             items:
-              $ref: "#/components/schemas/RidWithDate"
+              type: string
+              example: "RID01"
         - in: query
           name: "csns"
-          description: "Array of csn with date."
+          description: "Array of csn."
           required: false
           schema:
             type: array
             items:
-              $ref: "#/components/schemas/CsnWithDate"
+              type: string
+              example: "CSN01"
       responses:
         "200":
           description: "Success"
@@ -124,26 +126,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CsnWithRid'
-            
-    # Query components
-    CsnWithDate:
-      type: object
-      properties:
-        csn:
-          type: string
-        date:
-          type: string
-          format: date-time
-          description: "The date on which the compliance should be returned. (Sometimes matches change and one csn starts to match another rid)"
-    RidWithDate:
-      type: object
-      properties:
-        rid:
-          type: string
-        date:
-          type: string
-          format: date-time
-          description: "The date on which the compliance should be returned. (Sometimes matches change and one rid starts to match another csn)"
 
     ## Resource object
     CsnWithRid:
