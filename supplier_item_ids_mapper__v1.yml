@@ -46,6 +46,7 @@ paths:
           name: "rids"
           description: "Array of rollunId."
           required: false
+          explode: false
           schema:
             type: array
             items:
@@ -55,6 +56,7 @@ paths:
           name: "csns"
           description: "Array of csn."
           required: false
+          explode: false
           schema:
             type: array
             items:
