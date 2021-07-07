@@ -149,7 +149,7 @@ components:
           nullable: true
           description: >
             It is used when the order is divided into several deals with different numbers. For example, this happens with autodist, when ordered from different warehouses, they create a separate order for each warehouse. We combine such orders into one order, with one of the order numbers in the order_number field, and the rest in the associated_order_numbers.
-        paymentCardNumber:
+        paymentCard:
           type: string
           nullable: true
           example: "op acct"
