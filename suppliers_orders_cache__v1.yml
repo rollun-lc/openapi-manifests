@@ -218,14 +218,17 @@ components:
         createRequest:
           type: string
           nullable: true
+          example: "{}"
           description: Serialized in json request for creating createOrderTask
         createResonse:
           type: string
           nullable: true
+          example: "{}"
           description: Serialized to json the raw data of the supplier response when requesting to create an order.
         originalOrder:
           type: string
           nullable: true
+          example: "{}"
           description: Serialized in json last saved raw order data from a supplier.
         checkedAt:
           type: string
