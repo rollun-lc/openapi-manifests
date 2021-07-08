@@ -109,15 +109,6 @@ components:
           description: >
             Unique identificator of order in format "supplierCode | orderNumber"
           example: "Autodist | AP7734"
-        createdAt:
-          type: string
-          format: date-time
-          nullable: true
-          description: >
-            Time when order was ordered. When the supplier has confirmed that the order has been created.
-            Examples
-              1. The time when we received a successful order creation response from the supplier API.
-              2. The time when the parser finished work and successfully created an order on the site.
         updatedAt:
           type: string
           format: date-time
@@ -236,7 +227,15 @@ components:
           format: date-time
           description: >
             Time of the last check of the order data.
-    
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >
+            Time when order was ordered. When the supplier has confirmed that the order has been created.
+            Examples
+              1. The time when we received a successful order creation response from the supplier API.
+              2. The time when the parser finished work and successfully created an order on the site.
     Shipment:
       type: object
       properties:
