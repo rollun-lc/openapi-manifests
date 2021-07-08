@@ -97,7 +97,8 @@ components:
       required:
         - supplierCode
         - status
-
+        - checkedAt
+    
     ## Resource object
     Order:
       allOf:
