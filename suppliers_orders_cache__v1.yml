@@ -212,7 +212,7 @@ components:
           nullable: true
           example: "{}"
           description: Serialized in json request for creating createOrderTask
-        createResonse:
+        createResponse:
           type: string
           nullable: true
           example: "{}"
