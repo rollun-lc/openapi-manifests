@@ -2,7 +2,6 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "SuppliersOrdersCache"
-  description: Manifest description
 servers:
   - url: http://suppliers/openapi/SuppliersOrdersCache/v1
 tags:
@@ -12,7 +11,7 @@ paths:
     put:
       tags:
         - Orders
-      summary: 'Update (not partial) or create order in cache.'
+      summary: 'Updating (not partial) or creating an order in the cache'
       description: |
         Partial updates are not allowed with the PUT method. 
         
@@ -32,6 +31,40 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/OrderPutRequest'
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+    patch:
+      tags:
+        - Orders
+      summary: 'Partial update of order in cache'
+      description: |
+        Null values for field is equivalent to undefined and will not changes the order value.
+        
+        If you need to set some field to null use PUT method (Do not forget to get the values of other fields before that, because PUT updates the order resource completely).
+      parameters:
+        - in: path
+          name: id
+          description: Order number "supplierCode | orderNumber"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderPatchRequest'
       responses:
         "200":
           description: 'Success'
@@ -105,6 +138,11 @@ components:
         - status
         - checkedAt
     
+    # Body for patch request
+    OrderPatchRequest:
+      allOf:
+        - $ref: "#/components/schemas/OrderBody"
+    
     ## Resource object
     Order:
       allOf:
@@ -132,6 +170,7 @@ components:
           format: date-time
           description: >
             Time when record with order was created in the cache
+    
     OrderBody:
       type: object
       properties:
@@ -257,6 +296,7 @@ components:
             Examples
               1. The time when we received a successful order creation response from the supplier API.
               2. The time when the parser finished work and successfully created an order on the site.
+    
     Shipment:
       type: object
       properties:
