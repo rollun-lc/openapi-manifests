@@ -52,6 +52,10 @@ paths:
         Null values for field is equivalent to undefined and will not changes the order value.
         
         If you need to set some field to null use PUT method (Do not forget to get the values of other fields before that, because PUT updates the order resource completely).
+        
+        Messages types
+        
+        ORDER_NOT_FOUND - cannot find order by id
       parameters:
         - in: path
           name: id
@@ -106,9 +110,11 @@ components:
           type: string
           enum:
             - UNDEFINED
+            - ORDER_NOT_FOUND
           description: >
             You can expose this enum for all your errors
             UNDEFINED - Any undefined message type
+            ORDER_NOT_FOUND - cannot find order by id
         text:
           type: string
           description: Message, that describes what went wrong
