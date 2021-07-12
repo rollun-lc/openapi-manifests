@@ -141,6 +141,7 @@ components:
         - $ref: "#/components/schemas/OrderBody"
       required:
         - supplierCode
+        - orderNumber
         - status
         - checkedAt
     
@@ -184,6 +185,13 @@ components:
           type: string
           example: Autodist
           description: Code of supplier (same as id from https://rollun.net/suppliers)
+        orderNumber:
+          type: string
+          example: AP7734
+          description: |
+            The order number received from the supplier. 
+            
+            According to it, the order can be found in the user interface on the supplier's website.
         purchaseOrderNumber:
           type: string
           description: Original p.o. number value if supplier has one
