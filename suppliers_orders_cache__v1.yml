@@ -7,6 +7,59 @@ servers:
 tags:
   - name: Orders
 paths:
+  "/orders":
+    get:
+      tags:
+        - Orders
+      summary: "Get list of orders"
+      parameters:
+        - name: rql
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 'and(eq(supplierCode,Autodist),eq(status,Ordered))'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1000
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 'name'
+        - name: sortOrder
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - "asc"
+              - "desc"
+            default: "asc"
+            example: 'asc'
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderListResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
   "/orders/{id}":
     get:
       tags:
@@ -150,6 +203,17 @@ components:
       properties:
         data:
           type: object
+          
+    ## Result with list of resource
+    OrderListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
 
     ## One resource result
     OrderResult:
