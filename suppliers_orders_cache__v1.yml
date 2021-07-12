@@ -8,6 +8,31 @@ tags:
   - name: Orders
 paths:
   "/orders/{id}":
+    get:
+      tags:
+        - Orders
+      summary: 'Get info about specific order'
+      description: "Returns information of order by orderId"
+      parameters:
+        - in: path
+          name: id
+          description: Id of order. If order was created manually you can get it by id in format "supplierCode | orderId"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
     put:
       tags:
         - Orders
