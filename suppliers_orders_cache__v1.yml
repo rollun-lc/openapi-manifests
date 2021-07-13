@@ -69,7 +69,7 @@ paths:
       parameters:
         - in: path
           name: id
-          description: Id of order. If order was created manually you can get it by id in format "supplierCode | orderId"
+          description: Id of order. If order was created manually you can get it by id in format "supplierCode | orderNumber"
           required: true
           schema:
             type: string
