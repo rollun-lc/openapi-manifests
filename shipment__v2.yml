@@ -202,6 +202,11 @@ components:
           format: date-time
           nullable: true
           description: The estimated delivery date provided by the carrier (if available)
+        realDeliveryDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: The actual delivery date provided by the carrier (if available)
         createdAt:
           type: string
           format: date-time
