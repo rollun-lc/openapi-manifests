@@ -2,6 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "SuppliersOrders"
+  description: "Getting info about suppliers orders"
 servers:
   - url: http://suppliers/openapi/SuppliersOrders/v1
 tags:
