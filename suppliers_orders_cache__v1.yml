@@ -416,6 +416,7 @@ components:
             - ORDER_NOT_FOUND
             - RID_BY_CSN_NOT_FOUND
             - IDEMPOTENCY_KEY_PROBLEM
+            - EMPTY_FIELD_IN_ADDRESS
           description: >
             If you add a new type to this manifest, then also add it to the SuppliersOrders manifest.
             
@@ -423,6 +424,7 @@ components:
             ORDER_NOT_FOUND - Cannot find order by id
             RID_BY_CSN_NOT_FOUND - Cannot convert csn to rid. Rid in this case will be null.
             IDEMPOTENCY_KEY_PROBLEM - The idempotency key cannot be uniquely identified for an order.
+            EMPTY_FIELD_IN_ADDRESS - Some of required Address fields is empty.
         text:
           type: string
           description: Message, that describes what went wrong
