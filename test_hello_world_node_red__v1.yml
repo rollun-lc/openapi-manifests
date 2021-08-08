@@ -4,19 +4,8 @@ info:
   title: TestHelloWorldNodeRed
 servers:
   - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
-  - url: http://cto-nred/openapi/TestHelloWorldNodeRed/v1
+  - url: http://nr-accounting/openapi/TestHelloWorldNodeRed/v1
+  - url: http://127.0.0.1:80/openapi/TestHelloWorldNodeRed/v1
 tags:
   - name: User
   - name: Hello
