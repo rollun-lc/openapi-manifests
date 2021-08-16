@@ -1,0 +1,168 @@
+openapi: 3.0.0
+info:
+  version: "3"
+  title: HelloUserNodeRedDemo
+servers:
+  - url: http://cto-nred/openapi/HelloUserNodeRedDemo/v3
+  - url: http://nr-accounting/openapi/HelloUserNodeRedDemo/v3
+tags:
+  - name: User
+paths:
+  /User:
+    post:
+      tags:
+        - User
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResult'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+  /User/{id}:
+    get:
+      tags:
+        - User
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: '5f51f78ccaa4c'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResult'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  /Hello/{id}:
+    get:
+      tags:
+        - Hello
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: '5f51f78ccaa4c'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelloResult'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    Message:
+      type: object
+      required:
+        - level
+        - text
+      properties:
+        level:
+          type: string
+          description: 'Message level  (like in a logger)'
+          example: 'error'
+        text:
+          type: string
+          description: 'Message text'
+          example: 'Something wrong.'
+        context:
+          type: array
+          description: 'Message context (like in a logger)'
+          items:
+            type: string
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Result:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    UserResult:
+      allOf:
+        - $ref: '#/components/schemas/Result'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          example: '5f51f78ccaa4c'
+        name:
+          type: string
+          example: 'Roman'
+    HelloResult:
+      allOf:
+        - $ref: '#/components/schemas/Result'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Hello'
+    Hello:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: 'Hello, Roman!'
