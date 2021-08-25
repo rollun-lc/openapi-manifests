@@ -1,0 +1,110 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Logger"
+  description: Manifest for Logger api
+servers:
+  - url: http://rollun-net-prvt/openapi/Logger/v1
+  - url: https://rollun.net/api/openapi/Logger/v1
+tags:
+  - name: Logs
+paths:
+  "/logs":
+    post:
+      tags:
+        - Logs
+      summary: 'Add log record'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Log'
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+          description: >
+            UNDEFINED - Any undefined message type
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    LogResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Log'
+
+    ## Resources
+    Log:
+      type: object
+      required:
+        - level
+        - message
+        - index_name
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        message:
+          type: string
+        index_name:
+          type: string
+          description: Index name in Elasticsearch where log record will be added
+        context:
+          type: object
+          additionalProperties: true
