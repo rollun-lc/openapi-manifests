@@ -97,7 +97,7 @@ paths:
         
         UpdatedAt and CachedAt field automaticaly filled.
         
-        If sum of "shippingTotalPrice", "itemsTotalPrice", itemsTax" and "totalTax" not equals to "totalTax" than message with type "PRICES_MISMATCH" will be added (if not already added). Also, this message will be automatically deleted if prices become equal.
+        If sum of "shippingTotalPrice", "itemsTotalPrice", itemsTax" and "totalTax" not equals to "totalPrice" than message with type "PRICES_MISMATCH" will be added (if not already added). Also, this message will be automatically deleted if prices become equal.
       parameters:
         - in: path
           name: id
@@ -133,7 +133,7 @@ paths:
         
         If you need to set some field to null use PUT method (Do not forget to get the values of other fields before that, because PUT updates the order resource completely).
         
-        If sum of "shippingTotalPrice", "itemsTotalPrice", itemsTax" and "totalTax" not equals to "totalTax" than message with type "PRICES_MISMATCH" will be added (if not already added). Also, this message will be automatically deleted if prices become equal.
+        If sum of "shippingTotalPrice", "itemsTotalPrice", itemsTax" and "totalTax" not equals to "totalPrice" than message with type "PRICES_MISMATCH" will be added (if not already added). Also, this message will be automatically deleted if prices become equal.
       parameters:
         - in: path
           name: id
