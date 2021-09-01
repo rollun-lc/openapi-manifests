@@ -96,6 +96,8 @@ paths:
         BE CAREFUL! All fields that you did not specify in the request body will be replaced with default values or null if no default value is specified for the field.
         
         UpdatedAt and CachedAt field automaticaly filled.
+        
+        If sum of "shippingTotalPrice", "itemsTotalPrice", itemsTax" and "totalTax" not equals to "totalTax" than message with type "PRICES_MISMATCH" will be added (if not already added). Also, this message will be automatically deleted if prices become equal.
       parameters:
         - in: path
           name: id
@@ -131,9 +133,7 @@ paths:
         
         If you need to set some field to null use PUT method (Do not forget to get the values of other fields before that, because PUT updates the order resource completely).
         
-        Messages types
-        
-        ORDER_NOT_FOUND - cannot find order by id
+        If sum of "shippingTotalPrice", "itemsTotalPrice", itemsTax" and "totalTax" not equals to "totalTax" than message with type "PRICES_MISMATCH" will be added (if not already added). Also, this message will be automatically deleted if prices become equal.
       parameters:
         - in: path
           name: id
@@ -426,7 +426,7 @@ components:
             RID_BY_CSN_NOT_FOUND - Cannot convert csn to rid. Rid in this case will be null.
             IDEMPOTENCY_KEY_PROBLEM - The idempotency key cannot be uniquely identified for an order.
             UNPARSED_ADDRESS_FIELD - Unable to parse one of the address fields. This field will contain an empty string.
-            PRICES_MISMATCH - sum of prices parts not equals to totalPrice
+            PRICES_MISMATCH - sum of prices parts ("shippingTotalPrice", "itemsTotalPrice", itemsTax" and "totalTax") not equals to totalPrice
         text:
           type: string
           description: Message, that describes what went wrong
