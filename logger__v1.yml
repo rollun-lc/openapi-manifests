@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Logger"
-  description: Manifest for Logger api
+  description: Writing logs by http request
 servers:
   - url: http://rollun-net-prvt/openapi/Logger/v1
   - url: https://rollun.net/api/openapi/Logger/v1
@@ -91,6 +91,7 @@ components:
       properties:
         level:
           type: string
+          description: PSR-3 log level
           enum:
             - emergency
             - alert
@@ -102,9 +103,11 @@ components:
             - debug
         message:
           type: string
+          description: Log message
         index_name:
           type: string
           description: Index name in Elasticsearch where log record will be added
         context:
           type: object
+          description: Any extra information that does not fit in the message
           additionalProperties: true
