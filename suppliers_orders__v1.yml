@@ -102,7 +102,6 @@ components:
             - UNDEFINED
             - INVALID_RESPONSE
             - ORDER_NOT_FOUND
-            - RID_BY_CSN_NOT_FOUND
           description: >
             You can expose this enum for all your errors
             UNDEFINED - Any undefined message type
