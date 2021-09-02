@@ -316,7 +316,7 @@ components:
             
             Problem - The order has at least one problem that is not described in the manifest.
             
-            Canceled - Order cancelled
+            Canceled - Order cancelled. Prices in this status are equal to the values that were actually paid (in most cases, this is zero, but some cancellation penalties can be removed)
         shippingTotalPrice:
           type: number
           nullable: true
