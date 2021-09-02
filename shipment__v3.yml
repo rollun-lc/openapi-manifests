@@ -106,11 +106,6 @@ components:
           example: 'https://google.com'
           nullable: true
           description: URL to a publicly-accessible html page that shows tracking details for this tracker
-        firstScan:
-          type: string
-          format: date-time
-          nullable: true
-          description: The timestamp when the first carrier tracking scan occurred
         estDeliveryDate:
           type: string
           format: date-time
