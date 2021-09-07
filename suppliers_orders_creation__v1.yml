@@ -1,0 +1,155 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "SuppliersOrdersCreation"
+servers:
+  - url: http://suppliers/openapi/SuppliersOrdersCreation/v1
+tags:
+  - name: CreateOrderTasks
+paths:
+  "/createOrderTasks/{id}":
+    get:
+      tags:
+        - CreateOrderTasks
+      summary: 'Get info about task state'
+      parameters:
+        - in: path
+          name: id
+          description: Id of task. Id always equals to idempotencyKey.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfoResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - ORDER_NOT_FOUND
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            ORDER_NOT_FOUND - cannot find order by id
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    TaskInfoResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TaskInfo'
+    TaskInfo:
+      type: object
+      required:
+        - id
+        - timeout
+        - stage
+        - status
+      properties:
+        id:
+          type: string
+          example: 'qwerty123'
+        timeout:
+          type: integer
+          example: '3'
+        stage:
+          $ref: '#/components/schemas/Stage'
+        status:
+          $ref: '#/components/schemas/Status'
+        startTime:
+          type: string
+          description: 'Task start time UTC'
+          example: '2020-11-20T13:14:15Z'
+        result:
+          $ref: '#/components/schemas/SummaryResult'
+    Stage:
+      type: object
+      required:
+        - stage
+        - all
+      properties:
+        stage:
+          type: string
+          description: 'Current stage'
+          example: 'writing 2'
+        all:
+          type: array
+          description: 'All possible stages'
+          items:
+            type: string
+          example: [ 'writing 1','writing 2','writing 3','calc summary','done' ]
+    Status:
+      type: object
+      required:
+        - state
+        - all
+      properties:
+        state:
+          type: string
+          description: 'Current state'
+          example: 'pending'
+        all:
+          type: array
+          description: 'All possible states'
+          items:
+            type: string
+          example: [ 'pending','fulfilled','rejected' ]
+    SummaryResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Summary'
+    Summary:
+      type: object
+      required:
+        - summary
+      properties:
+        summary:
+          type: integer
+          example: '15'
