@@ -7,7 +7,7 @@ servers:
 tags:
   - name: CreateOrderTasks
 paths:
-  "/creationOrderTasks":
+  "/createOrderTasks":
     post:
       tags:
         - CreateOrderTasks
