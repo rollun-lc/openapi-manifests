@@ -126,7 +126,8 @@ components:
       properties:
         id:
           type: string
-          example: 'qwerty123'
+          description: Always equals to idempotencyKey
+          example: '12345'
         stage:
           $ref: '#/components/schemas/Stage'
         status:
