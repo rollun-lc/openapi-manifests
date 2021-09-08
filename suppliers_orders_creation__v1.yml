@@ -7,12 +7,12 @@ servers:
 tags:
   - name: CreateOrderTasks
 paths:
-  "/creationOrderTask":
+  "/creationOrderTasks":
     post:
       tags:
         - CreateOrderTasks
       responses:
-        '201':
+        '200':
           description: Created
           content:
             application/json:
