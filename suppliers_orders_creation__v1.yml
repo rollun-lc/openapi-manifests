@@ -143,7 +143,7 @@ components:
         - stage
         - all
       properties:
-        stage:
+        value:
           type: string
           description: 'Current stage'
           example: 'creating'
@@ -160,7 +160,7 @@ components:
         - state
         - all
       properties:
-        state:
+        value:
           type: string
           description: 'Current state'
           example: 'pending'
