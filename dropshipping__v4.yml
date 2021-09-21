@@ -193,6 +193,8 @@ components:
             - ORDER_SHIPMENTS_NOT_CREATED
             - CSN_BY_RID_NOT_FOUND
             - RID_BY_CSN_NOT_FOUND
+            - ITEM_SHIPPING_RESTRICTED
+            - INVALID_ADDRESS
           description: >
             ALREADY_EXIST - An order with the given idempotency key already exists (For special cases when we cannot determine the order number by its idempotency key.)
             UNDEFINED - Any undefined message type
@@ -206,6 +208,8 @@ components:
             ORDER_SHIPMENTS_NOT_CREATED - Tucker Rocky order exist, but information about it shipments is not returned
             CSN_BY_RID_NOT_FOUND - Cannot convert rid to csn.
             RID_BY_CSN_NOT_FOUND - Cannot convert csn to rid. Rid in this case will be null.
+            ITEM_SHIPPING_RESTRICTED - This item cannot be shipped for various reasons
+            INVALID_ADDRESS - Shipping address isn't valid
         text:
           type: string
           description: Message, that describes what went wrong
