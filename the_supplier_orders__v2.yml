@@ -7,6 +7,7 @@ servers:
   - url: http://pu-orders/openapi/TheSupplierOrders/v2
   - url: http://tr-orders/openapi/TheSupplierOrders/v2
   - url: http://au-orders/openapi/TheSupplierOrders/v2
+  - url: http://supplier-rof/openapi/TheSupplierOrders/v2
 tags:
   - name: Orders
   - name: CalculatedShippingMethods
