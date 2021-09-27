@@ -5,15 +5,15 @@ info:
 servers:
   - url: http://suppliers/openapi/SuppliersOrdersCreation/v1
 tags:
-  - name: CreateOrderTasks
+  - name: OrderCreationTasks
 paths:
-  "/createOrderTasks":
+  "/orderCreationTasks":
     post:
       description: >
         Create task. Multiple requests with same task id does not create new one, but return same task.
         If task rejected (due to validation error or other reason) you need to create new task with new id but same idempotency key to run it again.
       tags:
-        - CreateOrderTasks
+        - OrderCreationTasks
       responses:
         '200':
           description: Created
@@ -35,7 +35,7 @@ paths:
               $ref: '#/components/schemas/CrerationTaskPostRequest'
     get:
       tags:
-        - CreateOrderTasks
+        - OrderCreationTasks
       summary: "Get list of tasks"
       parameters:
         - name: payloadIdempotencyKey
@@ -59,10 +59,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
               
-  "/createOrderTasks/{id}":
+  "/orderCreationTasks/{id}":
     get:
       tags:
-        - CreateOrderTasks
+        - OrderCreationTasks
       summary: 'Get info about task state'
       parameters:
         - in: path
