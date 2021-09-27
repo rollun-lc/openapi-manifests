@@ -1,0 +1,373 @@
+openapi: "3.0.0"
+info:
+  description: "How to return"
+  version: "2"
+  title: "HowToReturn"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+servers:
+  - url: "http://megaplan-union/openapi/HowToReturn/v2"
+  #- url: "http://l.union-megaplan/openapi/HowToReturn/v1"
+  - url: https://rollun.net/api/openapi/HowToReturn/v2
+tags:
+  - name: Locations
+    description: "Locations"
+  - name: Products
+    description: "Candidates"
+  - name: Returns
+    description: "Returns"
+paths:
+  /locations:
+    get:
+      tags:
+        - Locations
+      description: ""
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            aplication/json:
+              schema:
+                $ref: "#/components/schemas/LocationCollectionResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /products:
+    get:
+      tags:
+        - Products
+      description: ""
+      parameters:
+        - in: query
+          name: location
+          required: true
+          description: Location
+          schema:
+            type: string
+        - in: query
+          name: pageNumber
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+        - in: query
+          name: includeEmpty
+          description: If true, result set will include items with empty candidates array. Default true
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            aplication/json:
+              schema:
+                $ref: "#/components/schemas/ProductCollectionResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /returns:
+    post:
+      tags:
+        - Returns
+      summary: "Select candidates for products"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnPostRequest'
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnPostResponse'
+        "400":
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+
+    #### GENERAL ###
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Message:
+      type: object
+      required:
+        - level
+        - text
+      properties:
+        level:
+          type: string
+          description: 'Message level  (like in a logger)'
+          example: 'error'
+        text:
+          type: string
+          description: 'Message text'
+          example: 'Something wrong.'
+        context:
+          type: array
+          description: 'Message context (like in a logger)'
+          items:
+            type: string
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+#    MetaResponse:
+#      type: object
+#      properties:
+#        meta:
+#          type: object
+    CollectionResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - $ref: "#/components/schemas/PaginatedMetaResponse"
+      type: object
+#      properties:
+#        meta:
+#          $ref: "#/components/schemas/PaginatedMetaResponse"
+#    Meta:
+#      type: object
+#      additionalProperties: true
+    PaginatedMetaResponse:
+#      allOf:
+#        - $ref: "#/components/schemas/MetaResponse"
+      properties:
+        meta:
+          $ref: "#/components/schemas/PaginatedMeta"
+    PaginatedMeta:
+#      allOf:
+#        - $ref: "#/components/schemas/Meta"
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+    Result:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+    Relationship:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: integer
+    Include:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: integer
+    Links:
+      type: object
+      properties:
+        self:
+          type: string
+        first:
+          type: string
+        prev:
+          type: string
+        next:
+          type: string
+        last:
+          type: string
+
+    ### CUSTOM ###
+    ProductCollectionResponse:
+      allOf:
+        - $ref: '#/components/schemas/CollectionResponse'
+        #- $ref: "#/components/schemas/PaginatedMetaResponse"
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductResultItem"
+        included:
+          type: array
+          items:
+            $ref: "#/components/schemas/DealInclude"
+    ProductResultItem:
+      allOf:
+        - $ref: "#/components/schemas/Result"
+      properties:
+        attributes:
+          $ref: "#/components/schemas/Product"
+        relationships:
+          $ref: "#/components/schemas/DealsRelationships"
+    DealsRelationships:
+      type: object
+      properties:
+        deals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Relationship"
+    Product:
+      type: object
+      properties:
+        rid:
+          type: string
+        quantity:
+          type: integer
+        originalSupplier:
+          type: string
+    DealInclude:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/Include"
+      properties:
+        attributes:
+          $ref: "#/components/schemas/Deal"
+    Deal:
+      type: object
+      required:
+        - srOrderNumber
+        - srName
+        - timeCreated
+      properties:
+        srOrderNumber:
+          type: string
+        srName:
+          type: string
+        timeCreated:
+          type: string
+          format: date-time
+        positions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Position"
+    Position:
+      type: object
+      properties:
+        rid:
+          type: string
+        quantity:
+          type: integer
+
+
+    LocationCollectionResponse:
+      allOf:
+        - $ref: '#/components/schemas/CollectionResponse'
+        #- $ref: "#/components/schemas/PaginatedMetaResponse"
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocationResultItem"
+    LocationResultItem:
+      allOf:
+        - $ref: "#/components/schemas/Result"
+      properties:
+        attributes:
+          $ref: "#/components/schemas/Location"
+#    LocationListResult:
+#      allOf:
+#        - $ref: '#/components/schemas/Result'
+#      type: object
+#      properties:
+#        data:
+#          type: array
+#          items:
+#            $ref: '#/components/schemas/Location'
+    Location:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        pickupSuppliers:
+          nullable: true
+          type: array
+          items:
+            type: string
+
+
+    ReturnPostRequest:
+      type: object
+      properties:
+        location:
+          type: string
+        returns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReturnRequestItem"
+    ReturnRequestItem:
+      type: object
+      properties:
+        rid:
+          type: string
+        dealId:
+          type: integer
+        quantity:
+          type: integer
+    ReturnPostResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReturnResponseItem"
+    ReturnResponseItem:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ReturnRequestItem"
+      properties:
+        status:
+          type: boolean
