@@ -127,7 +127,7 @@ components:
       properties:
         id:
           type: string
-          description: Client generated unique id
+          description: Server generated unique id
           example: '12345'
         stage:
           $ref: '#/components/schemas/Stage'
