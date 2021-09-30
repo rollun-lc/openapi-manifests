@@ -129,6 +129,7 @@ components:
           type: string
           description: Server generated unique id
           example: '12345'
+          nullable: true
         stage:
           $ref: '#/components/schemas/Stage'
         status:
