@@ -233,6 +233,7 @@ components:
             - UNAVAILABLE_SHIPPING_METHOD
             - ITEM_SHIPPING_RESTRICTED
             - INVALID_ADDRESS
+            - ITEMS_NOT_AVAILABLE
           description: >
             If you add a new type to this manifest, then also add it to the SuppliersOrders manifest.
             UNDEFINED - Any undefined message type
@@ -241,6 +242,7 @@ components:
             UNAVAILABLE_SHIPPING_METHOD - A shipping method exists but is not available for this order
             ITEM_SHIPPING_RESTRICTED - This item cannot be shipped for various reasons
             INVALID_ADDRESS - Shipping address isn't valid
+            ITEMS_NOT_AVAILABLE - Requested items not available.
         text:
           type: string
           description: Message, that describes what went wrong
