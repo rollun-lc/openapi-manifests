@@ -278,6 +278,7 @@ components:
             - UNAVAILABLE_SHIPPING_METHOD
             - ITEM_SHIPPING_RESTRICTED
             - INVALID_ADDRESS
+            - UNSUPPORTED_REQUEST
           description: >
             UNDEFINED - Any undefined message type
             IDEMPOTENT_PARAMETER_MISMATCH - Order with same idempotency_key already exist but with different parameters
@@ -286,6 +287,7 @@ components:
             UNAVAILABLE_SHIPPING_METHOD - A shipping method exists but is not available for this order
             ITEM_SHIPPING_RESTRICTED - This item cannot be shipped for various reasons
             INVALID_ADDRESS - Shipping address isn't valid
+            UNSUPPORTED_REQUEST - The request is correct but currently not supported
         text:
           type: string
           description: Message, that describes what went wrong
