@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "SupplierItemIdsMapper"
-  description: Manifest description
+  description: Converts csn to rid and vice versa. 
 servers:
   - url: http://suppliers/openapi/SupplierItemIdsMapper/v1
 tags:
