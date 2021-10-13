@@ -2,7 +2,12 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Dropshipping"
-  description: Long running tasks interface
+  description: >
+    This manifest is deprecated. 
+    Instead of it use next manifests
+    suppliersOrdersCreation to create orders;
+    suppliersOrder to track orders;
+    dropshipping__v4 to calculate shipping methods
 servers:
   - url: http://suppliers/openapi/Dropshipping/v1
 tags:
