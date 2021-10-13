@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Shipment"
-  description: Long running tasks interface
+  description: This version of manifest is deprecated. Do not use it
 servers:
   - url: http://carriers/openapi/Shipment/v1
 tags: 
