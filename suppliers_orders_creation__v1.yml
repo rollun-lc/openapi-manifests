@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "SuppliersOrdersCreation"
-  description: Long task suppliers order creation.
+  description: Long task suppliers order creation. With this manifest, you can create an order creation task and track its state.
 servers:
   - url: http://suppliers/openapi/SuppliersOrdersCreation/v1
 tags:
