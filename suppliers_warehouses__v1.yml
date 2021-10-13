@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "SuppliersWarehouses"
-  description: Suppliers warehouses
+  description: Use this manifest to get warehouses with calculated distance from warehouse to client, sorted by handling time and distance.
 servers:
   - url: http://suppliers/openapi/SuppliersWarehouses/v1
 tags:
