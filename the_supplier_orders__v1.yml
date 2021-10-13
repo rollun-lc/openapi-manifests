@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "TheSupplierOrders"
-  description: Manifest for specific supplier
+  description: Manifest for specific supplier. Deprecated. Use TheSupplierOrdersCreation and SuppliersOrders instead.
 servers:
   - url: http://pu-orders/openapi/TheSupplierOrders/v1
 tags:
