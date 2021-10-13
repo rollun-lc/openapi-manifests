@@ -2,6 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "SuppliersOrdersCache"
+  description: REST CRUD for suppliers orders cache data store (https://rollun.net/SuppliersOrdersDataStore). 
 servers:
   - url: http://suppliers/openapi/SuppliersOrdersCache/v1
 tags:
