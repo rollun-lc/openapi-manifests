@@ -2,7 +2,10 @@ openapi: 3.0.0
 info:
   version: "2"
   title: "Shipment"
-  description: Long running tasks interface
+  description: >
+    Track shipments by tracknumber. 
+    This version uses easypost to track shipments whis is paid. 
+    We recommend using the following version which works by free APIs
 servers:
   - url: http://carriers/openapi/Shipment/v2
 tags: 
