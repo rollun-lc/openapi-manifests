@@ -2,7 +2,9 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "SuppliersOrders"
-  description: "Getting info about suppliers orders"
+  description: >
+    Use this manifest to get complete info about suppliers orders.
+    Information about orders is returned from the cache and may not be relevant.
 servers:
   - url: http://suppliers/openapi/SuppliersOrders/v1
 tags:
