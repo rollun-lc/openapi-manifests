@@ -5,7 +5,7 @@ info:
   description: Long running tasks interface
 servers:
   - url: http://carriers/openapi/Shipment/v3
-tags: 
+tags:
   - name: Tracker
 paths:
   "/Tracker/{id}":
@@ -39,7 +39,7 @@ components:
     ErrorResponse:
       type: object
       properties:
-        messages: 
+        messages:
           type: array
           items:
             $ref: "#/components/schemas/Message"
@@ -53,6 +53,14 @@ components:
             - info
             - warning
             - error
+        type:
+          type: string
+          enum:
+            - UNSUPPORTED_CARRIER
+            - UNDEFINED
+          description: >
+            UNSUPPORTED_CARRIER - Requested carrier is not supported
+            UNDEFINED - Any undefined message type
         text:
           type: string
           description: Message, that describes what went wrong
@@ -84,12 +92,14 @@ components:
         carrier:
           type: string
           description: The name of the carrier handling the shipment
-          enum: 
+          enum:
             - USPS
+            - FEDEX
+            - UPS
         shipStatus:
           type: string
           description: The current status of the package
-          enum: 
+          enum:
             - pre_transit
             - in_transit
             - out_for_delivery
