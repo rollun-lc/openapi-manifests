@@ -2,7 +2,9 @@ openapi: 3.0.0
 info:
   version: "3"
   title: "Shipment"
-  description: Long running tasks interface
+  description: >
+    Tracking shipments by tracknumber.
+    This version of manifest uses carriers APIs, but not easypost to track shipments.
 servers:
   - url: http://carriers/openapi/Shipment/v3
 tags:
