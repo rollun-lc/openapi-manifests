@@ -265,6 +265,10 @@ components:
         level:
           type: string
           enum:
+            - emergency
+            - alert
+            - critical
+            - error
             - warning
             - notice
             - info
