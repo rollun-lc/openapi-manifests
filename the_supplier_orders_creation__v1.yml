@@ -173,7 +173,7 @@ components:
           description: 'All possible states'
           items:
             type: string
-          example: [ 'pending', 'in_progress', 'fulfilled', 'rejected' ]
+          example: ['in_progress', 'fulfilled', 'rejected' ]
           
     CrerationTaskPayload:
       type: object
