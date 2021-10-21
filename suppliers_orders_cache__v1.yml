@@ -493,7 +493,7 @@ components:
         trackNumbers:
           type: array
           nullable: true
-          description: The tracking code of the shipment this item is in
+          description: The tracking code of the shipment this item is in. Can be null if it is impossible to match items to shipments.
           items:
             type: string
             example: '9400100000000000000000'
