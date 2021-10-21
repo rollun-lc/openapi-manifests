@@ -492,6 +492,7 @@ components:
           nullable: true
         trackNumbers:
           type: array
+          nullable: true
           description: The tracking code of the shipment this item is in
           items:
             type: string
