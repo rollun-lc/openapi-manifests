@@ -406,11 +406,4 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/ReturnResponseItem"
-    ReturnResponseItem:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/ReturnRequestItem"
-      properties:
-        status:
-          type: boolean
+            type: number
