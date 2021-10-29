@@ -7,11 +7,14 @@ info:
     name: "Apache 2.0"
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 servers:
-  - url: "http://megaplan-union/openapi/HowToReturn/v1"
+  - url: "http://megaplan-union/openapi/HowToReturn/v2"
   #- url: "http://l.union-megaplan/openapi/HowToReturn/v1"
+  - url: https://rollun.net/api/openapi/HowToReturn/v2
 tags:
   - name: Locations
     description: "Locations"
+  - name: Storages
+    description: "Storages"
   - name: Products
     description: "Candidates"
   - name: Returns
@@ -28,7 +31,31 @@ paths:
           content:
             aplication/json:
               schema:
-                $ref: "#/components/schemas/LocationListResult"
+                $ref: "#/components/schemas/LocationCollectionResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /storages:
+    get:
+      tags:
+        - Storages
+      description: "successful operation"
+      responses:
+        "200":
+          description: "successful"
+          content:
+            aplication/json:
+              schema:
+                $ref: "#/components/schemas/StoragesCollectionResponse"
         "400":
           description: Bad Request
           content:
@@ -48,9 +75,9 @@ paths:
       description: ""
       parameters:
         - in: query
-          name: location
+          name: storage
           required: true
-          description: Location
+          description: Storage
           schema:
             type: string
         - in: query
@@ -154,31 +181,16 @@ components:
       properties:
         data:
           type: object
-#    MetaResponse:
-#      type: object
-#      properties:
-#        meta:
-#          type: object
     CollectionResponse:
       allOf:
         - $ref: "#/components/schemas/SuccessResponse"
         - $ref: "#/components/schemas/PaginatedMetaResponse"
       type: object
-#      properties:
-#        meta:
-#          $ref: "#/components/schemas/PaginatedMetaResponse"
-#    Meta:
-#      type: object
-#      additionalProperties: true
     PaginatedMetaResponse:
-#      allOf:
-#        - $ref: "#/components/schemas/MetaResponse"
       properties:
         meta:
           $ref: "#/components/schemas/PaginatedMeta"
     PaginatedMeta:
-#      allOf:
-#        - $ref: "#/components/schemas/Meta"
       type: object
       properties:
         pageNumber:
@@ -261,6 +273,11 @@ components:
           type: integer
         originalSupplier:
           type: string
+        inventory:
+          type: string
+        inventoryItemId:
+          nullable: true
+          type: number
     DealInclude:
       type: object
       allOf:
@@ -295,21 +312,29 @@ components:
           type: integer
 
 
-
-    LocationListResult:
+    LocationCollectionResponse:
       allOf:
-        - $ref: '#/components/schemas/Result'
+        - $ref: '#/components/schemas/CollectionResponse'
+        #- $ref: "#/components/schemas/PaginatedMetaResponse"
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Location'
+            $ref: "#/components/schemas/LocationResultItem"
+    LocationResultItem:
+      allOf:
+        - $ref: "#/components/schemas/Result"
+      properties:
+        attributes:
+          $ref: "#/components/schemas/Location"
     Location:
       type: object
       required:
         - name
       properties:
+        id:
+          type: string
         name:
           type: string
         pickupSuppliers:
@@ -317,12 +342,43 @@ components:
           type: array
           items:
             type: string
-
-
+    StoragesCollectionResponse:
+      allOf:
+        - $ref: '#/components/schemas/CollectionResponse'
+        #- $ref: "#/components/schemas/PaginatedMetaResponse"
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StorageResultItem"
+    StorageResultItem:
+      allOf:
+        - $ref: "#/components/schemas/Result"
+      properties:
+        attributes:
+          $ref: "#/components/schemas/Storage"
+    Storage:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        responsible:
+          nullable: false
+          type: string
+        address:
+          nullable: true
+          type: string
+        supplier:
+          type: string
     ReturnPostRequest:
       type: object
       properties:
-        location:
+        storage:
           type: string
         returns:
           type: array
@@ -337,6 +393,11 @@ components:
           type: integer
         quantity:
           type: integer
+        inventory:
+          type: string
+        inventoryItemId:
+          type: number
+          nullable: true
     ReturnPostResponse:
       allOf:
         - $ref: "#/components/schemas/ErrorResponse"
