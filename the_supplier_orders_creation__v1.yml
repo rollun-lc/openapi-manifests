@@ -33,7 +33,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CrerationTaskPostRequest'
+              $ref: '#/components/schemas/CreationTaskPostRequest'
               
   "/orderCreationTasks/{id}":
     get:
@@ -113,14 +113,14 @@ components:
           $ref: '#/components/schemas/CreationTaskInfo'
           
     
-    CrerationTaskPostRequest:
+    CreationTaskPostRequest:
       type: object
       required:
         - id
         - payload
       properties:
         payload:
-          $ref: '#/components/schemas/CrerationTaskPayload'
+          $ref: '#/components/schemas/CreationTaskPayload'
           
     CreationTaskInfo:
       type: object
@@ -175,7 +175,7 @@ components:
             type: string
           example: ['in_progress', 'fulfilled', 'rejected' ]
           
-    CrerationTaskPayload:
+    CreationTaskPayload:
       type: object
       required:
         - idempotencyKey
