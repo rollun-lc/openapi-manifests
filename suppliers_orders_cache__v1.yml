@@ -169,6 +169,7 @@ components:
       properties:
         messages:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/Message"
       description: "Message field is not required"
@@ -206,6 +207,7 @@ components:
       properties:
         data:
           type: object
+          nullable: true
           
     ## Result with list of resource
     OrderListResult:
@@ -215,6 +217,7 @@ components:
       properties:
         data:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/Order'
 
@@ -225,7 +228,9 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/Order'
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Order'
 
     ## Body for put request
     OrderPutRequest:
@@ -239,8 +244,82 @@ components:
     
     # Body for patch request
     OrderPatchRequest:
-      allOf:
-        - $ref: "#/components/schemas/OrderBody"
+      properties:
+        supplierCode:
+          type: string
+          nullable: true
+        orderNumber:
+          type: string
+          nullable: true
+        purchaseOrderNumber:
+          type: string
+          nullable: true
+        idempotencyKey:
+          type: string
+          nullable: true
+        associatedOrderNumbers:
+          type: array
+          items:
+            type: string
+          nullable: true
+        paymentCard:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+          enum: ['Ordered', 'Back ordered', 'Completed', 'Problem', 'Canceled']
+        shippingTotalPrice:
+          type: number
+          nullable: true
+        itemsTotalPrice:
+          type: number
+          nullable: true
+        itemsTax:
+          type: number
+          nullable: true
+        totalTax:
+          type: number
+          nullable: true
+        totalPrice:
+          type: number
+          nullable: true
+        receiver:
+          allOf:
+            - $ref: '#/components/schemas/Customer'
+          nullable: true
+        items:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shipments:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/Shipment'
+        messages:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/OrderMessage"
+        createRequest:
+          type: string
+          nullable: true
+        createResponse:
+          type: string
+          nullable: true
+        originalOrder:
+          type: string
+          nullable: true
+        checkedAt:
+          type: string
+          nullable: true
+          format: date-time
+        createdAt:
+          type: string
+          nullable: true
+          format: date-time
     
     ## Resource object
     Order:
@@ -355,6 +434,7 @@ components:
         items:
           type: array
           description: List of purchased items
+          nullable: true
           items:
             $ref: '#/components/schemas/OrderItem'
         shipments:
@@ -368,6 +448,7 @@ components:
             $ref: '#/components/schemas/Shipment'
         messages:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/OrderMessage"
           description: Messages with warning level (or below)
@@ -445,6 +526,7 @@ components:
         shippingMethodName:
           type: string
           example: USPS Priority
+          nullable: true
           description: Name of shipping method (same as name in shippingMethod)
         shippingPrice:
           type: number
