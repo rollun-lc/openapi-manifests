@@ -9,7 +9,7 @@ info:
 servers:
   - url: "http://megaplan-union/openapi/HowToReturn/v2"
   #- url: "http://l.union-megaplan/openapi/HowToReturn/v1"
-  - url: https://rollun.net/api/openapi/HowToReturn/v2
+  - url: "https://rollun.net/api/openapi/HowToReturn/v2"
 tags:
   - name: Locations
     description: "Locations"
@@ -277,7 +277,7 @@ components:
           type: string
         inventoryItemId:
           nullable: true
-          type: number
+          type: string
     DealInclude:
       type: object
       allOf:
@@ -396,7 +396,7 @@ components:
         inventory:
           type: string
         inventoryItemId:
-          type: number
+          type: string
           nullable: true
     ReturnPostResponse:
       allOf:
