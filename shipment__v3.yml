@@ -60,6 +60,7 @@ components:
           enum:
             - UNSUPPORTED_CARRIER
             - UNDEFINED
+            - INVALID_RESPONSE
           description: >
             UNSUPPORTED_CARRIER - Requested carrier is not supported
             UNDEFINED - Any undefined message type
