@@ -8,7 +8,6 @@ info:
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 servers:
   - url: "http://megaplan-union/openapi/HowToReturn/v2"
-  #- url: "http://l.union-megaplan/openapi/HowToReturn/v1"
   - url: "https://rollun.net/api/openapi/HowToReturn/v2"
 tags:
   - name: Locations
@@ -385,6 +384,11 @@ components:
           items:
             $ref: "#/components/schemas/ReturnRequestItem"
     ReturnRequestItem:
+      required:
+        - rid
+        - dealId
+        - quantity
+        - inventory
       type: object
       properties:
         rid:
@@ -404,6 +408,4 @@ components:
       type: object
       properties:
         data:
-          type: array
-          items:
-            type: number
+          type: number
