@@ -268,13 +268,13 @@ components:
           type: string
           format: date-time
           description: >
-            Time of the last check of the order data.
+            Time in UTC of the last check of the order data.
         createdAt:
           type: string
           format: date-time
           nullable: true
           description: |
-            Time when order was ordered. When the supplier has confirmed that the order has been created.
+            Time in UTC when order was ordered. When the supplier has confirmed that the order has been created.
             
             Examples
               1. The time when we received a successful order creation response from the supplier API.
@@ -284,7 +284,7 @@ components:
           format: date-time
           nullable: true
           description: |
-            The time when the order information was changed in the cache. 
+            The time in UTC when the order information was changed in the cache. 
             
             If the order has never changed since the moment it entered the cache, then the time will be null.
             
