@@ -1,0 +1,161 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "AuParser"
+  description: Manifest description
+servers:
+  - url: http://au-orders/openapi/AuParser/v1
+tags:
+  - name: Orders
+paths:
+  "/orders":
+    get:
+      tags:
+        - Orders
+      summary: "Get list of resource"
+      description: "Get list of orders"
+      parameters:
+        - in: query
+          name: "fromDate"
+          description: "Get order list from date"
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: "toDate"
+          description: "Get order list to date"
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderListResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/orders/{id}":
+    get:
+      tags:
+        - Orders
+      summary: 'Get info about specific order'
+      description: "Returns information of order by orderNumber"
+      parameters:
+        - in: path
+          name: id
+          description: Id of resource
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined 
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## Oreder results
+    OrderResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Order'
+    OrderListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+
+    ## Resources
+    Order:
+      type: object
+      properties:
+        orderNumber:
+          type: string
+          example: AP7734
+          description: |
+            The order number received from the supplier. 
+            
+            According to it, the order can be found in the user interface on the supplier's website.
+        purchaseOrderNumber:
+          type: string
+          description: Original p.o. number value if supplier has one
+          nullable: true
+        associatedOrderNumbers:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: >
+            It is used when the order is divided into several deals with different numbers. For example, this happens with autodist, when ordered from different warehouses, they create a separate order for each warehouse. We combine such orders into one order, with one of the order numbers in the order_number field, and the rest in the associated_order_numbers.
+        createdAt:
+          type: string
+          format: date-time
+          description: |
+            Time in UTC when order was ordered. When the supplier has confirmed that the order has been created.
+            
+            Examples
+              1. The time when we received a successful order creation response from the supplier API.
+              2. The time when the parser finished work and successfully created an order on the site.
