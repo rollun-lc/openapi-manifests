@@ -12,7 +12,7 @@ paths:
     get:
       tags:
         - Orders
-      summary: "Get list of resource"
+      summary: "Get list of orders"
       description: "Get list of orders"
       parameters:
         - in: query
@@ -60,6 +60,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrderResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/returns":
+    get:
+      tags:
+        - Returns
+      summary: "Get list of returns"
+      description: "Get list of returns"
+      parameters:
+        - in: query
+          name: "fromDate"
+          description: "Get returns list from date"
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: "toDate"
+          description: "Get returns list to date"
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReturnListResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/returns/{id}":
+    get:
+      tags:
+        - Returns
+      summary: 'Get info about specific return'
+      description: "Returns information of return by internalId"
+      parameters:
+        - in: path
+          name: id
+          description: Id of resource
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnResult'
         "500":
           description: 'Some internal error'
           content:
@@ -127,6 +185,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Order'
+            
+    ## Return results
+    ReturnResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Return'
+    ReturnListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Return'
 
     ## Resources
     Order:
@@ -159,3 +235,11 @@ components:
             Examples
               1. The time when we received a successful order creation response from the supplier API.
               2. The time when the parser finished work and successfully created an order on the site.
+              
+    Return:
+      type: object
+      properties:
+        internalId:
+          type: string
+          example: "26378"
+          description: order number of return
