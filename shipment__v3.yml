@@ -129,3 +129,7 @@ components:
           format: date-time
           nullable: true
           description: The actual delivery date provided by the carrier (if available)
+        rawResponse:
+          type: object
+          additionalProperties: true
+          description: Raw response from carrier with data related to specified tracking number
