@@ -88,8 +88,6 @@ components:
     ## Body for post request
     ShippingWayPostRequest:
       type: object
-      required:
-        - requiredField
       properties:
         sender:
           type: string
