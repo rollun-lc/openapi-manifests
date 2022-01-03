@@ -104,6 +104,10 @@ components:
     RequestedItem:
       type: object
       properties:
+        sender:
+          type: string
+          nullable: true
+          example: au_ds_all
         rid:
           type: string
           description: item rid
