@@ -119,7 +119,7 @@ components:
     FullShippingWay:
       type: object
       properties:
-        container:
+        containers:
           type: array
           items:
             $ref: '#/components/schemas/Container'
