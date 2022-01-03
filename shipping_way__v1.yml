@@ -1,0 +1,277 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "ShippingWay"
+  description: Manifest for calculating shipping ways by items and zipCode
+servers:
+  - url: http://suppliers/openapi/ShippingWay/v1
+tags:
+  - name: ShippingWay
+paths:
+  "/shippingWay":
+    post:
+      tags:
+        - ShippingWay
+      summary: "Calculate shipping ways"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingWayPostRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingWayResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined 
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## One resource result
+    ShippingWayResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/FullShippingWay'
+
+    ## Body for post request
+    ShippingWayPostRequest:
+      type: object
+      required:
+        - requiredField
+      properties:
+        zipTo:
+          type: string
+          description: destination zip code
+          example: '12345-6789'
+        items:
+          type: array
+          description: List of ordered products
+          items:
+            $ref: '#/components/schemas/RequestedItem'
+          
+    RequestedItem:
+      type: object
+      properties:
+        rid:
+          type: string
+          description: item rid
+          example: RID01
+        qty:
+          type: number
+          description: requested qty for item
+          example: 1
+
+    ## Resource object
+    FullShippingWay:
+      type: object
+      properties:
+        container:
+          type: array
+          items:
+            $ref: '#/components/schemas/Container'
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Package'
+        inventories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Inventory'
+        shippingWays:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShippingWay'
+        
+    Container:
+      type: object
+      properties:
+        type:
+          type: string
+          description: container type
+          example: Box
+    
+    Package:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        container:
+          type: string
+          description: container type
+          nullable: true
+          example: box
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageItem'
+            
+    PackageItem:
+      type: object
+      properties:
+        csn:
+          type: string
+          example: CSN01
+        rid:
+          type: string
+          example: RID01
+        qty:
+          type: number
+          example: 1
+    
+    Inventory:
+      type: object
+      properties:
+        warehouseName:
+          type: string
+          example: 'AU_ALL'
+        warehouseSpeed:
+          type: string
+          example: A
+        supplier:
+          type: string
+          example: Autodist
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItem'
+            
+    InventoryItem:
+      type: object
+      properties:
+        csn:
+          type: string
+          example: CSN01
+        rid:
+          type: string
+          example: RID01
+        qty:
+          type: number
+          example: 1
+        unitPrice:
+          type: number
+          example: 20.00
+    
+    ShippingWay:
+      type: object
+      properties:
+        package:
+          type: number
+          example: 1
+        sender: 
+          type: string
+          example: AU_DS_A
+        carrier:
+          type: string
+          example: Autodist
+        shippingMethod:
+          type: string
+          example: USPS First class
+        fromWarehouses:
+          type: array
+          items:
+            $ref: '#/components/schemas/FromWarehouse'
+        shippingDates:
+          $ref: '#/components/schemas/ShippingDates'
+        itemsTotalPrice:
+          type: number
+          example: 20.00
+        shippingPrice:
+          type: number
+          example: 5.00
+        otherCosts:
+          type: number
+          example: 0.00
+        totalPrice:
+          type: number
+          example: 25.00
+    
+    FromWarehouse:
+      type: object
+      properties:
+        name:
+          type: string
+          example: AU_ALL
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FromWarehouseItem'
+    
+    FromWarehouseItem:
+      type: object
+      properties:
+        csn:
+          type: string
+          example: CSN01
+        rid:
+          type: string
+          example: RID01
+        qty:
+          type: number
+          example: 1
+    
+    ShippingDates:
+      type: object
+      properties:
+        estDeliveryDate:
+          type: string
+          format: date-time
+        trackNumberReceiptDate:
+          type: string
+          format: date-time
+    
+          
+      
+  
