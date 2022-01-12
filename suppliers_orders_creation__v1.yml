@@ -166,7 +166,9 @@ components:
       properties:
         id:
           type: string
-          description: Client generated unique id
+          description: >
+            Server generated unique value. 
+            Cannot be equals to idempotency_key, since there can be several rejected tasks with same idempotency_key.
           example: '12345'
         stage:
           $ref: '#/components/schemas/Stage'
