@@ -502,6 +502,7 @@ components:
             - IDEMPOTENCY_KEY_PROBLEM
             - UNPARSED_ADDRESS_FIELD
             - PRICES_MISMATCH
+            - RECEIVER_MISMATCH
           description: >
             If you add a new type to this manifest, then also add it to the SuppliersOrders manifest.
             
@@ -511,6 +512,7 @@ components:
             IDEMPOTENCY_KEY_PROBLEM - The idempotency key cannot be uniquely identified for an order.
             UNPARSED_ADDRESS_FIELD - Unable to parse one of the address fields. This field will contain an empty string.
             PRICES_MISMATCH - sum of prices parts ("shippingTotalPrice", "itemsTotalPrice", itemsTax" and "totalTax") not equals to totalPrice
+            RECEIVER_MISMATCH - Actual receiver is different from the requested.
         text:
           type: string
           description: Message, that describes what went wrong
