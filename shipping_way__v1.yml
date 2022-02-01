@@ -13,6 +13,14 @@ paths:
       tags:
         - ShippingWay
       summary: "Calculate shipping ways"
+      description: >
+        If items are not available than success response with empty shippingWay 
+        array (also empty container, packages and inventories) will returned.
+        
+        
+        If individual shippingWay cannot be returned (for any reason like unkown 
+        carrier method or price mismatch) you can still return success response
+        but with warning message.
       requestBody:
         required: true
         content:
