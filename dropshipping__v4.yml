@@ -200,6 +200,9 @@ components:
             - ITEM_SHIPPING_RESTRICTED
             - INVALID_ADDRESS
             - RECEIVER_MISMATCH
+            - SHIPPING_METHOD_MISMATCH
+            - SUPPLIER_MISMATCH
+            - ITEMS_MISMATCH
           description: >
             ALREADY_EXIST - An order with the given idempotency key already exists (For special cases when we cannot determine the order number by its idempotency key.)
             UNDEFINED - Any undefined message type
@@ -216,6 +219,9 @@ components:
             ITEM_SHIPPING_RESTRICTED - This item cannot be shipped for various reasons
             INVALID_ADDRESS - Shipping address isn't valid
             RECEIVER_MISMATCH - Actual receiver is different from the requested.
+            SHIPPING_METHOD_MISMATCH - Actual shipping method is different from the requested
+            SUPPLIER_MISMATCH - Actual supplier is different from the requested
+            ITEMS_MISMATCH - Actual items is different from the requested
         text:
           type: string
           description: Message, that describes what went wrong
