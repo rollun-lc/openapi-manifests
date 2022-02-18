@@ -69,10 +69,14 @@ components:
           enum:
             - UNDEFINED
             - LOGGER_MESSAGE
+            - IGNORED_SHIPPING_METHOD
+            - NO_ESTIMATES_FOR_SHIPPING_METHOD
           description: >
             You can expose this enum for all your errors
             UNDEFINED - Any undefined message type
             LOGGER_MESSAGE - Same as undefined 
+            IGNORED_SHIPPING_METHOD - shipping method was ignored for any reasone (restricted, etc.)
+            NO_ESTIMATES_FOR_SHIPPING_METHOD - shipping method was ignored because it is not possible to calculate estimate dates for it
         text:
           type: string
           description: Message, that describes what went wrong
