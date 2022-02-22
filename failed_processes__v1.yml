@@ -6,6 +6,7 @@ info:
 servers:
   - url: http://rollun-net-prvt/openapi/FailedProcesses/v1
   - url: http://rm-orders/openapi/FailedProcesses/v1
+  - url: http://catalog/openapi/FailedProcesses/v1
 tags:
   - name: ProcessData
 paths:
