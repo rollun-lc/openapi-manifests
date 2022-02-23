@@ -1,0 +1,178 @@
+openapi: "3.0.0"
+info:
+  description: "Crm packages"
+  version: "1"
+  title: "Packages"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+servers:
+  - url: "http://megaplan-union/openapi/Packages/v1"
+  #- url: "http://l.union-megaplan/openapi/HowToReturn/v1"
+  - url: "https://rollun.net/api/openapi/Packages/v1"
+tags:
+  - name: Bags
+    description: "Bags"
+paths:
+  /bags/createAndGroup:
+    post:
+      tags:
+        - Bags
+      summary: "Bag auto creation"
+      description: "Create bag and group packages to created bag"
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAndGroupRequest'
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAndGroupResponse'
+        "400":
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+
+    #### GENERAL ###
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Message:
+      type: object
+      required:
+        - level
+        - text
+      properties:
+        level:
+          type: string
+          description: 'Message level  (like in a logger)'
+          example: 'error'
+        text:
+          type: string
+          description: 'Message text'
+          example: 'Something wrong.'
+        context:
+          type: array
+          description: 'Message context (like in a logger)'
+          items:
+            type: string
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+    CollectionResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - $ref: "#/components/schemas/PaginatedMetaResponse"
+      type: object
+    PaginatedMetaResponse:
+      properties:
+        meta:
+          $ref: "#/components/schemas/PaginatedMeta"
+    PaginatedMeta:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+    Result:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+    Relationship:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: integer
+    Include:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: integer
+    Links:
+      type: object
+      properties:
+        self:
+          type: string
+        first:
+          type: string
+        prev:
+          type: string
+        next:
+          type: string
+        last:
+          type: string
+
+    ### CUSTOM ###
+    CreateAndGroupRequest:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidateRequestItem"
+    CreateAndGroupResponse:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidateResponseItem"
+    Candidate:
+      type: object
+      required:
+        - supplier
+        - sender
+      properties:
+        supplier:
+          type: string
+        sender:
+          type: string
+    CandidateRequestItem:
+      allOf:
+        - $ref: "#/components/schemas/Candidate"
+      required:
+        - supplier
+        - sender
+        - paymentCard
+      properties:
+        paymentCard:
+          type: string
+        orderNumber:
+          type: string
+    CandidateResponseItem:
+      allOf:
+        - $ref: "#/components/schemas/Candidate"
