@@ -176,3 +176,8 @@ components:
     CandidateResponseItem:
       allOf:
         - $ref: "#/components/schemas/Candidate"
+      properties:
+        bagId:
+          type: integer
+        bagUri:
+          type: string
