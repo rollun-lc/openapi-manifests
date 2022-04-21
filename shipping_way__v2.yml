@@ -4,7 +4,7 @@ info:
   title: "ShippingWay"
   description: Manifest for calculating shipping ways by items and zipCode
 servers:
-  - url: http://suppliers/openapi/ShippingWay/v1
+  - url: http://suppliers/openapi/ShippingWay/v2
 tags:
   - name: ShippingWay
 paths:
