@@ -7,39 +7,12 @@ servers:
   - url: http://megaplan-union/openapi/Deals/v1
 tags:
   - name: Deals
-  - name: DealBySupplierOrder
 paths:
-  "/deals/{id}":
+  "/dropship/queryBySupplierOrder":
     get:
       tags:
         - Deals
-      summary: 'Get info about specific deal'
-      description: "Returns information of deal by dealId"
-      parameters:
-        - in: path
-          name: id
-          description: Id of deal as in Megaplan
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: 'Success'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DealResult'
-        "500":
-          description: 'Some internal error'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-  "/dealBySupplierOrder":
-    get:
-      tags:
-        - DealBySupplierOrder
-      summary: "Get deal by supplier order"
+      summary: "Get dropship deal by supplier order"
       parameters:
         - in: query
           name: "supplierName"
@@ -61,7 +34,40 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DealBySupplierOrderResult"
+                $ref: "#/components/schemas/DropshipResult"
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/bag/queryBySupplierOrder":
+    get:
+      tags:
+        - Deals
+      summary: "Get bag deal by supplier order"
+      parameters:
+        - in: query
+          name: "supplierName"
+          description: "Supplier name (same as id from https://rollun.net/suppliers)"
+          required: true
+          example: "Autodist"
+          schema:
+            type: string
+        - in: query
+          name: "orderNumber"
+          description: "Order number as in supplier"
+          required: true
+          example: "0A423"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BagResult"
         "500":
           description: "Internal error"
           content:
@@ -109,7 +115,7 @@ components:
       properties:
         data:
           type: object
-    DealResult:
+    DropshipResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
       type: object
@@ -117,8 +123,8 @@ components:
         data:
           nullable: true
           allOf:
-            - $ref: '#/components/schemas/Deal'
-    DealBySupplierOrderResult:
+            - $ref: '#/components/schemas/Dropship'
+    BagResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
       type: object
@@ -126,42 +132,34 @@ components:
         data:
           nullable: true
           allOf:
-            - $ref: '#/components/schemas/DealBySupplierOrder'
+            - $ref: '#/components/schemas/Bag'
 
     ## Resource object
     Deal:
       type: object
       required:
-        - dealId
+        - id
       properties:
-        dealId:
+        id:
           type: string
           description: Deal id as in Megaplan
           example: '152028'
+
+    Dropship:
+      allOf:
+        - $ref: '#/components/schemas/Deal'
+      type: object
+      required:
+        - customer
+      properties:
         customer:
           allOf:
             - $ref: '#/components/schemas/Customer'
-          nullable: true
 
-    DealBySupplierOrder:
+    Bag:
+      allOf:
+        - $ref: '#/components/schemas/Deal'
       type: object
-      required:
-        - supplierName
-        - orderNumber
-        - dealId
-      properties:
-        supplierName:
-          type: string
-          description: Supplier name (same as id from https://rollun.net/suppliers)
-          example: 'Autodist'
-        orderNumber:
-          type: string
-          description: Order number as in supplier
-          example: '0A423'
-        dealId:
-          type: string
-          description: Deal id as in Megaplan
-          example: '152028'
 
     Customer:
       type: object
