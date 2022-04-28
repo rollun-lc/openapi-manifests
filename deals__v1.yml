@@ -115,18 +115,18 @@ components:
       type: object
       properties:
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Deal'
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Deal'
     DealBySupplierOrderResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/DealBySupplierOrder'
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/DealBySupplierOrder'
 
     ## Resource object
     Deal:
