@@ -61,9 +61,11 @@ components:
             - UNSUPPORTED_CARRIER
             - UNDEFINED
             - INVALID_RESPONSE
+            - NOT_FOUND
           description: >
             UNSUPPORTED_CARRIER - Requested carrier is not supported
             UNDEFINED - Any undefined message type
+            NOT_FOUND - Tracknumber not exist
         text:
           type: string
           description: Message, that describes what went wrong
