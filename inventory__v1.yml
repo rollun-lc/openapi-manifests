@@ -1,0 +1,219 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: Inventory
+servers:
+  - url: http://l.ebay-inventory/openapi/Inventory/v1
+  - url: http://localhost:8001/openapi/Inventory/v1
+  - url: http://localhost:8082/openapi/Inventory/v1
+tags:
+  - name: CatalogCompatibles
+paths:
+  /catalog/compatibles:
+    get:
+      operationId: getCompatibles
+      tags:
+        - CatalogCompatibles
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: Default 100, Max 1000
+        - name: offset
+          in: query
+          schema:
+            type: integer
+          description: Default 0
+        - name: sortField
+          in: query
+          schema:
+            type: string
+            enum:
+              - "updatedCompAt"
+        - name: sortDirection
+          in: query
+          schema:
+            type: string
+            enum:
+              - "asc"
+              - "desc"
+      responses:
+        201:
+          description: Item collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompatiblesCollectionResponse'
+  /catalog/compatibles/{rid}:
+    get:
+      tags:
+        - CatalogCompatibles
+      parameters:
+        - name: rid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        201:
+          description: One item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompatiblesResponse'
+    put:
+      tags:
+        - CatalogCompatibles
+      parameters:
+        - name: rid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompatiblesResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompatiblesRequest'
+components:
+  schemas:
+    SuccessResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      properties:
+        data:
+          type: object
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Message:
+      type: object
+      required:
+        - level
+        - text
+      properties:
+        level:
+          type: string
+          description: 'Message level  (like in a logger)'
+          example: 'error'
+        text:
+          type: string
+          description: 'Message text'
+          example: 'Something wrong.'
+        context:
+          type: array
+          description: 'Message context (like in a logger)'
+          items:
+            type: string
+    PaginatedMetaResponse:
+      type: object
+      properties:
+        meta:
+          $ref: "#/components/schemas/PaginatedMeta"
+    PaginatedMeta:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+    CollectionResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - $ref: "#/components/schemas/PaginatedMetaResponse"
+
+    CompatiblesCollectionResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CollectionResponse'
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompatibleProductOutput'
+    CompatiblesResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      properties:
+        data:
+          $ref: '#/components/schemas/CompatibleProductOutput'
+    CreateCompatiblesRequest:
+      type: object
+      required:
+        - rid
+        - compatibles
+      properties:
+        rid:
+          type: string
+        compatibles:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompatibleInput'
+    UpdateCompatiblesRequest:
+      type: object
+      required:
+        - compatibles
+      properties:
+        compatibles:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompatibleInput'
+    Compatible:
+      type: object
+      required:
+        - epid
+        - make
+        - model
+        - year
+      properties:
+        epid:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+          format: 'yyyy'
+        submodel:
+          type: string
+          nullable: true
+    CompatibleInput:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Compatible'
+    CompatibleProductOutput:
+      type: object
+      properties:
+        rid:
+          type: string
+        compatibles:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompatibleOutput'
+    CompatibleOutput:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Compatible'
+      properties:
+        updatedAt:
+          type: string
+          format: date
