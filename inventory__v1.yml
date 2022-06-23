@@ -21,7 +21,7 @@ paths:
           in: query
           schema:
             type: integer
-          description: Default 100, Max 1000
+          description: Default 100, Max 100
         - name: offset
           in: query
           schema:
@@ -33,6 +33,7 @@ paths:
             type: string
             enum:
               - "updatedCompAt"
+          description: In this moment only one field is enabled - "updatedCompAt". Default value "updatedCompAt".
         - name: sortDirection
           in: query
           schema:
@@ -40,6 +41,17 @@ paths:
             enum:
               - "asc"
               - "desc"
+          description: Default value "asc"
+        - name: compatibleFields
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+          example: epid,make
+          description: Field "epid" is required. Default null
       responses:
         201:
           description: Item collection
@@ -182,9 +194,6 @@ components:
       type: object
       required:
         - epid
-        - make
-        - model
-        - year
       properties:
         epid:
           type: string
@@ -202,15 +211,23 @@ components:
       type: object
       allOf:
         - $ref: '#/components/schemas/Compatible'
+      required:
+        - make
+        - model
+        - year
     CompatibleProductOutput:
       type: object
       properties:
         rid:
           type: string
+        updatedCompAt:
+          type: string
+          format: date
+          nullable: true
         compatibles:
           type: array
           items:
-            $ref: '#/components/schemas/CompatibleOutput'
+            $ref: '#/components/schemas/Compatible'
     CompatibleOutput:
       type: object
       allOf:
