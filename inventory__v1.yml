@@ -222,7 +222,7 @@ components:
           type: string
         updatedCompAt:
           type: string
-          format: date
+          format: date-time
           nullable: true
         compatibles:
           type: array
@@ -235,4 +235,4 @@ components:
       properties:
         updatedAt:
           type: string
-          format: date
+          format: date-time
