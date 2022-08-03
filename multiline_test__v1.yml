@@ -1,0 +1,123 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "MultilineTest"
+  description: Manifest description
+servers:
+  - url: http://server-host/openapi/MultilineTest/v1
+tags:
+  - name: Resource
+paths:
+  "/resource/{id}":
+    get:
+      tags:
+        - Resource
+      summary: 'Get info about specific resource'
+      description: "Returns information of resource by id"
+      parameters:
+        - in: path
+          name: id
+          description: Id of resource
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## One resource result
+    ResourceResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Resource'
+
+    ## Resource object
+    Resource:
+      type: object
+      properties:
+        field1:
+          type: string
+          description: >
+            Note: this is my very very very 
+            long string
+        field2:
+          type: string
+          description: >-
+            Note: this is my very very very 
+            long string
+        field3:
+          type: string
+          description: |
+            Note: this is my very very very 
+            long string
+        field4:
+          type: string
+          description: |-
+            Note: this is my very very very 
+            long string
+        field5:
+          type: string
+          description: >+
+            Note: this is my very very very 
+            long string
+        field6:
+          type: string
+          description: >+
+            Note: this is my very very very 
+            long string
+        field7:
+          type: string
+          description: "Note: this is my very very very\ 
+          long string"
