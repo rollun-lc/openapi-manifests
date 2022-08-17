@@ -286,6 +286,7 @@ components:
             - ITEM_SHIPPING_RESTRICTED
             - INVALID_ADDRESS
             - UNSUPPORTED_REQUEST
+            - SERVICE_UNAVAILABLE
           description: >
             UNDEFINED - Any undefined message type
             IDEMPOTENT_PARAMETER_MISMATCH - Order with same idempotency_key already exist but with different parameters
