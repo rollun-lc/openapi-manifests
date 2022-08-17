@@ -203,6 +203,7 @@ components:
             - SHIPPING_METHOD_MISMATCH
             - SUPPLIER_MISMATCH
             - ITEMS_MISMATCH
+            - SERVICE_UNAVAILABLE
           description: >
             ALREADY_EXIST - An order with the given idempotency key already exists (For special cases when we cannot determine the order number by its idempotency key.)
             UNDEFINED - Any undefined message type
@@ -222,6 +223,7 @@ components:
             SHIPPING_METHOD_MISMATCH - Actual shipping method is different from the requested
             SUPPLIER_MISMATCH - Actual supplier is different from the requested
             ITEMS_MISMATCH - Actual items is different from the requested
+            SERVICE_UNAVAILABLE - Service temporarly cannot handle request
         text:
           type: string
           description: Message, that describes what went wrong
