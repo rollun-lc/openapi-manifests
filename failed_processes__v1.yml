@@ -93,7 +93,6 @@ components:
       required:
         - service_name
         - life_cycle_token
-        - started_at
       properties:
         service_name:
           type: string
