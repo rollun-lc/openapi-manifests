@@ -118,13 +118,13 @@ components:
         - trackNumber
         - wasPacked
       properties:
-        tracknumber:
+        trackNumber:
           type: string
           description: tracknumber from shipping labels datastore
-        was_packed:
+        wasPacked:
           type: boolean
           description: Update was packed status message
-        problem_description:
+        problemDescription:
           type: string
           description: was packed problem description
     BagStatus:
