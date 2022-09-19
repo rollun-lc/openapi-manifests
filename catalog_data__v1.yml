@@ -20,8 +20,8 @@ paths:
           schema:
             type: string
             enum:
-              - EbayPlaisir
-              - EbayRollun
+              - "Ebay Plaisir"
+              - "Ebay Rollun"
         - name: rid
           in: path
           required: true
