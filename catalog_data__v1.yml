@@ -30,15 +30,23 @@ paths:
         - name: include
           in: query
           required: false
-          description: If set, only this fields will be returned. Format - field names separated by coma
+          description: If set, only fields that are listed in this array will be returned
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
         - name: exclude
           in: query
           required: false
-          description: If set, this fields will NOT be returned. Format - field names separated by coma
+          description: If set, fields that are listed in this array will NOT be returned
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: "Success"
