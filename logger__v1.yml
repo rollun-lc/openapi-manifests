@@ -13,7 +13,7 @@ paths:
     post:
       tags:
         - Logs
-      summary: 'Add log record'
+      summary: "Add log record"
       requestBody:
         required: true
         content:
@@ -26,23 +26,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LogResult'
+                $ref: '#/components/schemas/LogResponse'
         "500":
           description: 'Some internal error'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResult'
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ErrorResult:
-      type: object
-      properties:
-        messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/Message"
-      description: "Message field is not required"
     Message:
       type: object
       properties:
@@ -66,16 +58,24 @@ components:
         text:
           type: string
           description: Message, that describes what went wrong
-    SuccessResult:
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    SuccessResponse:
       allOf:
-        - $ref: '#/components/schemas/ErrorResult'
+        - $ref: '#/components/schemas/ErrorResponse'
       type: object
       properties:
         data:
           type: object
-    LogResult:
+    LogResponse:
       allOf:
-        - $ref: '#/components/schemas/SuccessResult'
+        - $ref: '#/components/schemas/SuccessResponse'
       type: object
       properties:
         data:
@@ -87,7 +87,7 @@ components:
       required:
         - level
         - message
-        - index_name
+        - indexName
       properties:
         level:
           type: string
@@ -104,7 +104,7 @@ components:
         message:
           type: string
           description: Log message
-        index_name:
+        indexName:
           type: string
           description: Index name in Elasticsearch where log record will be added
         context:
