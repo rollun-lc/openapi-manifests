@@ -68,6 +68,7 @@ components:
       properties:
         messages:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/Message"
       description: "Message field is not required"
@@ -120,19 +121,36 @@ components:
           type: string
         quantity:
           type: integer
+          nullable: true
         price:
           type: number
+          nullable: true
+        priceMin:
+          type: number
+          nullable: true
+        priceMax:
+          type: number
+          nullable: true
+        shippingTemplate:
+          type: string
+          nullable: true
         brand:
           type: string
+          nullable: true
         mpn:
           type: string
+          nullable: true
         title:
           type: string
+          nullable: true
         description:
           type: string
+          nullable: true
         photoUris:
           type: array
+          nullable: true
           items:
             type: string
         location:
           type: string
+          nullable: true
