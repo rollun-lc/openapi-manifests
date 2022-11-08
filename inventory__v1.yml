@@ -60,6 +60,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompatiblesCollectionResponse'
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /catalog/compatibles/{rid}:
     get:
       tags:
@@ -77,6 +83,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompatiblesResponse'
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     put:
       tags:
         - CatalogCompatibles
@@ -86,6 +98,12 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompatiblesRequest'
       responses:
         '201':
           description: Updated
@@ -93,12 +111,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompatiblesResponse'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateCompatiblesRequest'
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /productForSelling:
     post:
       tags:
@@ -116,6 +134,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProductForSellingResponse"
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       tags:
         - ProductForSelling
@@ -132,6 +156,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProductForSellingResponse"
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /productForSelling/bulk:
     post:
       tags:
@@ -149,6 +179,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProductForSellingBulkResponse"
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       tags:
         - ProductForSelling
@@ -333,12 +369,12 @@ components:
           type: number
         shipping_template:
           type: string
-        #        start_time:
-        #          type: string
-        #          format: date
-        #        end_time:
-        #          type: string
-        #          format: date
+#        start_time:
+#          type: string
+#          format: date
+#        end_time:
+#          type: string
+#          format: date
         title:
           type: string
           nullable: true
