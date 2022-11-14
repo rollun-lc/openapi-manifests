@@ -21,6 +21,10 @@ If You did some changes to this git ropository for other swagger editor or using
 
 2. Flush Your changes from swagger editor to this repo
 
+> Для того щоб зберегти маніфест в цей репозиторій у вас повинно бути встановлено гітхаб токен з правами на запис в цей репозиторій.
+> Створити гітхаб токен можно за посиланням https://github.com/settings/tokens . 
+> Гітхаб токен у вас запитають при першому відкритті едітора, надалі його можно змінити натиснувши reset github token
+
 Using button **Save current manifest**
 ![](/docs/github-interop.png)
 
