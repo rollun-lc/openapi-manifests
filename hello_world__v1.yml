@@ -1,0 +1,25 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: HelloWorld
+  description: A simple test API
+servers:
+  - url: http://localhost:8080/openapi/HelloWorld/v1
+    description: Localhost
+tags:
+  - name: Greetings
+paths:
+  /greetings:
+    get:
+      tags:
+        - Greetings
+      summary: See a hello world message
+      description: This is just a test entry point
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Hello World
