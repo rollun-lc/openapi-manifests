@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Skeleton"
-  description: Manifest description
+  description: Skeleton to write manifests
 servers:
   - url: http://server-host/openapi/Skeleton/v1
 tags:
