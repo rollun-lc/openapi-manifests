@@ -19,7 +19,17 @@ paths:
         '200':
           description: Success
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/HelloWorldResult'
                 example: Hello World
+components:
+  schemas:
+    HelloWorldResult:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          
