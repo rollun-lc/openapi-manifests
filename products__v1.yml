@@ -1,0 +1,305 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: Products
+  description: An API to add, retrieve, modify, and delete products
+servers:
+  - url: http://localhost:8080/openapi/Products/v1
+    description: Localhost
+tags:
+  - name: Products
+  - name: Product
+  - name: Add
+  - name: Modify
+  
+paths:
+
+  /products:
+  
+    get:
+      tags:
+        - Products
+      summary: Get a product list
+      description: View a collection
+      parameters:
+        - 
+          name: quantity
+          in: query
+          description: Products with quanity (`equal`)
+          required: false
+          schema:
+            type: integer
+          example: 5
+        - 
+          name: ids
+          in: query
+          description: Products with ids (`in`)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: integer
+          example: 1,3,5
+        - 
+          name: fromDate
+          in: query
+          description: Beginning of period (`between`)
+          required: false
+          schema:
+            type: string
+          example: '2022-11-18'
+        - 
+          name: toDate
+          in: query
+          description: End of period
+          required: false
+          schema:
+            type: string
+          example: '2022-11-20'
+        - 
+          name: fromPrice
+          in: query
+          description: Start price (`between`)
+          required: false
+          schema:
+            type: number
+          example: 99.99
+        - 
+          name: toPrice
+          in: query
+          description: Closing price
+          required: false
+          schema:
+            type: number
+          example: 999.99
+        - 
+          name: title
+          in: query
+          description: Title (`like`)
+          required: false
+          schema:
+            type: string
+          example: SomE nAme (case-insensitive)
+        - 
+          name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Default 2, Max 10
+        - 
+          name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Default 0
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductsResultResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Add
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProductRequest'
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResultResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /products/{id}:
+    get:
+      tags:
+        - Product
+      summary: Get a product by id
+      description: View an item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Product id
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResultResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    patch:
+      tags: 
+        - Modify
+      summary: Change a product by id
+      description: Change an item
+      parameters: 
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Product id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProductRequest'
+      responses:
+        '204':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+                
+components:
+  schemas:
+  
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        price:
+          type: number
+        quantity:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+          
+    AddProductRequest:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/Product"
+      required:
+        - title
+
+    PatchProductRequest:
+      properties:
+        title:
+          type: string
+          nullable: true
+        price:
+          type: number
+          nullable: true
+        quantity:
+          type: integer
+          nullable: true
+
+    ProductResultResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      properties:
+        data:
+          $ref: '#/components/schemas/Product'
+
+    ProductsResultResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CollectionResponse'
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+            
+    CollectionResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - $ref: "#/components/schemas/PaginatedMetaResponse"
+        
+    PaginatedMetaResponse:
+      type: object
+      properties:
+        meta:
+          $ref: "#/components/schemas/PaginatedMeta"
+          
+    PaginatedMeta:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+          
+    SuccessResponse:
+      type: object
+      allOf:
+      - $ref: '#/components/schemas/ErrorResponse'
+      properties:
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+            
+    Message:
+      type: object
+      required:
+        - level
+        - text
+      properties:
+        level:
+          type: string
+          description: 'Message level  (like in a logger)'
+          example: 'error'
+        text:
+          type: string
+          description: 'Message text'
+          example: 'Something wrong.'
+        context:
+          type: array
+          description: 'Message context (like in a logger)'
+          items:
+            type: string
