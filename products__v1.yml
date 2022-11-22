@@ -21,6 +21,7 @@ paths:
         - Products
       summary: Get a product list
       description: View a collection
+      operationId: viewProducts
       parameters:
         - 
           name: quantity
@@ -112,6 +113,7 @@ paths:
     post:
       tags:
         - Add
+      operationId: createProduct
       requestBody:
         content:
           application/json:
@@ -137,6 +139,7 @@ paths:
         - Product
       summary: Get a product by id
       description: View an item
+      operationId: viewProduct
       parameters:
         - name: id
           in: path
@@ -163,6 +166,7 @@ paths:
         - Modify
       summary: Change a product by id
       description: Change an item
+      operationId: updateProduct
       parameters: 
         - name: id
           in: path
