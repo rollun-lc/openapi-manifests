@@ -150,6 +150,7 @@ components:
             - Partzilla
             - RockyMountainRetail
             - TuckerRocky
+            - PartsUnlimited
             - other
         orderNumber:
           type: string
