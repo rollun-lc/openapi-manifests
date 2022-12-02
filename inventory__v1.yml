@@ -3,120 +3,49 @@ info:
   version: "1"
   title: Inventory
 servers:
+  ### TODO
+  #- url: http://l.ebay-inventory/openapi/Inventory/v1
+  #- url: http://localhost:8001/openapi/Inventory/v1
+  #- url: http://localhost:8082/openapi/Inventory/v1
   - url: http://ebay-p-inventory/openapi/Inventory/v1
   - url: http://ebay-r-inventory/openapi/Inventory/v1
-  - url: http://l.ebay-inventory/openapi/Inventory/v1
-  - url: http://localhost:8001/openapi/Inventory/v1
-  - url: http://localhost:8082/openapi/Inventory/v1
 tags:
-  - name: CatalogCompatibles
+  - name: Inventory
+  - name: Catalog
+  - name: Marketplace
+  - name: Management
   - name: ProductForSelling
 paths:
-  /catalog/compatibles:
+  /inventory/aggregate:
     get:
-      operationId: getCompatibles
       tags:
-        - CatalogCompatibles
+        - Inventory
       parameters:
-        - name: limit
+        - name: rid
           in: query
-          schema:
-            type: integer
-          description: Default 100, Max 100
-        - name: offset
-          in: query
-          schema:
-            type: integer
-          description: Default 0
-        - name: sortField
-          in: query
-          schema:
-            type: string
-            enum:
-              - "updatedCompAt"
-          description: In this moment only one field is enabled - "updatedCompAt". Default value "updatedCompAt".
-        - name: sortDirection
-          in: query
-          schema:
-            type: string
-            enum:
-              - "asc"
-              - "desc"
-          description: Default value "asc"
-        - name: compatibleFields
-          in: query
+          required: false
           style: form
           explode: false
           schema:
             type: array
             items:
               type: string
-          example: epid,make
-          description: Field "epid" is required. Default null
-      responses:
-        201:
-          description: Item collection
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CompatiblesCollectionResponse'
-        "500":
-          description: "Internal error"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /catalog/compatibles/{rid}:
-    get:
-      tags:
-        - CatalogCompatibles
-      parameters:
-        - name: rid
-          in: path
-          required: true
+        - name: mln
+          in: query
+          required: false
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
-        201:
-          description: One item
+        200:
+          description: List of aggregated inventory items
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CompatiblesResponse'
-        "500":
-          description: "Internal error"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    put:
-      tags:
-        - CatalogCompatibles
-      parameters:
-        - name: rid
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateCompatiblesRequest'
-      responses:
-        '201':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CompatiblesResponse'
-        "500":
-          description: "Internal error"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/AggregateProductCollectionResponse'
   /productForSelling:
     post:
       tags:
@@ -201,8 +130,163 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProductForSellingBulkResponse"
+  /inventory/catalog/{rid}:
+    get:
+      tags:
+        - Catalog
+      parameters:
+        - name: rid
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: include
+          in: query
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - generalData
+      responses:
+        200:
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogProductResponse'
+    patch:
+      tags:
+        - Catalog
+      parameters:
+        - name: rid
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogProductItem'
+      responses:
+        200:
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogProductResponseItem'
+  /inventory/catalog:
+    get:
+      tags:
+        - Catalog
+      parameters:
+        - name: rid
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: include
+          in: query
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - generalData
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: sortField
+          in: query
+          required: false
+          schema:
+            type: string
+          description: default "updatedAt"
+        - name: sortDirection
+          in: query
+          required: false
+          schema:
+            type: string
+          description: default "DESC"
+      responses:
+        200:
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogProductCollectionResponse'
+  /inventory/management/{mln}:
+    get:
+      tags:
+        - Management
+      parameters:
+        - name: mln
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementProductResponse'
+  /inventory/management:
+    get:
+      tags:
+        - Management
+      parameters:
+        - name: mln
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: rid
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: tags
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        200:
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementCollectionResponse'
 components:
   schemas:
+    ### RESPONSE GENERAL STRUCTURE ###
     SuccessResponse:
       type: object
       allOf:
@@ -244,100 +328,83 @@ components:
     PaginatedMeta:
       type: object
       properties:
-        pageNumber:
+        offset:
           type: integer
-        pageSize:
+        limit:
           type: integer
-        totalPages:
+        total:
           type: integer
     CollectionResponse:
       type: object
       allOf:
         - $ref: "#/components/schemas/SuccessResponse"
         - $ref: "#/components/schemas/PaginatedMetaResponse"
-    CompatiblesCollectionResponse:
+
+
+    ### RESPONSE CONCRETE
+    AggregateProductCollectionResponse:
       type: object
       allOf:
-        - $ref: '#/components/schemas/CollectionResponse'
+        - $ref: "#/components/schemas/CollectionResponse"
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/CompatibleProductOutput'
-    CompatiblesResponse:
+            $ref: "#/components/schemas/AggregateProduct"
+    CatalogProductCollectionResponse:
       type: object
       allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
+        - $ref: "#/components/schemas/CollectionResponse"
       properties:
         data:
-          $ref: '#/components/schemas/CompatibleProductOutput'
-    CreateCompatiblesRequest:
-      type: object
-      required:
-        - rid
-        - compatibles
-      properties:
-        rid:
-          type: string
-        compatibles:
           type: array
           items:
-            $ref: '#/components/schemas/CompatibleInput'
-    UpdateCompatiblesRequest:
-      type: object
-      required:
-        - compatibles
-      properties:
-        compatibles:
-          type: array
-          items:
-            $ref: '#/components/schemas/CompatibleInput'
-    Compatible:
-      type: object
-      required:
-        - epid
-      properties:
-        epid:
-          type: string
-        make:
-          type: string
-        model:
-          type: string
-        year:
-          type: integer
-          format: 'yyyy'
-        submodel:
-          type: string
-          nullable: true
-    CompatibleInput:
+            $ref: "#/components/schemas/CatalogProductResponseItem"
+    CatalogProductResponse:
       type: object
       allOf:
-        - $ref: '#/components/schemas/Compatible'
-      required:
-        - make
-        - model
-        - year
-    CompatibleProductOutput:
-      type: object
+        - $ref: "#/components/schemas/SuccessResponse"
       properties:
-        rid:
-          type: string
-        updatedCompAt:
-          type: string
-          format: date-time
-          nullable: true
-        compatibles:
-          type: array
-          items:
-            $ref: '#/components/schemas/Compatible'
-    CompatibleOutput:
+        data:
+          $ref: "#/components/schemas/CatalogProductResponseItem"
+    ManagementCollectionResponse:
       type: object
       allOf:
-        - $ref: '#/components/schemas/Compatible'
+        - $ref: "#/components/schemas/CollectionResponse"
       properties:
-        updatedAt:
-          type: string
-          format: date-time
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManagementProductResponseItem"
+    ManagementProductResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+      properties:
+        data:
+          $ref: "#/components/schemas/ManagementProductResponseItem"
+
+    ### REQUEST CONCRETE ###
+    CatalogProductRequest:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CatalogProduct'
+
+    ### CONCRETE ENTITY ITEM
+    CatalogProductResponseItem:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CatalogProductItem'
+        - $ref: '#/components/schemas/WithGeneralData'
+        - $ref: '#/components/schemas/EntityDates'
+    ManagementProductResponseItem:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ManagementProduct'
+        - $ref: '#/components/schemas/GeneralData'
+        - $ref: '#/components/schemas/EntityDates'
+
+    ### ENTITIES GENERAL ###
     EntityDates:
       type: object
       properties:
@@ -347,6 +414,149 @@ components:
         updatedAt:
           type: string
           format: date-time
+    Product:
+      type: object
+      properties:
+        rid:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+        priceMin:
+          type: number
+          nullable: true
+        priceMax:
+          type: number
+          nullable: true
+        shippingTemplate:
+          type: string
+          nullable: true
+    WithGeneralData:
+      type: object
+      properties:
+        generalData:
+          $ref: '#/components/schemas/GeneralData'
+    GeneralData:
+      type: object
+      properties:
+        brand:
+          type: string
+          nullable: true
+        mpn:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        photoUris:
+          type: array
+          nullable: true
+          items:
+            type: string
+
+    ### ENTITIES CONCRETE ###
+    AggregateProduct:
+      type: object
+      required:
+        - mln
+        - rid
+      properties:
+        mln:
+          type: string
+        rid:
+          type: string
+        MarketplaceItem:
+          $ref: '#/components/schemas/MarketplaceProduct'
+        CatalogItem:
+          $ref: '#/components/schemas/CatalogProduct'
+        ManagementItem:
+          $ref: '#/components/schemas/ManagementProduct'
+    MarketplaceProduct:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Product'
+      properties:
+        mln:
+          type: string
+        msin:
+          type: string
+          nullable: true
+        listingId:
+          type: integer
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+        startTime:
+          type: string
+          format: dateTime
+        endTime:
+          type: string
+          format: dateTime
+        quantitySold:
+          type: integer
+        categoryId:
+          type: integer
+        generalData:
+          $ref: "#/components/schemas/GeneralData"
+    ManagementProduct:
+      type: object
+      properties:
+        mln:
+          type: string
+        rid:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        comments:
+          type: array
+          items:
+            #todo
+            type: string
+    CatalogProductItem:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Product'
+        - $ref: '#/components/schemas/CatalogProduct'
+    CatalogProduct:
+      type: object
+      #allOf:
+      #  - $ref: '#/components/schemas/Product'
+      properties:
+        isActive:
+          type: boolean
+        priceType:
+          type: string
+          nullable: true
+        profit:
+          type: number
+          nullable: true
+        #todo
+        formula:
+          type: string
+          nullable: true
+        #todo
+        formulaMin:
+          type: string
+          nullable: true
+        #todo
+        checkedAt:
+          type: string
+          format: dateTime
+        generalData:
+          $ref: "#/components/schemas/GeneralData"
+
+
+
+
+
     ProductForSelling:
       type: object
       properties:
@@ -369,12 +579,12 @@ components:
           type: number
         shipping_template:
           type: string
-#        start_time:
-#          type: string
-#          format: date
-#        end_time:
-#          type: string
-#          format: date
+        #        start_time:
+        #          type: string
+        #          format: date
+        #        end_time:
+        #          type: string
+        #          format: date
         title:
           type: string
           nullable: true
