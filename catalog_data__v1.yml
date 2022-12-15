@@ -8,29 +8,24 @@ servers:
 tags:
   - name: Catalog
 paths:
-  "/rid/byBrandIdAndMpn/{brandId}/{mpn}":
-    get:
+  "/rid/byBrandAndMpn":
+    post:
       tags:
         - Catalog
-      summary: "Find rid by brandId and MPN"
-      parameters:
-        - name: brandId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: mpn
-          in: path
-          required: true
-          schema:
-            type: string
+      summary: "Find rids for pairs of brand and MPN"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandAndMpnRequest'
       responses:
         "200":
           description: "Success"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RidResponse"
+                $ref: "#/components/schemas/NullableProductsResponse"
         "500":
           description: "Internal error"
           content:
@@ -132,13 +127,15 @@ components:
       properties:
         data:
           type: object
-    RidResponse:
+    NullableProductsResponse:
       type: object
       allOf:
         - $ref: '#/components/schemas/SuccessResponse'
       properties:
         data:
-          $ref: '#/components/schemas/Rid'
+          type: array
+          items:
+            $ref: '#/components/schemas/NullableProduct'
     ProductResponse:
       type: object
       allOf:
@@ -146,21 +143,33 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Product'
+    BrandAndMpnRequest:
+      type: object
+      required:
+        - products
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/BrandAndMpn'
 
     ## Resource object
-    Rid:
+    BrandAndMpn:
+      type: object
+      required:
+        - brand
+        - mpn
+      properties:
+        brand:
+          type: string
+        mpn:
+          type: string
+    NullableProduct:
       type: object
       properties:
         rid:
           type: string
           nullable: true
-    Product:
-      type: object
-      required:
-        - rid
-      properties:
-        rid:
-          type: string
         quantity:
           type: integer
           nullable: true
@@ -196,3 +205,13 @@ components:
         location:
           type: string
           nullable: true
+    Product:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/NullableProduct'
+      required:
+        - rid
+      properties:
+        rid:
+          type: string
+          nullable: false
