@@ -8,6 +8,35 @@ servers:
 tags:
   - name: Catalog
 paths:
+  "/rid/byBrandIdAndMpn/{brandId}/{mpn}":
+    get:
+      tags:
+        - Catalog
+      summary: "Find rid by brandId and MPN"
+      parameters:
+        - name: brandId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: mpn
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RidResponse"
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   "/product/{marketplace}/{rid}":
     get:
       tags:
@@ -103,6 +132,13 @@ components:
       properties:
         data:
           type: object
+    RidResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      properties:
+        data:
+          $ref: '#/components/schemas/Rid'
     ProductResponse:
       type: object
       allOf:
@@ -112,6 +148,12 @@ components:
           $ref: '#/components/schemas/Product'
 
     ## Resource object
+    Rid:
+      type: object
+      properties:
+        rid:
+          type: string
+          nullable: true
     Product:
       type: object
       required:
