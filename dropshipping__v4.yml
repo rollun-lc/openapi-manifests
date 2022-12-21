@@ -204,6 +204,7 @@ components:
             - SUPPLIER_MISMATCH
             - ITEMS_MISMATCH
             - SERVICE_UNAVAILABLE
+            - GATEWAY_TIMEOUT
           description: >
             ALREADY_EXIST - An order with the given idempotency key already exists (For special cases when we cannot determine the order number by its idempotency key.)
             UNDEFINED - Any undefined message type
