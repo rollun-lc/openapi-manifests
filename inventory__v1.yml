@@ -530,7 +530,7 @@ components:
       #allOf:
       #  - $ref: '#/components/schemas/Product'
       properties:
-        isActive:
+        active:
           type: boolean
         priceType:
           type: string
