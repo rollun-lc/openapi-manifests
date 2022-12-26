@@ -152,5 +152,4 @@ components:
           example: 'ui-session-77ce8821-47a2-46d5-b526-8af6af34ae7e'
           description: > 
             A unique string, that represents user session. Always starts with 'ui-session-'
-          example: 'ui-request-ce6bd96e-8eef-4c54-9f27-dfa4b52cb62a'
           type: string
