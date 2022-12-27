@@ -93,6 +93,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
+    put:
+      tags:
+        - OrderDeals
+      summary: Update Order Deal by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDealResult'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderDealPutRequest'
+
 components:
   schemas:
   # Common
@@ -157,6 +193,10 @@ components:
             $ref: '#/components/schemas/OrderDeal'
 
     OrderDealPostRequest:
+      type: object
+      properties: {}
+
+    OrderDealPutRequest:
       type: object
       properties: {}
 
