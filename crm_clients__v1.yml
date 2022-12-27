@@ -1,0 +1,238 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CRMClients"
+  description: >
+    This API implements low-level access to 'Client' entity
+    Offers CRUD functionality.
+
+servers:
+  - url: http://server-host/openapi/CRMClients/v1
+tags:
+  - name: Clients
+paths:
+  "/clients":
+    post:
+      tags:
+        - Clients
+      summary: "Create a Client"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientPostRequest'
+      responses:
+        "200":
+          description: "Client successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+    get:
+      tags:
+        - Clients
+      summary: "Get list of Order Deals"
+      description: "Get list of Order Deals"
+      parameters:
+        - name: rql
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 'and(eq(name,John),eq(surname,Smith))'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1000
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 'name'
+        - name: sortOrder
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - "asc"
+              - "desc"
+            default: "asc"
+            example: 'asc'
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientListResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/clients/{id}":
+    get:
+      tags:
+        - Clients
+      summary: 'Get info about specific Client'
+      parameters:
+        - in: path
+          name: id
+          description: Id of resource
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+    put:
+      tags:
+        - Clients
+      summary: Update client by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResult'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientPutRequest'
+components:
+  schemas:
+  # Common
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    # Clients
+    ClientResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Client'
+
+    ClientListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Client'
+
+    ClientPostRequest:
+      type: object
+      properties: {}
+
+    ClientPutRequest:
+      type: object
+      properties: {}
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identificator of order deal (generated by server).
+          example: "AP7734"
+        createdAt:
+          type: string
+          description: When entity was created
+          format: 'date-time'
+        updatedAt:
+          type: string
+          description: When entity was created
+          format: 'date-time'
