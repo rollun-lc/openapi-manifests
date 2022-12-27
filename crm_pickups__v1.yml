@@ -1,0 +1,217 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CRMPickups"
+  description: >
+    This is an API for Pickup deals managment
+    
+
+    *Question to discuss*
+      - Deduplication logic in post methods?
+      - Id of entities will be generated. What format? UUID? Incremental id with prefix?
+
+servers:
+  - url: http://server-host/openapi/CRMPickups/v1
+tags:
+  - name: PickupDeals
+paths:
+  "/pickups":
+    post:
+      tags:
+        - PickupDeals
+      summary: "Create An Pickup Deal"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PickupDealPostRequest'
+      responses:
+        "200":
+          description: "Pickup Deal successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupDealResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+    get:
+      tags:
+        - PickupDeals
+      summary: "Get list of Pickup Deals"
+      description: "Get list of Pickup Deals"
+      parameters:
+        - in: query
+          name: "filter"
+          example: "eq(mpPickupNumber,string:01-01-01)"
+          description: "Returning Pickups with by a specific rql filter."
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PickupDealListResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/pickups/{id}":
+    get:
+      tags:
+        - PickupDeals
+      summary: 'Get info about specific Pickup Deal'
+      description: "Returns information of Pickup Deal by id"
+      parameters:
+        - in: path
+          name: id
+          description: Id of resource
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupDealResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+    put:
+      tags:
+        - PickupDeals
+      summary: Update Pickup Deal by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupDealResult'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PickupDealPutRequest'
+
+components:
+  schemas:
+  # Common
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    # Pickup Deals
+    PickupDealResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PickupDeal'
+
+    PickupDealListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PickupDeal'
+
+    PickupDealPostRequest:
+      type: object
+      properties: {}
+
+    PickupDealPutRequest:
+      type: object
+      properties: {}
+
+    PickupDeal:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identificator of Pickup deal (generated by server).
+          example: "AP7734"
+        createdAt:
+          type: string
+          description: When entity was created
+          format: 'date-time'
+        updatedAt:
+          type: string
+          description: When entity was created
+          format: 'date-time'
