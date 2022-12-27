@@ -1,0 +1,244 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CRMBags"
+  description: >
+    This is an API for Bag deals managment
+    
+
+    *Question to discuss*
+      - Deduplication logic in post methods?
+      - Id of entities will be generated. What format? UUID? Incremental id with prefix?
+
+servers:
+  - url: http://server-host/openapi/CRMBags/v1
+tags:
+  - name: BagDeals
+paths:
+  "/bags":
+    post:
+      tags:
+        - BagDeals
+      summary: "Create a Bag Deal"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BagDealPostRequest'
+      responses:
+        "200":
+          description: "Bag Deal successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BagDealResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+    get:
+      tags:
+        - BagDeals
+      summary: "Get list of Bag Deals"
+      description: "Get list of Bag Deals"
+      parameters:
+        - name: rql
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 'and(eq(name,John),eq(surname,Smith))'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1000
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 'name'
+        - name: sortOrder
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - "asc"
+              - "desc"
+            default: "asc"
+            example: 'asc'
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BagDealListResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/bags/{id}":
+    get:
+      tags:
+        - BagDeals
+      summary: 'Get info about specific Bag Deal'
+      description: "Returns information of Bag Deal by id"
+      parameters:
+        - in: path
+          name: id
+          description: Id of resource
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BagDealResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+    put:
+      tags:
+        - BagDeals
+      summary: Update Bag Deal by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BagDealResult'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BagDealPutRequest'
+
+components:
+  schemas:
+  # Common
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    # Bag Deals
+    BagDealResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/BagDeal'
+
+    BagDealListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BagDeal'
+
+    BagDealPostRequest:
+      type: object
+      properties: {}
+
+    BagDealPutRequest:
+      type: object
+      properties: {}
+
+    BagDeal:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identificator of order deal (generated by server).
+          example: "AP7734"
+        createdAt:
+          type: string
+          description: When entity was created
+          format: 'date-time'
+        updatedAt:
+          type: string
+          description: When entity was created
+          format: 'date-time'
