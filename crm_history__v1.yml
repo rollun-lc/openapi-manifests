@@ -1,0 +1,159 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CRMHistory"
+  description: >
+    This is an API for reading history for different entities
+
+
+servers:
+  - url: http://server-host/openapi/CRMHistory/v1
+tags:
+  - name: History
+paths:
+  "/history":
+    get:
+      tags:
+        - History
+      summary: "Get list of events for an entity"
+      description: "Get list of events for an entitys"
+      parameters:
+        - name: rql
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 'and(eq(entity,BagDeal),qe(createdAt,2023-01-01))'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1000
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 'name'
+        - name: sortOrder
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - "asc"
+              - "desc"
+            default: "asc"
+            example: 'asc'
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryListResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+components:
+  schemas:
+  # Common
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    # History
+    HistoryListResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryEvent'
+
+    HistoryEvent:
+      type: object
+      required: 
+        - id
+        - createdAt
+        - updatedAt
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identificator of event, uuid
+          example: "1eac7ae8-e4f9-474f-8610-9810d92c563d"
+        entity:
+          type: string
+          description: What entity was affected
+          example: BagDeal
+        action:
+          type: string
+          description: Free text description of ehat happened
+          example: deal created
+        by:
+          type: string
+          description: Specifies who triggered the event
+          example: CRMInternal
+        payload:
+          type: object
+          example: 
+            tracknumber:
+              '1111111111111111'
+          description: > 
+            Free json, that stores additional info for an event.
+            Like what changed.
+        createdAt:
+          type: string
+          description: When event occured
+          format: 'date-time'
