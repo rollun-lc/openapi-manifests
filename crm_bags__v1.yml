@@ -227,6 +227,25 @@ components:
     BagDealPutRequest:
       $ref: '#/components/schemas/BagDeal'
 
+    BagProduct:
+      type: object
+      description: >
+        Object, represents item in bag. Each object does
+        not include quantity. If item there are 2 items in deal,
+        it will be duplicated.
+      properties:
+        id: 
+          type: string
+          description: Id of item in CRM (rollunId)
+          example: XDE4R
+        price:
+          type: number
+          description: unit price
+          example: 42
+        title:
+          type: string
+          description: The title of the items
+          example: 'CRG 1001500112'
     BagDeal:
       type: object
       required: 
@@ -279,6 +298,10 @@ components:
             - LabelsPreparation
             - Packaging
             - Archive
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/BagProduct'
         shipping:
           type: object
           properties:
@@ -288,7 +311,7 @@ components:
               description: What warehouse was used to send order
             tracknumber:
               type: string
-              example: 1Z5872850386382656
+              example: '1Z5872850386382656'
               description: Tracking number for bag order.
             carrier:
               type: string
