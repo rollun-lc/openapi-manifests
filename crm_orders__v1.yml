@@ -268,6 +268,10 @@ components:
               type: string
               description: The name of marketplace where order originated from
               example: Amazon Shoptimistic
+            orderNumber:
+              type: string
+              description: The order number for original order on marketplace
+              example: '111333-133-3322'
             customerId:
               type: string
               description: An id that points to a customer on marketplace
