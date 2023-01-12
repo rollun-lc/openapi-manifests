@@ -552,9 +552,13 @@ components:
           format: dateTime
         generalData:
           $ref: "#/components/schemas/GeneralData"
-
-
-
+        priceZeroProfit:
+          type: number
+          nullable: true
+        info:
+          type: object
+          nullable: true
+          additionalProperties: true
 
 
     ProductForSelling:
