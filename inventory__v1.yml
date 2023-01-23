@@ -130,6 +130,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProductForSellingBulkResponse"
+  /inventory/catalog/{rid}/generalData:
+    get:
+      tags:
+        - Catalog
+      parameters:
+        - name: rid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralData'
+        500:
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Catalog
+      parameters:
+        - name: rid
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeneralData'
+      responses:
+        200:
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralData'
+        500:
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /inventory/catalog/{rid}:
     get:
       tags:
