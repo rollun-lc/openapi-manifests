@@ -1,0 +1,156 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CrmEventHandler"
+  description: Manifest description
+servers:
+  - url: http://server-host/openapi/Skeleton/v1
+tags:
+  - name: Resource
+paths:
+  "/eventHandler":
+    post:
+      tags:
+        - Resource
+      summary: "Handle event"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPostRequest'
+      responses:
+        "200":
+          description: "Sucess response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionsResult'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## One resource result
+    ActionsResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ActionsList'
+          
+    ActionsList:
+      type: object
+      properties:
+        actions:
+          type: array
+          items:
+            type: object
+
+    ## Body for post request
+    EventPostRequest:
+      type: object
+      required:
+        - lifecycle_tokent
+        - entity
+      properties:
+        entity:
+          $ref: '#/components/schemas/RequestEntity'
+        action:
+          $ref: '#/components/schemas/RequestAction'
+          
+    RequestAction:
+      allOf:
+        - $ref: '#/components/schemas/Action'
+      properties:
+        started_at:
+          type: string
+          format: date-time
+
+    Action:
+      type: object
+      properties:
+        type: 
+          type: string
+        data:
+          type: object
+          additionalProperties:
+            type: string
+        delay:
+          type: number
+      
+    RequestEntity:
+      allOf:
+        - $ref: '#/components/schemas/Entity'
+      properties:
+        row:
+          allOf:
+            - $ref: '#/components/schemas/RequestEntityRow'
+          additionalProperties:
+            type: string
+        changed_fields:
+          type: object
+          additionalProperties:
+            type: string
+            
+    RequestEntityRow:
+      type: object
+      properties:
+        id: 
+          type: string
+
+    Entity:
+      type: object
+      properties:
+        type:
+          type: string
+        name:
+          type: string
