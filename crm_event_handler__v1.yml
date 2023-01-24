@@ -85,15 +85,24 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/ActionsList'
+          $ref: '#/components/schemas/ActionWithEntityList'
           
-    ActionsList:
+    ActionWithEntityList:
       type: object
       properties:
         actions:
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/ActionWithEntity"
+            
+    ActionWithEntity:
+      type: object
+      properties:
+        action: 
+          $ref: '#/components/schemas/ResponseAction'
+        entity:
+          $ref: '#/components/schemas/ResponseEntity'
+        
 
     ## Body for post request
     EventPostRequest:
@@ -114,7 +123,11 @@ components:
         started_at:
           type: string
           format: date-time
-
+          
+    ResponseAction:
+      allOf:
+        - $ref: '#/components/schemas/Action'
+          
     Action:
       type: object
       properties:
@@ -143,12 +156,26 @@ components:
             
     RequestEntityRow:
       type: object
+      required: 
+        - id
       properties:
         id: 
+          type: string
+          
+    ResponseEntity:
+      allOf:
+        - $ref: '#/components/schemas/Entity'
+      required: 
+        - row_id
+      properties:
+        row_id:
           type: string
 
     Entity:
       type: object
+      required: 
+        - type
+        - name
       properties:
         type:
           type: string
