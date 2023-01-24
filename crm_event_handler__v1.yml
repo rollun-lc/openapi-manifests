@@ -4,7 +4,7 @@ info:
   title: "CrmEventHandler"
   description: Manifest description
 servers:
-  - url: http://server-host/openapi/Skeleton/v1
+  - url: http://server-host/openapi/CrmEventHandler/v1
 tags:
   - name: Resource
 paths:
