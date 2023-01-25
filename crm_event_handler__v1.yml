@@ -58,21 +58,10 @@ components:
             - warning
             - notice
             - info
-        type:
-          type: string
-          enum:
-            - UNDEFINED
-            - LOGGER_MESSAGE
-          description: >
-            You can expose this enum for all your errors
-            UNDEFINED - Any undefined message type
-            LOGGER_MESSAGE - Same as undefined
         text:
           type: string
           description: Message, that describes what went wrong
     SuccessResult:
-      allOf:
-        - $ref: '#/components/schemas/ErrorResult'
       type: object
       properties:
         data:
@@ -122,7 +111,8 @@ components:
       properties:
         started_at:
           type: string
-          format: date-time
+          example: '2022-09-22 21:53:10.224'
+          description: mysql date-time
           
     ResponseAction:
       allOf:
@@ -135,8 +125,7 @@ components:
           type: string
         data:
           type: object
-          additionalProperties:
-            type: string
+          additionalProperties: true
         delay:
           type: integer
           minimum: 0
@@ -146,22 +135,11 @@ components:
         - $ref: '#/components/schemas/Entity'
       properties:
         row:
-          allOf:
-            - $ref: '#/components/schemas/RequestEntityRow'
-          additionalProperties:
-            type: string
+          type: object
+          additionalProperties: true
         changed_fields:
           type: object
-          additionalProperties:
-            type: string
-            
-    RequestEntityRow:
-      type: object
-      required: 
-        - id
-      properties:
-        id: 
-          type: string
+          additionalProperties: true
           
     ResponseEntity:
       allOf:
@@ -180,11 +158,5 @@ components:
       properties:
         type:
           type: string
-          enum:
-            - deals
-            - clients
-            - offers
-            - products
-            - relations
         name:
           type: string
