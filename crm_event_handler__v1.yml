@@ -4,14 +4,14 @@ info:
   title: "CRMEventHandler"
   description: Manifest description
 servers:
-  - url: http://server-host/openapi/CRMEventHandler/v1
+  - url: https://crm-node-red.rollun.net/openapi/CRMEventHandler/v1
 tags:
-  - name: Resource
+  - name: Event
 paths:
   "/eventHandler":
     post:
       tags:
-        - Resource
+        - Event
       summary: "Handle event"
       description: ""
       requestBody:
@@ -23,28 +23,20 @@ paths:
               $ref: '#/components/schemas/EventPostRequest'
       responses:
         "200":
-          description: "Sucess response"
+          description: "Success response"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionsResult'
+                $ref: '#/components/schemas/ActionsResponse'
         "500":
           description: 'Some error'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResult'
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    # Basic results components
-    ErrorResult:
-      type: object
-      properties:
-        messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/Message"
-      description: "Message field is not required"
+    ## General
     Message:
       type: object
       properties:
@@ -61,67 +53,77 @@ components:
         text:
           type: string
           description: Message, that describes what went wrong
-    SuccessResult:
+    ErrorResponse:
+      type: object
+      required:
+        - lifecycleToken
+      properties:
+        lifecycleToken:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
       type: object
       properties:
         data:
           type: object
 
-    ## One resource result
-    ActionsResult:
+    ## Custom responses
+    ActionsResponse:
       allOf:
-        - $ref: '#/components/schemas/SuccessResult'
+        - $ref: '#/components/schemas/SuccessResponse'
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/ActionWithEntityList'
-          
-    ActionWithEntityList:
-      type: object
-      properties:
-        actions:
           type: array
           items:
             $ref: "#/components/schemas/ActionWithEntity"
-            
+
     ActionWithEntity:
       type: object
       properties:
-        action: 
-          $ref: '#/components/schemas/ResponseAction'
+        action:
+          $ref: '#/components/schemas/Action'
         entity:
-          $ref: '#/components/schemas/ResponseEntity'
-        
+          $ref: '#/components/schemas/ActionEntity'
 
-    ## Body for post request
+    ## Custom requests
     EventPostRequest:
       type: object
       required:
-        - lifecycle_tokent
+        - lifecycleToken
         - entity
+        - action
       properties:
-        entity:
-          $ref: '#/components/schemas/RequestEntity'
-        action:
-          $ref: '#/components/schemas/RequestAction'
-          
-    RequestAction:
-      allOf:
-        - $ref: '#/components/schemas/Action'
-      properties:
-        started_at:
+        lifecycleToken:
           type: string
-          example: '2022-09-22 21:53:10.224'
-          description: mysql date-time
-          
-    ResponseAction:
+        entity:
+          $ref: '#/components/schemas/EventEntity'
+        action:
+          $ref: '#/components/schemas/CompletedAction'
+
+    ## Resources
+    CompletedAction:
       allOf:
         - $ref: '#/components/schemas/Action'
-          
+      properties:
+        startedAt:
+          type: string
+          example: '2022-09-22 21:53:10'
+          description: mysql date-time
+
     Action:
       type: object
+      required:
+        - type
+        - data
       properties:
-        type: 
+        type:
           type: string
         data:
           type: object
@@ -129,30 +131,37 @@ components:
         delay:
           type: integer
           minimum: 0
-      
-    RequestEntity:
+
+    EventEntity:
       allOf:
         - $ref: '#/components/schemas/Entity'
+      required:
+        - row
       properties:
         row:
           type: object
+          required:
+            - id
           additionalProperties: true
-        changed_fields:
+          properties:
+            id:
+              type: string
+        changedFields:
           type: object
           additionalProperties: true
-          
-    ResponseEntity:
+
+    ActionEntity:
       allOf:
         - $ref: '#/components/schemas/Entity'
-      required: 
-        - row_id
+      required:
+        - rowId
       properties:
-        row_id:
+        rowId:
           type: string
 
     Entity:
       type: object
-      required: 
+      required:
         - type
         - name
       properties:
