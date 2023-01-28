@@ -17,6 +17,7 @@ info:
 servers:
   - url: http://rollun-net/openapi/LogsIngestorDemo/v1
   - url: http://node-red:80/openapi/LogsIngestorDemo/v1
+  - url: http://localhost:8080/openapi/LogsIngestorDemo/v1
 tags:
   - name: Logs
 paths:
