@@ -84,6 +84,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  "/wheel/{rid}":
+    get:
+      tags:
+        - Catalog
+      summary: "Get specific wheel info by rid"
+      parameters:
+        - name: rid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WheelResponse"
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
@@ -143,6 +167,13 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Product'
+    WheelResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      properties:
+        data:
+          $ref: '#/components/schemas/Wheel'
     BrandAndMpnRequest:
       type: object
       required:
@@ -215,3 +246,27 @@ components:
         rid:
           type: string
           nullable: false
+    Wheel:
+      type: object
+      required:
+        - rid
+      properties:
+        rid:
+          type: string
+          nullable: false
+        aspectRatio:
+          type: string
+          nullable: true
+        wheelWidth:
+          type: string
+          nullable: true
+        sectionWidth:
+          type: string
+          nullable: true
+        diameter:
+          type: string
+          nullable: true
+        quantity:
+          type: string
+          nullable: false
+          default: "1"
