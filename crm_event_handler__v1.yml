@@ -78,6 +78,8 @@ components:
       allOf:
         - $ref: '#/components/schemas/SuccessResponse'
       type: object
+      required:
+        - data
       properties:
         data:
           type: array
@@ -86,6 +88,9 @@ components:
 
     ActionWithEntity:
       type: object
+      required:
+        - action
+        - entity
       properties:
         action:
           $ref: '#/components/schemas/Action'
