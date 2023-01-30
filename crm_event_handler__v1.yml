@@ -55,11 +55,7 @@ components:
           description: Message, that describes what went wrong
     ErrorResponse:
       type: object
-      required:
-        - lifecycleToken
       properties:
-        lifecycleToken:
-          type: string
         messages:
           type: array
           items:
@@ -69,6 +65,8 @@ components:
       allOf:
         - $ref: '#/components/schemas/ErrorResponse'
       type: object
+      required:
+        - data
       properties:
         data:
           type: object
@@ -126,11 +124,11 @@ components:
       type: object
       required:
         - type
-        - data
+        - context
       properties:
         type:
           type: string
-        data:
+        context:
           type: object
           additionalProperties: true
         delay:
