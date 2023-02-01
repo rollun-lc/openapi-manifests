@@ -16,6 +16,7 @@ info:
     Ingest logs schema reflects logger interface (not sure about datetime).
 servers:
   - url: http://rollun-net-prvt/openapi/LogsIngestor/v1
+  - url: http://node-red:80/openapi/LogsIngestor/v1
   - url: https://rollun.net/api/openapi/LogsIngestor/v1
 tags:
   - name: LogsIngestor
