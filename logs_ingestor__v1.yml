@@ -15,22 +15,16 @@ info:
     
     Ingest logs schema reflects logger interface (not sure about datetime).
 servers:
-  - url: http://rollun-net/openapi/LogsIngestor/v1
-  - url: http://node-red:80/openapi/LogsIngestor/v1
+  - url: http://rollun-net-prvt/openapi/LogsIngestor/v1
+  - url: https://rollun.net/api/openapi/LogsIngestor/v1
 tags:
-  - name: Logs
+  - name: LogsIngestor
 paths:
   "/ingest":
     post:
       tags:
-        - Logs
+        - LogsIngestor
       summary: "Ingest multiple log entries"
-      parameters: 
-        - in: header
-          name: X-Api-Key
-          description: A static token for authenticating from UI apps
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -38,18 +32,22 @@ paths:
             schema:
               $ref: '#/components/schemas/LogsIngestRequest'
       responses:
-        "204":
-          description: "Updated"
+        "200":
+          description: 'Success'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleResponse'
         "500":
           description: "Internal error"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResult'
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
-    ErrorResult:
+    ErrorResponse:
       type: object
       properties:
         messages:
@@ -57,6 +55,22 @@ components:
           items:
             $ref: "#/components/schemas/Message"
       description: "Message field is not required"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+    SimpleResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          allOf:
+            - $ref: '#/components/schemas/Result'
+
     Message:
       type: object
       properties:
@@ -81,7 +95,7 @@ components:
         text:
           type: string
           description: Message, that describes what went wrong
-          
+
     LogsIngestRequest:
       type: object
       properties:
@@ -89,14 +103,7 @@ components:
           type: array
           maxLength: 50
           items:
-            $ref: '#/components/schemas/Log' 
-
-    LogLevel:
-      type: string
-      enum:
-        - error
-        - warning
-        - info
+            $ref: '#/components/schemas/Log'
 
     Log:
       type: object
@@ -112,7 +119,11 @@ components:
           type: string
           example: 'barcodes-ui'
         level:
-          $ref: '#/components/schemas/LogLevel'
+          type: string
+          enum:
+            - error
+            - warning
+            - info
         message:
           example: 'app crashed'
           description: A short description of log message. Keep it short and undestandable
@@ -127,12 +138,13 @@ components:
             If context is too big for internal logger, it is expected that log will be saved anyway,
             but truncated.
           type: object
+          additionalProperties: true
           example:
             user:
               email: user@mail.dev
               roles:
                 - guest
-            stacktrace: > 
+            stacktrace: >
               some/path/a.js
               some/path/b.js
             error: cannot read property of undefined
@@ -145,12 +157,18 @@ components:
           type: string
         lifecycleToken:
           example: 'ui-request-77ce8821-47a2-46d5-b526-8af6af34ae7e'
-          description: > 
+          description: >
             A unique string, that represents a request to the backend API. Must be generated on each request
             Always starts with 'ui-request-'
           type: string
         parentLifecycleToken:
           example: 'ui-session-77ce8821-47a2-46d5-b526-8af6af34ae7e'
-          description: > 
+          description: >
             A unique string, that represents user session. Always starts with 'ui-session-'
           type: string
+
+    Result:
+      type: object
+      properties:
+        result:
+          type: boolean
