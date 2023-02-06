@@ -36,4 +36,8 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
-  
+    RollunRequest:
+      type: object
+      properties:
+        payload:
+          nullable: true
