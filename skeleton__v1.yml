@@ -1,0 +1,39 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Skeleton"
+  description: Manifest description
+servers:
+  - url: http://server-host/openapi/Skeleton/v1
+tags:
+  - name: Resource
+paths:
+  "/resource":
+    post:
+      tags:
+        - Resource
+      summary: "Make an resource"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderPostRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+  
