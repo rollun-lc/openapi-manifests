@@ -6,13 +6,13 @@ info:
 servers:
   - url: http://server-host/openapi/Skeleton/v1
 tags:
-  - name: Resource
+  - name: Orders
 paths:
-  "/resource":
+  "/orders":
     post:
       tags:
-        - Resource
-      summary: "Make an resource"
+        - Orders
+      summary: "Create an order"
       description: ""
       requestBody:
         description: ""
@@ -25,15 +25,43 @@ paths:
         "200":
           description: "Order successfully created"
           content:
-            application/json:
+            application/vnd.rollun+json:
               schema:
-                $ref: '#/components/schemas/OrderResult'
+                $ref: '#/components/schemas/OrderResponse'
+        "202":
+          description: Order creation pending
+          content:
+            application/vnd.rollun-long-task+json:
+              schema:
+                $ref: '#/components/schemas/OrderCreationLongTaskResponse'
         "500":
           description: 'Some internal error'
           content:
-            application/json:
+            application/rollun.problem+json:
               schema:
                 $ref: '#/components/schemas/Error'
+  "/orders/actions/create/{id}":
+    get:
+      tags:
+        - Orders
+      parameters:
+        - in: path
+          name: id
+          description: Id of task
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/vnd.rollun-long-task+json:
+              schema:
+                $ref: '#/components/schemas/OrderCreationLongTaskResponse'
+            application/rollun.problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      
 components:
   schemas:
     RollunRequest:
@@ -50,6 +78,17 @@ components:
           type: object
         data:
           nullable: true
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Warning"
+    RollunLongTaskResponse:
+      type: object
+      required: 
+        - data
+      properties:
+        task:
+          type: object
         warnings:
           type: array
           items:
@@ -111,14 +150,36 @@ components:
           description: Lifecycle token
 
     ## One resource result
-    OrderResult:
+    OrderResponse:
       allOf:
         - $ref: '#/components/schemas/RollunResponse'
       type: object
       properties:
         data:
           $ref: '#/components/schemas/Order'
-
+          
+    OrderCreationLongTaskResponse:
+      allOf:
+        - $ref: '#/components/schemas/RollunLongTaskResponse'
+      properties:
+        task:
+          $ref: '#/components/schemas/OrderCreationLongTask'
+    
+    OrderCreationLongTask:
+      type: object
+      required:
+        - id
+        - idempotencyKey
+      properties:
+        id:
+          type: string
+          description: Server-generated task id
+        idempotencyKey:
+          type: string
+        resultId:
+          type: string
+          description: Order id
+          
 
     ## Body for post request
     OrderPostRequest:
