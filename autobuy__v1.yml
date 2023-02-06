@@ -4,7 +4,7 @@ info:
   title: "Autobuy"
   description: Manifest description
 servers:
-  - url: http://supplierd/openapi/Autobuy/v1
+  - url: http://supplier/openapi/Autobuy/v1
 tags:
   - name: Orders
 paths:
@@ -58,6 +58,55 @@ paths:
             application/vnd.rollun-long-task+json:
               schema:
                 $ref: '#/components/schemas/OrderCreationLongTaskResponse'
+        "303":
+          description: Task fulfilled
+          content:
+            application/vnd.rollun-long-task+json:
+              schema:
+                $ref: '#/components/schemas/OrderCreationLongTaskResponse'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/rollun.problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  "/orders/actions/create/{id}/restart":
+    post:
+      tags:
+        - Orders
+      parameters:
+        - in: path
+          name: id
+          description: Id of task
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderPostRequest'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/vnd.rollun-long-task+json:
+              schema:
+                $ref: '#/components/schemas/OrderCreationLongTaskResponse'
+        "303":
+          description: Task fulfilled
+          content:
+            application/vnd.rollun-long-task+json:
+              schema:
+                $ref: '#/components/schemas/OrderCreationLongTaskResponse'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/rollun.problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
       
 components:
   schemas:
