@@ -40,6 +40,54 @@ paths:
             application/rollun.problem+json:
               schema:
                 $ref: '#/components/schemas/Error'
+  "/orders/actions/create":
+    get:
+      tags:
+        - Orders
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 'and(eq(field1,value1),eq(field2,value2))'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            example: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            example: 0
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            example: -field1
+        - name: select
+          in: query
+          required: false
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+            example: field1,field2
+      responses:
+        "200":
+          description: Success
+          content:
+            application/vnd.rollun+json:
+              schema:
+                $ref: '#/components/schemas/OrderCreationLongTaskListReponse'
   "/orders/actions/create/{id}":
     get:
       tags:
@@ -204,6 +252,16 @@ components:
         data:
           $ref: '#/components/schemas/Order'
           
+    OrderCreationLongTaskListReponse:
+      allOf:
+        - $ref: '#/components/schemas/RollunResponse'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderCreationLongTask'
+          
     OrderCreationLongTaskResponse:
       allOf:
         - $ref: '#/components/schemas/RollunLongTaskResponse'
@@ -213,10 +271,6 @@ components:
     
     OrderCreationLongTask:
       type: object
-      required:
-        - id
-        - status
-        - idempotencyKey
       properties:
         id:
           type: string
