@@ -1,0 +1,121 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Highlighter"
+  description: Allows to color-code records from datastore by some logic
+servers:
+  - url: http://rollun-crm/openapi/Highlighter/v1
+tags:
+  - name: Highlighter
+paths:
+  "/getColors":
+    post:
+      tags:
+        - Highlighter
+      description: "Get colors for list of records"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ColorsPostRequest'
+      responses:
+        "200":
+          description: "Success response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColorsResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ## General
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+
+    ## Custom responses
+    ColorsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColorForRecord"
+
+    ## Custom requests
+    ColorsPostRequest:
+      type: object
+      required:
+        - dataStore
+        - filterName
+        - ids
+      properties:
+        dataStore:
+          type: string
+          description: "Name of datastore where records are located"
+          example: 'BagsDataStore'
+        filterName:
+          type: string
+          description: "Name of filter that must be applied"
+          enum:
+            - test
+        ids:
+          type: array
+          description: "Ids of records that must be color-coded"
+          items:
+            type: string
+
+    ## Resources
+    ColorForRecord:
+      type: object
+      required:
+        - id
+        - color
+      properties:
+        id:
+          type: string
+          description: "Id of record"
+        color:
+          type: string
+          description: "Color of record in HEX"
+          example: '#ff5733'
