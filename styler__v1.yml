@@ -115,7 +115,10 @@ components:
           description: "Id of record"
         color:
           type: string
-          description: "Color for record"
+          description: >
+            Color for record as named html color
+            [https://www.w3.org/wiki/CSS/Properties/color/keywords](https://www.w3.org/wiki/CSS/Properties/color/keywords)
+            [https://colorscheme.ru/html-colors.html](https://colorscheme.ru/html-colors.html)
           enum:
             - black
             - darkred
