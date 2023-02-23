@@ -8,18 +8,26 @@ servers:
 tags:
   - name: CRMData
 paths:
-  "/getRelationsForDeal/{dealId}":
+  "/getRelatedEntities/{itemType}/{itemId}":
     get:
       tags:
         - CRMData
-      description: "Get relations for deal"
+      description: "Get related entities for some item"
       parameters:
-        - name: dealId
+        - name: itemType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - deal
+        - name: itemId
           in: path
           required: true
           schema:
             type: string
         - name: relationType
+          description: "Filter to get only relations with this type"
           in: query
           required: false
           schema:
@@ -27,6 +35,7 @@ paths:
             enum:
               - deal
         - name: programId
+          description: "Filter to get only related deals with this programId"
           in: query
           required: false
           schema:
@@ -37,7 +46,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RelationsResponse'
+                $ref: '#/components/schemas/RelatedEntitiesResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  "/addRelation":
+    post:
+      tags:
+        - CRMData
+      description: "Add new relation"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Relation'
+      responses:
+        "200":
+          description: "Success response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationResponse'
         "500":
           description: 'Some error'
           content:
@@ -82,7 +115,7 @@ components:
           type: object
 
     ## Custom responses
-    RelationsResponse:
+    RelatedEntitiesResponse:
       allOf:
         - $ref: '#/components/schemas/SuccessResponse'
       type: object
@@ -92,19 +125,46 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/Relation"
+            $ref: "#/components/schemas/RelatedEntity"
+    RelationResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/Relation'
 
     ## Resources
+    RelatedEntity:
+      type: object
+      required:
+        - relation
+        - data
+      properties:
+        relation:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/Relation'
+        data:
+          type: object
+          additionalProperties: true
+
     Relation:
       type: object
       required:
-        - type
-        - item
+        - dealId
+        - entityType
+        - entityId
       properties:
-        type:
+        dealId:
+          type: string
+        entityType:
           type: string
           enum:
             - deal
-        item:
-          type: object
-          additionalProperties: true
+        entityId:
+          type: string
