@@ -1,0 +1,110 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CRMData"
+  description: Allows to retrieve data from CRM
+servers:
+  - url: http://rollun-crm/openapi/CRMData/v1
+tags:
+  - name: CRMData
+paths:
+  "/getRelationsForDeal/{dealId}":
+    get:
+      tags:
+        - CRMData
+      description: "Get relations for deal"
+      parameters:
+        - name: dealId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: relationType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - deal
+        - name: programId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationsResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ## General
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+
+    ## Custom responses
+    RelationsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Relation"
+
+    ## Resources
+    Relation:
+      type: object
+      required:
+        - type
+        - item
+      properties:
+        type:
+          type: string
+          enum:
+            - deal
+        item:
+          type: object
+          additionalProperties: true
