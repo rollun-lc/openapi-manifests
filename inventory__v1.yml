@@ -661,8 +661,9 @@ components:
         status:
           type: string
           enum:
+            - new
             - pending
-            - in_progress
+            - validated
             - done
             - error
         best_offer_price:
