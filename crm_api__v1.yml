@@ -1,0 +1,173 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CRMApi"
+  description: Api to communicate with CRM
+servers:
+  - url: http://rollun-crm/openapi/CRMApi/v1
+tags:
+  - name: Relations
+paths:
+  "/relations/{entityType}/{entityId}":
+    get:
+      tags:
+        - Relations
+      description: "Get relations for some entity"
+      parameters:
+        - name: entityType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - deal
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: relationType
+          description: "Filter to get only relations with this type"
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - deal
+        - name: programId
+          description: "Filter to get only related deals with this programId"
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelatedEntitiesResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  "/relations":
+    post:
+      tags:
+        - Relations
+      description: "Add new relation"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Relation'
+      responses:
+        "200":
+          description: "Success response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ## General
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+
+    ## Custom responses
+    RelatedEntitiesResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RelatedEntity"
+    RelationResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/Relation'
+
+    ## Resources
+    RelatedEntity:
+      type: object
+      required:
+        - entityId
+        - entityType
+      properties:
+        entityId:
+          type: string
+        entityType:
+          type: string
+          enum:
+            - deal
+        programId:
+          type: string
+
+    Relation:
+      type: object
+      required:
+        - dealId
+        - entityId
+        - entityType
+      properties:
+        dealId:
+          type: string
+          description: "Each relation must have deal as one of related entities"
+        entityId:
+          type: string
+        entityType:
+          type: string
+          description: "Second related entity can be any type, deal included"
+          enum:
+            - deal
