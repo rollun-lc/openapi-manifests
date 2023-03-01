@@ -8,7 +8,7 @@ servers:
 tags:
   - name: Orders
 paths:
-  "/orders":
+  "/orders/actions/create":
     post:
       tags:
         - Orders
@@ -27,12 +27,6 @@ paths:
           content:
             application/vnd.rollun+json:
               schema:
-                $ref: '#/components/schemas/OrderResponse'
-        "202":
-          description: Order creation pending
-          content:
-            application/vnd.rollun-long-task+json:
-              schema:
                 $ref: '#/components/schemas/OrderCreationLongTaskResponse'
         "500":
           description: 'Some internal error'
@@ -40,7 +34,6 @@ paths:
             application/rollun.problem+json:
               schema:
                 $ref: '#/components/schemas/Error'
-  "/orders/actions/create":
     get:
       tags:
         - Orders
@@ -106,56 +99,12 @@ paths:
             application/vnd.rollun-long-task+json:
               schema:
                 $ref: '#/components/schemas/OrderCreationLongTaskResponse'
-        "303":
-          description: Task fulfilled
-          content:
-            application/vnd.rollun-long-task+json:
-              schema:
-                $ref: '#/components/schemas/OrderCreationLongTaskResponse'
         "500":
           description: 'Some internal error'
           content:
             application/rollun.problem+json:
               schema:
                 $ref: '#/components/schemas/Error'
-  "/orders/actions/create/{id}/restart":
-    post:
-      tags:
-        - Orders
-      parameters:
-        - in: path
-          name: id
-          description: Id of task
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: ""
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OrderPostRequest'
-      responses:
-        "200":
-          description: Success
-          content:
-            application/vnd.rollun-long-task+json:
-              schema:
-                $ref: '#/components/schemas/OrderCreationLongTaskResponse'
-        "303":
-          description: Task fulfilled
-          content:
-            application/vnd.rollun-long-task+json:
-              schema:
-                $ref: '#/components/schemas/OrderCreationLongTaskResponse'
-        "500":
-          description: 'Some internal error'
-          content:
-            application/rollun.problem+json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      
 components:
   schemas:
     RollunRequest:
@@ -168,21 +117,8 @@ components:
       required:
         - data
       properties:
-        metadata:
-          type: object
         data:
           nullable: true
-        warnings:
-          type: array
-          items:
-            $ref: "#/components/schemas/Warning"
-    RollunLongTaskResponse:
-      type: object
-      required: 
-        - data
-      properties:
-        task:
-          type: object
         warnings:
           type: array
           items:
@@ -242,15 +178,6 @@ components:
           type: string
           format: uri
           description: Lifecycle token
-
-    ## One resource result
-    OrderResponse:
-      allOf:
-        - $ref: '#/components/schemas/RollunResponse'
-      type: object
-      properties:
-        data:
-          $ref: '#/components/schemas/Order'
           
     OrderCreationLongTaskListReponse:
       allOf:
@@ -264,13 +191,17 @@ components:
           
     OrderCreationLongTaskResponse:
       allOf:
-        - $ref: '#/components/schemas/RollunLongTaskResponse'
+        - $ref: '#/components/schemas/RollunResponse'
       properties:
-        task:
+        data:
           $ref: '#/components/schemas/OrderCreationLongTask'
     
     OrderCreationLongTask:
       type: object
+      required: 
+        - id
+        - status
+        - stage
       properties:
         id:
           type: string
@@ -281,9 +212,15 @@ components:
             - pending
             - fulfilled
             - rejected
+        stage:
+          type: string
+          enum:
+            - pending
+            - fulfilled
+            - rejected
         idempotencyKey:
           type: string
-        resultId:
+        orderId:
           type: string
           description: Order id
         problem:
