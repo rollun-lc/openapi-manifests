@@ -1,0 +1,182 @@
+openapi: 3.0.0
+info:
+  version: "2"
+  title: "CRMApi"
+  description: Api for CRM
+servers:
+  - url: http://rollun-crm/openapi/CRMApi/v2
+tags:
+  - name: Entities
+paths:
+  "/entities/{entityType}/{entityId}/relations/{itemId}": # maybe /entities/deal/{entityId}/dealsRelations/{itemId}
+    get:
+      tags:
+        - Entities
+      description: "Get relations for some entity"
+      parameters:
+        - name: entityType
+          in: path
+          required: true
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/EntityType' # must be subset of EntityType
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/EntityId'
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelatedItemsResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  "/relations": 
+    post:
+      tags:
+        - Relations
+      description: "Add new relation"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Relation'
+      responses:
+        "200":
+          description: "Success response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ## General
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+
+    ## Custom responses
+    RelatedItemsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RelatedItem"
+    RelationResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/Relation'
+
+    ## Resources
+    RelatedItem:
+      type: object
+      required:
+        - itemId
+        - entityType
+      properties:
+        itemId:
+          type: string
+        entityType:
+          allOf:
+            - $ref: '#/components/schemas/EntityType'
+        entityId:
+          type: string
+
+    Relation:
+      type: object
+      required:
+        - firstItemId
+        - firstEntityType
+        - secondItemId
+        - secondEntityType
+      properties:
+        firstItemId:
+          type: string
+        firstEntityType:
+          allOf:
+            - $ref: '#/components/schemas/EntityType'
+        secondItemId:
+          type: string
+        secondEntityType:
+          allOf:
+            - $ref: '#/components/schemas/EntityType'
+
+    ## Enums
+    EntityType:
+      type: string
+      enum:
+        - deal
+        - client
+        - offer
+
+    EntityId:
+      type: string
+      enum:
+        - orders
+        - dropships
+        - pickups
+        - bags
+        - clients
+        - offers
