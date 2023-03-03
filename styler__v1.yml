@@ -1,0 +1,138 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Styler"
+  description: Allows to style records from datastore by some logic
+servers:
+  - url: http://rollun-crm/openapi/Styler/v1
+  - url: https://rollun.net/api/openapi/Styler/v1
+tags:
+  - name: Styler
+paths:
+  "/getStyles":
+    post:
+      tags:
+        - Styler
+      description: "Get styles for list of records"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StylesPostRequest'
+      responses:
+        "200":
+          description: "Success response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StylesResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ## General
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+
+    ## Custom responses
+    StylesResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StyleForRecord"
+
+    ## Custom requests
+    StylesPostRequest:
+      type: object
+      required:
+        - dataStore
+        - processor
+        - ids
+      properties:
+        dataStore:
+          type: string
+          description: "Name of datastore where records are located"
+          example: 'BagsDataStore'
+        processor:
+          type: string
+          description: "Name of processor that must be applied"
+        ids:
+          type: array
+          description: "Ids of records that must be styled"
+          items:
+            type: string
+
+    ## Resources
+    StyleForRecord:
+      type: object
+      required:
+        - id
+        - color
+      properties:
+        id:
+          type: string
+          description: "Id of record"
+        color:
+          type: string
+          description: >
+            Color for record as named html color
+            [https://www.w3.org/wiki/CSS/Properties/color/keywords](https://www.w3.org/wiki/CSS/Properties/color/keywords)
+            [https://colorscheme.ru/html-colors.html](https://colorscheme.ru/html-colors.html)
+          enum:
+            - black
+            - darkred
+            - crimson
+            - teal
+            - forestgreen
+            - limegreen
+            - mediumturquoise
+            - cornflowerblue
+            - midnightblue
+            - blueviolet
+            - lightslategray
+            - silver
+            - orange
+            - orangered
+            - darksalmon
