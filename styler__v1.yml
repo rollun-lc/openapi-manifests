@@ -98,6 +98,9 @@ components:
         processor:
           type: string
           description: "Name of processor that must be applied"
+          enum:
+            - "test"
+            - "CheckRelatedDealsForOrder"
         ids:
           type: array
           description: "Ids of records that must be styled"
