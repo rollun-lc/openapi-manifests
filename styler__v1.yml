@@ -122,11 +122,11 @@ components:
             [https://colorscheme.ru/html-colors.html](https://colorscheme.ru/html-colors.html)
           enum:
             - black
-            - darkred
+            - firebrick
             - crimson
             - teal
             - forestgreen
-            - limegreen
+            - lightgreen
             - mediumturquoise
             - cornflowerblue
             - midnightblue
