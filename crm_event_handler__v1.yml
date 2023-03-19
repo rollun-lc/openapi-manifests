@@ -130,6 +130,13 @@ components:
       properties:
         type:
           type: string
+          enum:
+            - create
+            - update
+            - scenario_request
+            - megaplan_request
+            - remote_request
+            - button
         context:
           type: object
           additionalProperties: true
@@ -145,12 +152,7 @@ components:
       properties:
         row:
           type: object
-          required:
-            - id
           additionalProperties: true
-          properties:
-            id:
-              type: string
         changedFields:
           type: object
           additionalProperties: true
