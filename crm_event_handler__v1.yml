@@ -1,0 +1,176 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CRMEventHandler"
+  description: Manifest description
+servers:
+  - url: http://rollun-crm/openapi/CRMEventHandler/v1
+  - url: https://crm-node-red.rollun.net/openapi/CRMEventHandler/v1
+  - url: https://rollun.net/api/openapi/CRMEventHandler/v1
+tags:
+  - name: Event
+paths:
+  "/eventHandler":
+    post:
+      tags:
+        - Event
+      summary: "Handle event"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPostRequest'
+      responses:
+        "200":
+          description: "Success response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionsResponse'
+        "500":
+          description: 'Some error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ## General
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+
+    ## Custom responses
+    ActionsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionWithEntity"
+
+    ActionWithEntity:
+      type: object
+      required:
+        - action
+        - entity
+      properties:
+        action:
+          $ref: '#/components/schemas/Action'
+        entity:
+          $ref: '#/components/schemas/ActionEntity'
+
+    ## Custom requests
+    EventPostRequest:
+      type: object
+      required:
+        - lifecycleToken
+        - entity
+        - action
+      properties:
+        lifecycleToken:
+          type: string
+        entity:
+          $ref: '#/components/schemas/EventEntity'
+        action:
+          $ref: '#/components/schemas/CompletedAction'
+
+    ## Resources
+    CompletedAction:
+      allOf:
+        - $ref: '#/components/schemas/Action'
+      properties:
+        startedAt:
+          type: string
+          example: '2022-09-22 21:53:10'
+          description: mysql date-time
+
+    Action:
+      type: object
+      required:
+        - type
+        - context
+      properties:
+        type:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+        delay:
+          type: integer
+          minimum: 0
+
+    EventEntity:
+      allOf:
+        - $ref: '#/components/schemas/Entity'
+      required:
+        - row
+      properties:
+        row:
+          type: object
+          required:
+            - id
+          additionalProperties: true
+          properties:
+            id:
+              type: string
+        changedFields:
+          type: object
+          additionalProperties: true
+
+    ActionEntity:
+      allOf:
+        - $ref: '#/components/schemas/Entity'
+      required:
+        - rowId
+      properties:
+        rowId:
+          type: string
+
+    Entity:
+      type: object
+      required:
+        - type
+        - name
+      properties:
+        type:
+          type: string
+        name:
+          type: string
