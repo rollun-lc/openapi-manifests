@@ -7,7 +7,7 @@ info:
     name: "Apache 2.0"
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 servers:
-  - url: "http://megaplan-ru/openapi/HowToReturn/v2"
+  - url: "http://megaplan-crm/openapi/HowToReturn/v2"
   #- url: "http://l.union-megaplan/openapi/HowToReturn/v1"
   - url: https://rollun.net/api/openapi/HowToReturn/v2
 tags:
