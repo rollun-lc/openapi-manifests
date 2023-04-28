@@ -133,6 +133,7 @@ components:
           enum:
             - create
             - update
+            - delete
             - scenario_request
             - megaplan_request
             - remote_request
