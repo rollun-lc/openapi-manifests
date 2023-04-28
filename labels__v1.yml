@@ -1,0 +1,188 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Labels"
+  description: Manifest description
+servers:
+  - url: http://carriers/openapi/Labels/v1
+tags:
+  - name: Labels
+paths:
+  "/labels":
+    post:
+      tags:
+        - Labels
+      summary: "Make an label"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelPostRequest'
+      responses:
+        "200":
+          description: "Label successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## One resource result
+    LabelResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Label'
+
+    ## Body for post request
+    LabelPostRequest:
+      type: object
+      required:
+        - requiredField
+      properties:
+        receiver:
+          allOf:
+            - $ref: '#/components/schemas/Customer'
+          description: Recipient of the shipment.
+        sender:
+          allOf:
+            - $ref: '#/components/schemas/Customer'
+          description: Sender of the shipment.
+        shippingMethodName:
+          type: string
+        weight:
+          type: string
+          example: 80
+        weightUnitOfMeasurement:
+          type: string
+          enum: 
+            - pound
+            - ounce
+        width:
+          type: number
+          description: width in inches
+        length:
+          type: number
+          description: length in inches
+        height:
+          type: number
+          description: height in inches
+        canFly:
+          type: boolean
+          
+        
+    ## Resource object
+    Label:
+      type: object
+      properties:
+        labelImage: 
+          type: string
+          description: base64 encoded label image in pdf
+    Customer:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          description: Full name
+          example: Shawn Weisweaver
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person
+          example: "415-123-4567"
+        email:
+          type: string
+          nullable: true
+          description: Email address to reach the person
+          example: "test@mail.loc"
+        address:
+          $ref: "#/components/schemas/Address"
+    Address:
+      type: object
+      required:
+        - country
+        - state
+        - city
+        - postalCode
+        - address1
+      properties:
+        country:
+          type: string
+          description: "Country code"
+        state:
+          type: string
+          description: US state code
+          example: CA
+        city:
+          type: string
+          description: Full city name
+          example: San Francisco
+        postalCode:
+          type: string
+          description: ZIP or postal code
+          example: "94104"
+        address1:
+          type: string
+          description: First line of the address
+          example: "417 Montgomery St"
+        address2:
+          type: string
+          nullable: true
+          description: Second line of the address
+          example: "Floor 5"
