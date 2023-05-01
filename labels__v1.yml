@@ -93,6 +93,11 @@ components:
       required:
         - requiredField
       properties:
+        carrier:
+          type: string
+          enum: 
+            - USPS
+            - UPS
         receiver:
           allOf:
             - $ref: '#/components/schemas/Customer'
