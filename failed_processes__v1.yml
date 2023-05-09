@@ -1,0 +1,120 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "FailedProcesses"
+  description: Retrieve data about failed processes in each service
+servers:
+  - url: http://rollun-net-prvt/openapi/FailedProcesses/v1
+  - url: http://rm-orders/openapi/FailedProcesses/v1
+  - url: http://catalog/openapi/FailedProcesses/v1
+  - url: http://ebay-r-inventory/openapi/FailedProcesses/v1
+  - url: http://ebay-p-inventory/openapi/FailedProcesses/v2
+tags:
+  - name: ProcessData
+paths:
+  "/processData":
+    get:
+      tags:
+        - ProcessData
+      summary: "Get data about failed processes"
+      description: "Retrieve data about all failed processes in specific service."
+      parameters:
+        - name: limit
+          description: Fake parameter to avoid error that appears with zero parameters # FIXME
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessDataResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+          description: >
+            UNDEFINED - Any undefined message type
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    ProcessDataResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessData'
+
+    ## Resources
+    ProcessData:
+      type: object
+      required:
+        - service_name
+        - life_cycle_token
+      properties:
+        service_name:
+          type: string
+          description: Service name
+        life_cycle_token:
+          type: string
+          description: LifeCycleToken of failed process
+        parent_lifecycle_token:
+          type: string
+          nullable: true
+          description: Parent LifeCycleToken of failed process
+        started_at:
+          type: string
+          format: date-time
+          description: Time when process started
+        ip:
+          type: string
+          nullable: true
+          description: Ip from which request came
+        uri:
+          type: string
+          nullable: true
+          description: Request uri
