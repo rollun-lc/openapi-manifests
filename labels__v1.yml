@@ -109,8 +109,8 @@ components:
         shippingMethodName:
           type: string
         weight:
-          type: string
-          example: 80
+          type: number
+          example: 80.5
         weightUnitOfMeasurement:
           type: string
           enum: 
