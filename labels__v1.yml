@@ -108,6 +108,14 @@ components:
           description: Sender of the shipment.
         shippingMethodName:
           type: string
+          enum: 
+            - First-Class Package Service
+            - Priority Mail Cubic
+            - Parcel Select Ground
+            - Priority Mail
+            - Priority Mail Flat Rate Envelope
+            - Priority Mail Legal Flat Rate Envelope
+            - Priority Mail Flat Rate Padded Envelope
         weight:
           type: number
           example: 80.5
