@@ -146,6 +146,9 @@ components:
           description: base64 encoded label image in pdf
         trackNumber:
           type: string
+        totalPrice:
+          type: number
+          example: 7.85
         
     Customer:
       type: object
