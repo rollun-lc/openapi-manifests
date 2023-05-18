@@ -97,7 +97,7 @@ components:
           type: string
           enum: 
             - USPS
-            - UPS
+            - FedEx
         receiver:
           allOf:
             - $ref: '#/components/schemas/Customer'
@@ -144,6 +144,9 @@ components:
         labelImage: 
           type: string
           description: base64 encoded label image in pdf
+        trackNumber:
+          type: string
+        
     Customer:
       type: object
       required:
