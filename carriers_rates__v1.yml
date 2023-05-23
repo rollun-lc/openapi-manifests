@@ -1,0 +1,150 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CarriersRates"
+  description: Get carrier shipping methods with price
+servers:
+  - url: http://carriers/openapi/CarriersRates/v1
+tags:
+  - name: Rates
+paths:
+  "/rates":
+    post:
+      tags:
+        - Rates
+      summary: "Get carrier rates"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatesPostRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatesResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## One resource result
+    RatesResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Rates'
+
+    ## Body for post request
+    RatesPostRequest:
+      type: object
+      required:
+        - carrier
+      properties:
+        carrier:
+          type: string
+          enum: 
+            - USPS
+            - FedEx
+        zipFrom:
+          type: string
+          example: "91601"
+        zipTo:
+          type: string
+          example: "91730"
+        weight:
+          type: number
+          example: 80.5
+        weightUnitOfMeasurement:
+          type: string
+          enum: 
+            - pound
+            - ounce
+        width:
+          type: number
+          description: width in inches
+        length:
+          type: number
+          description: length in inches
+        height:
+          type: number
+          description: height in inches
+
+    ## Resource object
+    Rates:
+      type: object
+      properties:
+        rates:
+          type: array
+          description: List of rates
+          items:
+            $ref: '#/components/schemas/Rate'
+
+    Rate:
+      type: object
+      properties:
+        shippingMethodName:
+          type: string
+          enum: 
+            - First-Class Package Service
+            - Priority Mail Cubic
+            - Parcel Select Ground
+            - Priority Mail
+            - Priority Mail Flat Rate Envelope
+            - Priority Mail Legal Flat Rate Envelope
+            - Priority Mail Flat Rate Padded Envelope
+        totalPrice:
+          type: number
+          example: 7.85
