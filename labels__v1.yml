@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Labels"
-  description: Manifest description
+  description: Manifest to create carrier label
 servers:
   - url: http://carriers/openapi/Labels/v1
 tags:
