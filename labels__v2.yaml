@@ -1,0 +1,349 @@
+openapi: 3.0.0
+info:
+  version: "2"
+  title: "Labels"
+  description: Manifest description
+servers:
+  - url: http://carriers/openapi/Labels/v2
+tags:
+  - name: Labels
+  - name: LabelsMarketplaces
+paths:
+  "/labels":
+    post:
+      tags:
+        - Labels
+      summary: "Make an label"
+      operationId: labels
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelPostRequest'
+      responses:
+        "200":
+          description: "Label successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/labels-marketplaces":
+    post:
+      tags:
+        - LabelsMarketplaces
+      summary: "Make an label for marketplaces"
+      operationId: labelsMarketplaces
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelAmazonPostRequest'
+      responses:
+        "200":
+          description: "Label successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## One resource result
+    LabelResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Label'
+
+    ## Body for post request
+    LabelPostRequest:
+      type: object
+      required:
+        - requiredField
+      properties:
+        carrier:
+          type: string
+          enum:
+            - USPS
+            - FedEx
+        receiver:
+          allOf:
+            - $ref: '#/components/schemas/Customer'
+          description: Recipient of the shipment.
+        sender:
+          allOf:
+            - $ref: '#/components/schemas/Customer'
+          description: Sender of the shipment.
+        shippingMethodName:
+          type: string
+          enum:
+            - First-Class Package Service
+            - Priority Mail Cubic
+            - Parcel Select Ground
+            - Priority Mail
+            - Priority Mail Flat Rate Envelope
+            - Priority Mail Legal Flat Rate Envelope
+            - Priority Mail Flat Rate Padded Envelope
+            - Rlln_FEDEX_son_Reg
+            - Rlln_FEDEX_son_Reg_1R
+            - Rlln_FEDEX_son_Let_1R
+            - Rlln_FEDEX_son_Box_1R
+            - Rlln_FEDEX_2day_Reg
+            - Rlln_FEDEX_2day_Reg_1R
+            - Rlln_FEDEX_2day_Let_1R
+            - Rlln_FEDEX_2day_Box_1R
+            - Rlln_FEDEX_es_Reg
+            - Rlln_FEDEX_es_Reg_1R
+            - Rlln_FEDEX_es_Let_1R
+            - Rlln_FEDEX_es_Box_1R
+            - Rlln_FEDEX_hd_Reg
+            - Rlln_FEDEX_sp_Reg
+        weight:
+          type: number
+          example: 80.5
+        weightUnitOfMeasurement:
+          type: string
+          enum:
+            - pound
+            - ounce
+        width:
+          type: number
+          description: width in inches
+        length:
+          type: number
+          description: length in inches
+        height:
+          type: number
+          description: height in inches
+        canFly:
+          type: boolean
+        hazardousMaterials:
+          description: Indicate type of Dangerous Goods being reported.
+          type: boolean
+
+    LabelAmazonPostRequest:
+      type: object
+      required:
+        - requiredField
+      properties:
+        orderId:
+          type: string
+        sellerOrderId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItems'
+        sender:
+          allOf:
+            - $ref: '#/components/schemas/CustomerMP'
+          description: Sender of the shipment.
+        shippingMethodName:
+          type: string
+          enum:
+            - "First-Class Package Service"
+        weight:
+          type: number
+          example: 80.5
+        width:
+          type: number
+          description: width in inches
+        length:
+          type: number
+          description: length in inches
+        height:
+          type: number
+          description: height in inches
+        customId:
+          type: string
+    LineItems:
+      type: object
+      properties:
+        OrderItemId:
+          type: string
+        Quantity:
+          type: number
+
+    ## Resource object
+    Label:
+      type: object
+      properties:
+        labelImage:
+          type: string
+          description: base64 encoded label image in pdf
+        trackNumber:
+          type: string
+        totalPrice:
+          type: number
+          example: 7.85
+
+    CustomerMP:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          description: Full name
+          example: Shawn Weisweaver
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person
+          example: "415-123-4567"
+        email:
+          type: string
+          nullable: true
+          description: Email address to reach the person
+          example: "test@mail.loc"
+        address:
+          $ref: "#/components/schemas/AddressMP"
+
+    Customer:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          description: Full name
+          example: Shawn Weisweaver
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person
+          example: "415-123-4567"
+        email:
+          type: string
+          nullable: true
+          description: Email address to reach the person
+          example: "test@mail.loc"
+        address:
+          $ref: "#/components/schemas/Address"
+    Address:
+      type: object
+      required:
+        - country
+        - state
+        - city
+        - postalCode
+        - address1
+      properties:
+        country:
+          type: string
+          description: "Country code"
+        state:
+          type: string
+          description: US state code
+          example: CA
+        city:
+          type: string
+          description: Full city name
+          example: San Francisco
+        postalCode:
+          type: string
+          description: ZIP or postal code
+          example: "94104"
+        address1:
+          type: string
+          description: First line of the address
+          example: "417 Montgomery St"
+        address2:
+          type: string
+          nullable: true
+          description: Second line of the address
+          example: "Floor 5"
+
+    AddressMP:
+      type: object
+      required:
+        - country
+        - state
+        - city
+        - postalCode
+        - address1
+      properties:
+        pickupAddress:
+          type: string
+        country:
+          type: string
+          description: "Country code"
+        state:
+          type: string
+          description: US state code
+          example: CA
+        city:
+          type: string
+          description: Full city name
+          example: San Francisco
+        postalCode:
+          type: string
+          description: ZIP or postal code
+          example: "94104"
+        address1:
+          type: string
+          description: First line of the address
+          example: "417 Montgomery St"
