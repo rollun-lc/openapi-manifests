@@ -7,6 +7,7 @@ servers:
   - url: http://carriers/openapi/PDFMerger/v1
 tags:
   - name: MergeByBag
+  - name: MergeBySrOrderNumber
 paths:
   "/merge-by-bag":
     post:
@@ -21,6 +22,32 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MergePostRequest'
+      responses:
+        "200":
+          description: "Labels PDF successfully generated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/merge-by-sr-order-number":
+    post:
+      tags:
+        - MergeBySrOrderNumber
+      summary: "Get packages by SrOrderNumber and return a label"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergePostSrOrderNumberRequest'
       responses:
         "200":
           description: "Labels PDF successfully generated"
@@ -86,6 +113,14 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/MergedPDF'
+          
+    MergePostSrOrderNumberRequest:
+      type: object
+      required:
+        - srOrderNumber
+      properties:
+        srOrderNumber:
+          type: string
 
     ## Body for post request
     MergePostRequest:
