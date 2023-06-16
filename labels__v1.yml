@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Labels"
-  description: Manifest to create carrier label
+  description: Manifest description
 servers:
   - url: http://carriers/openapi/Labels/v1
 tags:
@@ -95,7 +95,7 @@ components:
       properties:
         carrier:
           type: string
-          enum: 
+          enum:
             - USPS
             - FedEx
         receiver:
@@ -108,7 +108,7 @@ components:
           description: Sender of the shipment.
         shippingMethodName:
           type: string
-          enum: 
+          enum:
             - First-Class Package Service
             - Priority Mail Cubic
             - Parcel Select Ground
@@ -116,12 +116,26 @@ components:
             - Priority Mail Flat Rate Envelope
             - Priority Mail Legal Flat Rate Envelope
             - Priority Mail Flat Rate Padded Envelope
+            - Rlln_FEDEX_son_Reg
+            - Rlln_FEDEX_son_Reg_1R
+            - Rlln_FEDEX_son_Let_1R
+            - Rlln_FEDEX_son_Box_1R
+            - Rlln_FEDEX_2day_Reg
+            - Rlln_FEDEX_2day_Reg_1R
+            - Rlln_FEDEX_2day_Let_1R
+            - Rlln_FEDEX_2day_Box_1R
+            - Rlln_FEDEX_es_Reg
+            - Rlln_FEDEX_es_Reg_1R
+            - Rlln_FEDEX_es_Let_1R
+            - Rlln_FEDEX_es_Box_1R
+            - Rlln_FEDEX_hd_Reg
+            - Rlln_FEDEX_sp_Reg
         weight:
           type: number
           example: 80.5
         weightUnitOfMeasurement:
           type: string
-          enum: 
+          enum:
             - pound
             - ounce
         width:
@@ -135,13 +149,16 @@ components:
           description: height in inches
         canFly:
           type: boolean
-          
-        
+        hazardousMaterials:
+          description: Indicate type of Dangerous Goods being reported.
+          type: boolean
+
+
     ## Resource object
     Label:
       type: object
       properties:
-        labelImage: 
+        labelImage:
           type: string
           description: base64 encoded label image in pdf
         trackNumber:
@@ -149,7 +166,7 @@ components:
         totalPrice:
           type: number
           example: 7.85
-        
+
     Customer:
       type: object
       required:
