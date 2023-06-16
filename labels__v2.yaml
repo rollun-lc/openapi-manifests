@@ -326,8 +326,6 @@ components:
         - postalCode
         - address1
       properties:
-        pickupAddress:
-          type: string
         country:
           type: string
           description: "Country code"
