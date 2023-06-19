@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "2"
   title: "Labels"
-  description: Manifest description
+  description: Manifest description v2
 servers:
   - url: http://carriers/openapi/Labels/v2
 tags:
