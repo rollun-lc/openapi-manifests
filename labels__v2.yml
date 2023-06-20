@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "2"
   title: "Labels"
-  description: Manifest description v2
+  description: Manifest description
 servers:
   - url: http://carriers/openapi/Labels/v2
 tags:
@@ -327,6 +327,8 @@ components:
         - postalCode
         - address1
       properties:
+#        pickupAddress:
+#          type: string
         country:
           type: string
           description: "Country code"
