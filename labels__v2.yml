@@ -203,6 +203,7 @@ components:
           type: string
           enum:
             - "First-Class Package Service"
+            - "Parcel Select Ground"
         weight:
           type: number
           example: 80.5
