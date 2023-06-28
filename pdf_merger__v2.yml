@@ -5,6 +5,7 @@ info:
   description: Merges PDFs
 servers:
   - url: http://carriers/openapi/PDFMerger/v2
+  - url: https://rollun.net/api/openapi/PDFMerger/v2
 tags:
   - name: MergedByBag
   - name: MergedBySrOrderNumber
