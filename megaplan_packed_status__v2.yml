@@ -4,7 +4,7 @@ info:
   title: "MegaplanPackedStatus"
   description: Update statuses in pickup and bag was_packed transactions by track number
 servers:
-  - url: http://megaplan-ru/openapi/MegaplanPackedStatus/v2
+  - url: http://megaplan-crm/openapi/MegaplanPackedStatus/v2
 tags:
   - name: WasPackedStatus
 paths:
