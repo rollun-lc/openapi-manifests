@@ -1,0 +1,279 @@
+openapi: 3.0.0
+info:
+  version: '1'
+  title: ShippingMethods
+  description: 'Service howtobuy. The service provides methods for obtaining possible delivery methods according to the specified parameters'
+externalDocs:
+  url: https://github.com/rollun-com/service-howtobay
+servers:
+  - url: http://howtobuy/openapi/ShippingMethods/v1
+tags:
+  - name: Shipping
+    description: 'Everything about shipping methods.'
+paths:
+  /shipping:
+    get:
+      tags:
+        - Shipping
+      summary: 'Getting Shipping Methods'
+      description: 'Returns possible shipping methods with prices, sender, and delivery time.'
+      operationId: getShippingMethodsData
+      parameters:
+        - name: zipTo
+          in: query
+          description: 'ZIP where the parcel is sent'
+          required: true
+          schema:
+            type: string
+            example: '78228'
+        - name: weight
+          in: query
+          description: 'Parcel weight'
+          required: true
+          schema:
+            type: number
+            example: 0.4
+        - name: width
+          in: query
+          description: 'Parcel Width'
+          required: true
+          schema:
+            type: number
+            example: 1
+        - name: length
+          in: query
+          description: 'Parcel length'
+          required: true
+          schema:
+            type: number
+            example: 3.1
+        - name: height
+          in: query
+          description: 'Parcel height'
+          required: true
+          schema:
+            type: number
+            example: 2.05
+        - name: senders
+          in: query
+          description: 'Sender. The sender is a certain entity that indicates the place where the parcels will be sent from, regulates the possible methods of delivery, and also imposes some restrictions on the ability to send the parcel.'
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+              default: pu_ds_a
+        - name: isDangerous
+          in: query
+          description: 'Whether the package contains hazardous materials. It is necessary to determine the possibility of sending by air.'
+          required: false
+          schema:
+            type: boolean
+            default: true
+            example: false
+        - name: isTire
+          in: query
+          description: 'If the package is a tire'
+          required: false
+          schema:
+            type: boolean
+            default: false
+            example: true
+#       RM
+        - name: rmCategory
+          in: query
+          required: false
+          description: 'Category for RM, affects the price'
+          schema:
+            type: string
+            default: false
+            example: Filters
+        - name: rmIsKit
+          in: query
+          required: false
+          description: 'IsKit for RM, affects the price'
+          schema:
+            type: boolean
+            default: false
+            example: true
+        - name: rmFee
+          in: query
+          required: false
+          description: 'A fee of RM, affects the price'
+          schema:
+            type: number
+            example: 10.2
+        - name: rmIsOversize
+          in: query
+          required: false
+          description: 'Flag IsOversize for RM, affects the price'
+          schema:
+            type: string
+            enum:
+              - Y
+              - N
+            example: Y
+#       AU
+        - name: auIsFirstClass
+          description: 'If possible, then send a parcel First Class'
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - Y
+              - N
+            example: Y
+        - name: auFlatRateGroup
+          in: query
+          required: false
+          description: 'Flag affects the price'
+          schema:
+            type: string
+            example: ATV25
+        - name: auLargePackageSurcharge
+          in: query
+          required: false
+          description: 'Flag affects the price'
+          schema:
+            type: string
+            example: ATV25
+#       TR
+        - name: trWidth
+          in: query
+          required: false
+          description: 'A flag that matches the width, but may be different. Affects the price'
+          schema:
+            type: number
+            example: 3.1
+        - name: trHeight
+          in: query
+          required: false
+          description: 'A flag that matches the height, but may be different. Affects the price'
+          schema:
+            type: number
+            example: 3.1
+        - name: trLength
+          in: query
+          required: false
+          description: 'A flag that matches the length, but may be different. Affects the price'
+          schema:
+            type: number
+            example: 3.1
+        - name: trSubcategory
+          in: query
+          required: false
+          description: 'Flag affects the price'
+          schema:
+            type: string
+            example: Offroad Tires
+        - name: trNewCategory
+          in: query
+          required: false
+          description: 'Flag affects the price'
+          schema:
+            type: string
+            example: TIRES
+        - name: trNewSubCategory
+          in: query
+          required: false
+          description: 'Flag affects the price'
+          schema:
+            type: string
+            example: KITS
+        - name: trFee
+          in: query
+          required: false
+          description: 'Flag affects the price'
+          schema:
+            type: number
+            example: 1.3
+        - name: trIsOversize
+          in: query
+          required: false
+          description: 'Flag affects the price'
+          schema:
+            type: boolean
+            example: false
+#       PU
+        - name: puTire
+          in: query
+          required: false
+          description: 'Flag affects the validator'
+          schema:
+            type: boolean
+            example: false
+      responses:
+        '200':
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetShippingBody'
+        '400':
+          description: 'Invalid input data'
+components:
+  schemas:
+    ShippingResponse:
+      type: object
+      required:
+        - deliverySender
+        - shippingMethodId
+        - shippingMethodName
+        - trackNumberDate
+        - shippingArriveDate
+        - cost
+      properties:
+        deliverySender:
+          type: string
+          example: 'wps_ds'
+        shippingMethodId:
+          type: string
+          example: 'PU-PickUp-Usps-PM-FR-BgBox'
+        shippingMethodName:
+          type: string
+          example: 'Priority Mail Large Flat Rate Board Game Box'
+        cost:
+          type: number
+          example: 5.84
+          nullable: true
+        trackNumberDate:
+          type: string
+          example: '30.01.2020 09:00:00'
+        shippingArriveDate:
+          type: string
+          example: '03.02.2020 09:00:00'
+      xml:
+        name: Shipping
+    GetShippingBody:
+      type: object
+      properties:
+        data:
+          type: array
+          description: 'Found delivery methods'
+          items:
+            $ref: '#/components/schemas/ShippingResponse'
+        messages:
+          type: array
+          description: 'Collection of messages. There may be errors, notes and more.'
+          items:
+            $ref: '#/components/schemas/Message'
+      xml:
+        name: GetShippingBody
+    Message:
+      type: object
+      required:
+        - level
+        - message
+      properties:
+        level:
+          type: string
+          description: 'Message level (type)'
+          example: 'error'
+        message:
+          type: string
+          description: 'Message text'
+          example: 'DataStore Test unavailable.'
+      xml:
+        name: Message
