@@ -310,6 +310,8 @@ components:
           type: string
         quantity:
           type: integer
+        availableQuantity:
+          type: integer
 
 
     LocationCollectionResponse:
