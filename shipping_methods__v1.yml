@@ -12,198 +12,17 @@ tags:
     description: 'Everything about shipping methods.'
 paths:
   /shipping:
-    get:
+    post:
       tags:
         - Shipping
       summary: 'Getting Shipping Methods'
       description: 'Returns possible shipping methods with prices, sender, and delivery time.'
-      operationId: getShippingMethodsData
-      parameters:
-        - name: zipTo
-          in: query
-          description: 'ZIP where the parcel is sent'
-          required: true
-          schema:
-            type: string
-            example: '78228'
-        - name: weight
-          in: query
-          description: 'Parcel weight'
-          required: true
-          schema:
-            type: number
-            example: 0.4
-        - name: width
-          in: query
-          description: 'Parcel Width'
-          required: true
-          schema:
-            type: number
-            example: 1
-        - name: length
-          in: query
-          description: 'Parcel length'
-          required: true
-          schema:
-            type: number
-            example: 3.1
-        - name: height
-          in: query
-          description: 'Parcel height'
-          required: true
-          schema:
-            type: number
-            example: 2.05
-        - name: senders
-          in: query
-          description: 'Sender. The sender is a certain entity that indicates the place where the parcels will be sent from, regulates the possible methods of delivery, and also imposes some restrictions on the ability to send the parcel.'
-          required: false
-          explode: false
-          schema:
-            type: array
-            items:
-              type: string
-              default: pu_ds_a
-        - name: isDangerous
-          in: query
-          description: 'Whether the package contains hazardous materials. It is necessary to determine the possibility of sending by air.'
-          required: false
-          schema:
-            type: boolean
-            default: true
-            example: false
-        - name: isTire
-          in: query
-          description: 'If the package is a tire'
-          required: false
-          schema:
-            type: boolean
-            default: false
-            example: true
-        #       RM
-        - name: rmCategory
-          in: query
-          required: false
-          description: 'Category for RM, affects the price'
-          schema:
-            type: string
-            default: false
-            example: Filters
-        - name: rmIsKit
-          in: query
-          required: false
-          description: 'IsKit for RM, affects the price'
-          schema:
-            type: boolean
-            default: false
-            example: true
-        - name: rmFee
-          in: query
-          required: false
-          description: 'A fee of RM, affects the price'
-          schema:
-            type: number
-            example: 10.2
-        - name: rmIsOversize
-          in: query
-          required: false
-          description: 'Flag IsOversize for RM, affects the price'
-          schema:
-            type: string
-            enum:
-              - Y
-              - N
-            example: Y
-        #       AU
-        - name: auIsFirstClass
-          description: 'If possible, then send a parcel First Class'
-          in: query
-          required: false
-          schema:
-            type: string
-            enum:
-              - Y
-              - N
-            example: Y
-        - name: auFlatRateGroup
-          in: query
-          required: false
-          description: 'Flag affects the price'
-          schema:
-            type: string
-            example: ATV25
-        - name: auLargePackageSurcharge
-          in: query
-          required: false
-          description: 'Flag affects the price'
-          schema:
-            type: string
-            example: ATV25
-        #       TR
-        - name: trWidth
-          in: query
-          required: false
-          description: 'A flag that matches the width, but may be different. Affects the price'
-          schema:
-            type: number
-            example: 3.1
-        - name: trHeight
-          in: query
-          required: false
-          description: 'A flag that matches the height, but may be different. Affects the price'
-          schema:
-            type: number
-            example: 3.1
-        - name: trLength
-          in: query
-          required: false
-          description: 'A flag that matches the length, but may be different. Affects the price'
-          schema:
-            type: number
-            example: 3.1
-        - name: trSubcategory
-          in: query
-          required: false
-          description: 'Flag affects the price'
-          schema:
-            type: string
-            example: Offroad Tires
-        - name: trNewCategory
-          in: query
-          required: false
-          description: 'Flag affects the price'
-          schema:
-            type: string
-            example: TIRES
-        - name: trNewSubCategory
-          in: query
-          required: false
-          description: 'Flag affects the price'
-          schema:
-            type: string
-            example: KITS
-        - name: trFee
-          in: query
-          required: false
-          description: 'Flag affects the price'
-          schema:
-            type: number
-            example: 1.3
-        - name: trIsOversize
-          in: query
-          required: false
-          description: 'Flag affects the price'
-          schema:
-            type: boolean
-            example: false
-        #       PU
-        - name: puTire
-          in: query
-          required: false
-          description: 'Flag affects the validator'
-          schema:
-            type: boolean
-            example: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingInfo'
       responses:
         '200':
           description: 'Successful operation'
@@ -215,6 +34,119 @@ paths:
           description: 'Invalid input data'
 components:
   schemas:
+    ShippingInfo:
+      type: object
+      required:
+        - zipTo
+        - weight
+        - width
+        - length
+        - height
+      properties:
+        zipTo:
+          type: string
+          example: "78228"
+        weight:
+          type: number
+          example: 1.0
+        width:
+          type: number
+          example: 2.0
+        length:
+          type: number
+          example: 3.5
+        height:
+          type: number
+          example: 4.0
+        senders:
+          type: array
+          items:
+            type: string
+            example: pu_fast_ds
+        isDangerous:
+          description: 'Whether the package contains hazardous materials. It is necessary to determine the possibility of sending by air.'
+          type: boolean
+          example: false
+        # RM
+        rmCategory:
+          description: 'Category for RM, affects the price'
+          type: string
+          example: 'Filters'
+        rmIsKit:
+          description: 'IsKit for RM, affects the price'
+          type: boolean
+          example: false
+
+        rmFee:
+          description: 'A fee of RM, affects the price'
+          type: number
+          example: 10.2
+        rmIsOversize:
+          description: 'Flag IsOversize for RM, affects the price'
+          type: string
+          enum:
+            - Y
+            - N
+          example: Y
+        # AU
+        auIsFirstClass:
+          description: 'If possible, then send a parcel First Class'
+          type: string
+          enum:
+            - Y
+            - N
+          example: Y
+        auFlatRateGroup:
+          description: 'Flag affects the price'
+          type: string
+          example: ATV25
+        auLargePackageSurcharge:
+          description: 'Flag affects the price'
+          type: number
+          example: 10.2
+        # TR
+        trWidth:
+          description: 'A flag that matches the width, but may be different. Affects the price'
+          type: number
+          example: 3.1
+        trHeight:
+          description: 'A flag that matches the height, but may be different. Affects the price'
+          type: number
+          example: 3.1
+        trLength:
+          description: 'A flag that matches the length, but may be different. Affects the price'
+          type: number
+          example: 3.1
+        trSubcategory:
+          description: 'Flag affects the price'
+          type: string
+          example: Offroad Tires
+        trNewCategory:
+          description: 'Flag affects the price'
+          type: string
+          example: TIRES
+        trNewSubCategory:
+          description: 'Flag affects the price'
+          type: string
+          example: KITS
+        trFee:
+          description: 'Flag affects the price'
+          type: number
+          example: 1.3
+        trIsOversize:
+          description: 'Flag affects the price'
+          type: string
+          enum:
+            - '1'
+            - '2'
+            - '3'
+            - 'false'
+          example: '1'
+        # PU
+        puTire:
+          description: 'Flag affects the validator'
+          type: boolean
+          example: false
     ShippingResponse:
       type: object
       required:
