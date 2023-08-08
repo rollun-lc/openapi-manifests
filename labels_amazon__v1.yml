@@ -52,12 +52,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LabelShippingServiceList'
+                $ref: '#/components/schemas/LabelShippingServiceListResponse'
         '400':
           description: 'Invalid input data'
 components:
   schemas:
-    LabelShippingServiceList:
+    LabelShippingServiceListResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/LabelShippingServiceList'
+        
+    LabelShippingServiceList:      
       type: array
       items:
         $ref: '#/components/schemas/LabelShippingServiceListItem'
