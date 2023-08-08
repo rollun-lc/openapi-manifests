@@ -34,10 +34,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-  "/amazon":
+  "/methods":
     post:
       tags:
-        - Amazon
+        - Methods
       summary: 'Getting Shipping Methods'
       description: 'Returns shipping methods by Amazon with prices, sender, and delivery time.'
       requestBody:
