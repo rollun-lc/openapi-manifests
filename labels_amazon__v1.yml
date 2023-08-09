@@ -34,8 +34,137 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
+  "/methods":
+    post:
+      tags:
+        - Methods
+      summary: 'Getting Shipping Methods'
+      description: 'Returns shipping methods by Amazon with prices, sender, and delivery time.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelAmazonPostRequest'
+      responses:
+        '200':
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelShippingServiceListResponse'
+        '400':
+          description: 'Invalid input data'
 components:
   schemas:
+    LabelShippingServiceListResponse:
+      allOf:
+      - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/LabelShippingServiceList'
+        
+    LabelShippingServiceList:      
+      type: array
+      items:
+        $ref: '#/components/schemas/LabelShippingServiceListItem'
+    LabelShippingServiceListItem:
+      type: object
+      required:
+        - ShippingServiceName
+        - CarrierName
+      properties:
+        ShippingServiceName:
+          type: string
+          description: "UPS Next Day Air Saver®"
+        CarrierName:
+          type: string
+          example: "UPS"
+        ShippingServiceId:
+          type: string
+          example: "AAAAAAAAAAAqnDNfzNUo1n6aEt88FZsDjQAAAAAAAAAh3Ewby/F4ajoYUgp/71GgjGcDSToMKTCeu+BOItBLGK9C3BcLwZ3swXfFWephs6kJnSfr4inJbd00c0RYmqDX+59LebA+Ita/yNIm0z0AhI7qY4KUFTlN8mOVilhSmzV2HtU/cg1Gp1bwvuk3kFRaEm63QTJa/1imCS1AzLsXNq0ApkqWgoaWayLVs+Y="
+        ShippingServiceOfferId:
+          type: string
+          example: "UPS_PTP_NEXT_DAY_AIR_SAVER"
+        ShipDate:
+          type: string
+          example: "2023-08-02T15:20:08Z"
+        EarliestEstimatedDeliveryDate:
+          type: string
+          example: "2023-08-04T06:00:00Z"
+        LatestEstimatedDeliveryDate:
+          type: string
+          example: "2023-08-04T06:00:00Z"
+        Rate:
+          type: object
+          properties:
+            CurrencyCode:
+              type: string
+              example: "USD"
+            Amount:
+              type: number
+              example: 10.2
+        ShippingServiceOptions:
+          type: object
+          properties:
+            DeliveryExperience:
+              type: string
+              example: "DeliveryConfirmationWithAdultSignature"
+            CarrierWillPickUp:
+              type: boolean
+              example: false
+            LabelFormat:
+              type: string
+              example: ''
+        AvailableLabelFormats:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailableLabelFormatsItems'
+        AvailableFormatOptionsForLabel:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailableFormatOptionsForLabelItem'
+    AvailableFormatOptionsForLabelItem:
+      type: object
+      properties:
+        AvailableFormatOptionsForLabel:
+          type: string
+          example: 'ShippingServiceDefault'
+    AvailableLabelFormatsItems:
+      type: string
+      example: 'ShippingServiceDefault'
+    LabelAmazonPostRequest:
+      type: object
+      properties:
+        pickupAddress:
+          type: string
+        orderId:
+          type: string
+        sellerOrderId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItems'
+        sender:
+          allOf:
+            - $ref: '#/components/schemas/Customer'
+          description: Sender of the shipment.
+        weight:
+          type: number
+          example: 80.5
+        width:
+          type: number
+          description: width in inches
+        length:
+          type: number
+          description: length in inches
+        height:
+          type: number
+          description: height in inches
+        customId:
+          type: string
     # Basic results components
     ErrorResult:
       type: object
@@ -87,7 +216,6 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Label'
-
     LineItems:
       type: object
       properties:
@@ -161,7 +289,6 @@ components:
         totalPrice:
           type: number
           example: 7.85
-
     Customer:
       type: object
       required:
