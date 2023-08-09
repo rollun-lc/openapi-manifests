@@ -67,6 +67,10 @@ components:
           description: 'Whether the package contains hazardous materials. It is necessary to determine the possibility of sending by air.'
           type: boolean
           example: false
+        isTire:
+          description: 'Flag affects the validator'
+          type: boolean
+          example: false
         # RM
         rmCategory:
           description: 'Category for RM, affects the price'
@@ -76,7 +80,6 @@ components:
           description: 'IsKit for RM, affects the price'
           type: boolean
           example: false
-
         rmFee:
           description: 'A fee of RM, affects the price'
           type: number
@@ -136,17 +139,12 @@ components:
         trIsOversize:
           description: 'Flag affects the price'
           type: string
+          nullable: true
           enum:
             - '1'
             - '2'
             - '3'
-            - 'false'
           example: '1'
-        # PU
-        puTire:
-          description: 'Flag affects the validator'
-          type: boolean
-          example: false
     ShippingResponse:
       type: object
       required:
