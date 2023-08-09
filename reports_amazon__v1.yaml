@@ -1,0 +1,154 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "ReportsAmazon"
+  description: Manifest description
+servers:
+  - url: http://amz-orders-ngx/openapi/ReportsAmazon/v1
+  - url: http://localhost:8080/openapi/ReportsAmazon/v1
+tags:
+  - name: Reports
+paths:
+  "/reports":
+    get:
+      tags:
+        - Reports
+      summary: "Get reports"
+      description: ""
+      parameters:
+        - name: reportTypes
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: processingStatuses
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: marketplaceIds
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: createdSince
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: createdUntil
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: nextToken
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Label successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportsResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - WRONG_SHIPPING_TYPE
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## One resource result
+    ReportsResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Report'
+    Report:
+      type: object
+      properties:
+        marketplaceIds:
+          type: array
+          items:
+            type: string
+        reportId:
+          type: string
+        reportType:
+          type: string
+        dataStartTime:
+          type: string
+        dataEndTime:
+          type: string
+        reportScheduleId:
+          type: string
+        createdTime:
+          type: string
+        processingStatus:
+          type: string
+        processingStartTime:
+          type: string
+        processingEndTime:
+          type: string
+        reportDocumentId:
+          type: string
