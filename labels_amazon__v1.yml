@@ -59,13 +59,13 @@ components:
   schemas:
     LabelShippingServiceListResponse:
       allOf:
-      - $ref: '#/components/schemas/SuccessResult'
+        - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
           $ref: '#/components/schemas/LabelShippingServiceList'
-        
-    LabelShippingServiceList:      
+    
+    LabelShippingServiceList:
       type: array
       items:
         $ref: '#/components/schemas/LabelShippingServiceListItem'
@@ -212,7 +212,6 @@ components:
             - "Priority Mail Legal Flat Rate Envelope"
             - "Priority Mail Flat Rate Padded Envelope"
             - "Priority Mail Small Flat Rate Box"
-            - "Priority Mail Medium Flat Rate Box"
             - "Priority Mail Large Flat Rate Box"
             - "Priority Mail Regional Rate Box A"
             - "Priority Mail Regional Rate Box B"
@@ -237,8 +236,6 @@ components:
           description: height in inches
         customId:
           type: string
-
-
     ## Resource object
     Label:
       type: object
@@ -282,8 +279,6 @@ components:
         - postalCode
         - address1
       properties:
-#        pickupAddress:
-#          type: string
         country:
           type: string
           description: "Country code"
