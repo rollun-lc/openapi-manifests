@@ -77,63 +77,25 @@ components:
       properties:
         ShippingServiceName:
           type: string
-          description: "UPS Next Day Air Saver®"
+          example: "UPS Next Day Air Saver"
         CarrierName:
           type: string
           example: "UPS"
-        ShippingServiceId:
-          type: string
-          example: "AAAAAAAAAAAqnDNfzNUo1n6aEt88FZsDjQAAAAAAAAAh3Ewby/F4ajoYUgp/71GgjGcDSToMKTCeu+BOItBLGK9C3BcLwZ3swXfFWephs6kJnSfr4inJbd00c0RYmqDX+59LebA+Ita/yNIm0z0AhI7qY4KUFTlN8mOVilhSmzV2HtU/cg1Gp1bwvuk3kFRaEm63QTJa/1imCS1AzLsXNq0ApkqWgoaWayLVs+Y="
-        ShippingServiceOfferId:
-          type: string
-          example: "UPS_PTP_NEXT_DAY_AIR_SAVER"
         ShipDate:
           type: string
-          example: "2023-08-02T15:20:08Z"
+          format: date-time
+          example: "04.08.2023 23:59:00"
         EarliestEstimatedDeliveryDate:
           type: string
-          example: "2023-08-04T06:00:00Z"
+          format: date-time
+          example: "14.08.2023 23:59:00"
         LatestEstimatedDeliveryDate:
           type: string
-          example: "2023-08-04T06:00:00Z"
+          format: date-time
+          example: "14.08.2023 23:59:00"
         Rate:
-          type: object
-          properties:
-            CurrencyCode:
-              type: string
-              example: "USD"
-            Amount:
-              type: number
-              example: 10.2
-        ShippingServiceOptions:
-          type: object
-          properties:
-            DeliveryExperience:
-              type: string
-              example: "DeliveryConfirmationWithAdultSignature"
-            CarrierWillPickUp:
-              type: boolean
-              example: false
-            LabelFormat:
-              type: string
-              example: ''
-        AvailableLabelFormats:
-          type: array
-          items:
-            $ref: '#/components/schemas/AvailableLabelFormatsItems'
-        AvailableFormatOptionsForLabel:
-          type: array
-          items:
-            $ref: '#/components/schemas/AvailableFormatOptionsForLabelItem'
-    AvailableFormatOptionsForLabelItem:
-      type: object
-      properties:
-        AvailableFormatOptionsForLabel:
-          type: string
-          example: 'ShippingServiceDefault'
-    AvailableLabelFormatsItems:
-      type: string
-      example: 'ShippingServiceDefault'
+          type: number
+          example: 10.2
     LabelAmazonPostRequest:
       type: object
       properties:
