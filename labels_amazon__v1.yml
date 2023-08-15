@@ -59,13 +59,13 @@ components:
   schemas:
     LabelShippingServiceListResponse:
       allOf:
-        - $ref: '#/components/schemas/SuccessResult'
+      - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
           $ref: '#/components/schemas/LabelShippingServiceList'
-    
-    LabelShippingServiceList:
+        
+    LabelShippingServiceList:      
       type: array
       items:
         $ref: '#/components/schemas/LabelShippingServiceListItem'
@@ -77,25 +77,63 @@ components:
       properties:
         ShippingServiceName:
           type: string
-          example: "UPS Next Day Air Saver"
+          description: "UPS Next Day Air Saver®"
         CarrierName:
           type: string
           example: "UPS"
+        ShippingServiceId:
+          type: string
+          example: "AAAAAAAAAAAqnDNfzNUo1n6aEt88FZsDjQAAAAAAAAAh3Ewby/F4ajoYUgp/71GgjGcDSToMKTCeu+BOItBLGK9C3BcLwZ3swXfFWephs6kJnSfr4inJbd00c0RYmqDX+59LebA+Ita/yNIm0z0AhI7qY4KUFTlN8mOVilhSmzV2HtU/cg1Gp1bwvuk3kFRaEm63QTJa/1imCS1AzLsXNq0ApkqWgoaWayLVs+Y="
+        ShippingServiceOfferId:
+          type: string
+          example: "UPS_PTP_NEXT_DAY_AIR_SAVER"
         ShipDate:
           type: string
-          format: date-time
-          example: "04.08.2023 23:59:00"
+          example: "2023-08-02T15:20:08Z"
         EarliestEstimatedDeliveryDate:
           type: string
-          format: date-time
-          example: "14.08.2023 23:59:00"
+          example: "2023-08-04T06:00:00Z"
         LatestEstimatedDeliveryDate:
           type: string
-          format: date-time
-          example: "14.08.2023 23:59:00"
+          example: "2023-08-04T06:00:00Z"
         Rate:
-          type: number
-          example: 10.2
+          type: object
+          properties:
+            CurrencyCode:
+              type: string
+              example: "USD"
+            Amount:
+              type: number
+              example: 10.2
+        ShippingServiceOptions:
+          type: object
+          properties:
+            DeliveryExperience:
+              type: string
+              example: "DeliveryConfirmationWithAdultSignature"
+            CarrierWillPickUp:
+              type: boolean
+              example: false
+            LabelFormat:
+              type: string
+              example: ''
+        AvailableLabelFormats:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailableLabelFormatsItems'
+        AvailableFormatOptionsForLabel:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailableFormatOptionsForLabelItem'
+    AvailableFormatOptionsForLabelItem:
+      type: object
+      properties:
+        AvailableFormatOptionsForLabel:
+          type: string
+          example: 'ShippingServiceDefault'
+    AvailableLabelFormatsItems:
+      type: string
+      example: 'ShippingServiceDefault'
     LabelAmazonPostRequest:
       type: object
       properties:
@@ -212,6 +250,7 @@ components:
             - "Priority Mail Legal Flat Rate Envelope"
             - "Priority Mail Flat Rate Padded Envelope"
             - "Priority Mail Small Flat Rate Box"
+            - "Priority Mail Medium Flat Rate Box"
             - "Priority Mail Large Flat Rate Box"
             - "Priority Mail Regional Rate Box A"
             - "Priority Mail Regional Rate Box B"
@@ -220,7 +259,6 @@ components:
             - "Priority Mail Flat Rate Envelope"
             - "Priority Mail Cubic"
             - "Priority Mail Large Flat Rate Board Game Box"
-            - "Priority Mail Medium Flat Rate Box"
             - "Ground Advantage"
         weight:
           type: number
@@ -236,6 +274,8 @@ components:
           description: height in inches
         customId:
           type: string
+
+
     ## Resource object
     Label:
       type: object
@@ -279,6 +319,8 @@ components:
         - postalCode
         - address1
       properties:
+#        pickupAddress:
+#          type: string
         country:
           type: string
           description: "Country code"
