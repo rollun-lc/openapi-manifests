@@ -1,0 +1,131 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "ZipsDistance"
+  description: Retrieve data about failed processes in each service
+servers:
+  - url: http://carriers/openapi/ZipsDistance/v1
+tags:
+  - name: ZipsDistance
+paths:
+  "/calculateZipsDistance":
+    get:
+      tags:
+        - CalculateZipsDistance
+      summary: "Calculate distance between 2 zips"
+      description: "Calculate distance between 2 zips"
+      parameters:
+        - name: zipFrom
+          in: query
+          required: true
+          schema:
+            type: string
+            example: '48200'
+        - name: zipTo
+          in: query
+          required: true
+          schema:
+            type: string
+            example: '49703'
+        - name: distanceType
+          in: query
+          schema:
+            type: string
+            example: 'meter'
+            default: 'meter'
+            enum:
+              - meter
+              - mile
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalculateDistanceResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+          description: >
+            UNDEFINED - Any undefined message type
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    CalculateDistanceResultItem:
+      type: object
+      required:
+        - distance
+      properties:
+        distance:
+          type: number
+          example: 108648.36391512
+    CalculateDistanceResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CalculateDistanceResultItem"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
