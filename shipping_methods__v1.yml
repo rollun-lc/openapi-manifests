@@ -169,8 +169,8 @@ components:
         - shippingMethodId
         - shippingMethodName
         - trackNumberDate
-        - shippingArriveDate
         - shippingSendDate
+        - shippingArriveDate
         - cost
       properties:
         deliverySender:
