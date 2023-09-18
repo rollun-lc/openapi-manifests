@@ -2,40 +2,25 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "ZipsDistance"
-  description: Retrieve data about failed processes in each service
+  description: Calculate distance between 2 zips
 servers:
   - url: http://carriers/openapi/ZipsDistance/v1
 tags:
-  - name: ZipsDistance
+  - name: Distances
 paths:
-  "/calculateZipsDistance":
+  "/distances/{id}":
     get:
       tags:
-        - CalculateZipsDistance
+        - Distances
       summary: "Calculate distance between 2 zips"
-      description: "Calculate distance between 2 zips"
+      description: "Calculate distance between 2 zips in meters"
       parameters:
-        - name: zipFrom
-          in: query
+        - in: path
+          name: id
+          description: Composite id. Format - zipFrom|zipTo or zipTo|zipFrom, the same
           required: true
           schema:
             type: string
-            example: '48200'
-        - name: zipTo
-          in: query
-          required: true
-          schema:
-            type: string
-            example: '49703'
-        - name: distanceType
-          in: query
-          schema:
-            type: string
-            example: 'meter'
-            default: 'meter'
-            enum:
-              - meter
-              - mile
       responses:
         "200":
           description: "Success"
