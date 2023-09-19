@@ -259,7 +259,6 @@ components:
             - "Priority Mail Flat Rate Envelope"
             - "Priority Mail Cubic"
             - "Priority Mail Large Flat Rate Board Game Box"
-            - "Priority Mail Medium Flat Rate Box"
             - "Ground Advantage"
         weight:
           type: number

@@ -1,0 +1,90 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "WorkingDay"
+  description: Retrieve data about failed processes in each service
+servers:
+  - url: http://carriers/openapi/WorkingDay/v1
+tags:
+  - name: GetNearWorkingDayDateTime
+paths:
+  "/getNearWorkingDayDateTime":
+    get:
+      tags:
+        - GetNearWorkingDayDateTime
+      description: "Move date to working day"
+      parameters:
+        - name: dateTime
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 1693323606
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessDataResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+          description: >
+            UNDEFINED - Any undefined message type
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    ProcessDataResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkingDayResult'
+    WorkingDayResult:
+      type: object
+      required:
+        - dateTime
+      properties:
+        dateTime:
+          type: integer
+          example: 1693324606

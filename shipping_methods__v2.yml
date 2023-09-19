@@ -1,0 +1,262 @@
+openapi: 3.0.0
+info:
+  version: '2'
+  title: ShippingMethods
+  description: 'Service howtobuy. The service provides methods for obtaining possible delivery methods according to the specified parameters'
+externalDocs:
+  url: https://github.com/rollun-com/service-howtobay
+servers:
+  - url: http://carriers/openapi/ShippingMethods/v2
+tags:
+  - name: Shipping
+    description: 'Everything about shipping methods.'
+paths:
+  /shipping:
+    post:
+      tags:
+        - Shipping
+      summary: 'Getting Shipping Methods'
+      description: 'Returns possible shipping methods with prices, sender, and delivery time.'
+      operationId: getShippingMethods
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingWayPostRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingMethodsResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    CatalogResponse:
+      type: object
+      properties:
+        zipTo:
+          type: string
+          example: "78228"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductPack'
+    ProductPack:
+      type: object
+      required:
+        - weight
+        - width
+        - length
+        - height
+        - quantity
+      properties:
+        weight:
+          type: number
+          example: 1.0
+        width:
+          type: number
+          example: 2.0
+        length:
+          type: number
+          example: 3.5
+        height:
+          type: number
+          example: 4.0
+        quantity:
+          type: integer
+          example: 2
+        attributes:
+          type: object
+          properties:
+            isDangerous:
+              description: 'Whether the package contains hazardous materials. It is necessary to determine the possibility of sending by air.'
+              type: boolean
+              example: false
+            isTire:
+              description: 'Is it a tire?'
+              type: boolean
+              example: false
+            rid:
+              type: string
+              example: "1118V"
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    Customer:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          description: Full name
+          example: Shawn Weisweaver
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person
+          example: "415-123-4567"
+        email:
+          type: string
+          nullable: true
+          description: Email address to reach the person
+          example: "test@mail.loc"
+        address:
+          $ref: "#/components/schemas/Address"
+    Address:
+      type: object
+      required:
+        - country
+        - state
+        - city
+        - postalCode
+        - address1
+      properties:
+        country:
+          type: string
+          description: "Country code"
+        state:
+          type: string
+          description: US state code
+          example: CA
+        city:
+          type: string
+          description: Full city name
+          example: San Francisco
+        postalCode:
+          type: string
+          description: ZIP or postal code
+          example: "94104"
+        address1:
+          type: string
+          description: First line of the address
+          example: "417 Montgomery St"
+        address2:
+          type: string
+          nullable: true
+          description: Second line of the address
+          example: "Floor 5"
+    ShippingWayPostRequest:
+      type: object
+      required:
+        - senders
+      properties:
+        senders:
+          type: array
+          description: Filter by sender
+          items:
+            type: string
+            default: au_ds_all
+        customer:
+          $ref: '#/components/schemas/Customer'
+        items:
+          type: array
+          description: List of ordered products
+          items:
+            $ref: '#/components/schemas/RequestedItem'
+    RequestedItem:
+      type: object
+      properties:
+        rid:
+          type: string
+          description: item rid
+          example: RID01
+        qty:
+          type: integer
+          description: requested qty for item
+          example: 1
+    ShippingMethodsResponse:
+      type: object
+      required:
+        - sender
+        - cost
+        - shippingMethodId
+        - shippingMethodName
+        - trackNumberDate
+        - shippingArriveDate
+      properties:
+        sender:
+          type: string
+          example: 'wps_ds'
+        shippingMethodId:
+          type: string
+          example: 'PU-PickUp-Usps-PM-FR-BgBox'
+        shippingMethodName:
+          type: string
+          example: 'Priority Mail Large Flat Rate Board Game Box'
+        cost:
+          type: number
+          example: 5.84
+          nullable: true
+        trackNumberDate:
+          type: string
+          example: '30.01.2020 09:00:00'
+        shippingArriveDate:
+          type: string
+          example: '03.02.2020 09:00:00'
+      xml:
+        name: Shipping
+    ShippingMethodsResult:
+      type: object
+      properties:
+        data:
+          type: array
+          description: 'Found delivery methods'
+          items:
+            $ref: '#/components/schemas/ShippingMethodsResponse'
+        messages:
+          type: array
+          description: 'Collection of messages. There may be errors, notes and more.'
+          items:
+            $ref: '#/components/schemas/Message'
+      xml:
+        name: GetShippingBody
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+            - IGNORED_SHIPPING_METHOD
+            - NO_ESTIMATES_FOR_SHIPPING_METHOD
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined 
+            IGNORED_SHIPPING_METHOD - shipping method was ignored for any reasone (restricted, etc.)
+            NO_ESTIMATES_FOR_SHIPPING_METHOD - shipping method was ignored because it is not possible to calculate estimate dates for it
+        text:
+          type: string
+          description: Message, that describes what went wrong
