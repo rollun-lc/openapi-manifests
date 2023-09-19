@@ -91,6 +91,7 @@ components:
           type: string
           enum:
             - UNDEFINED
+            - WRONG_SHIPPING_TYPE
             - LOGGER_MESSAGE
           description: >
             You can expose this enum for all your errors
@@ -203,7 +204,21 @@ components:
           type: string
           enum:
             - "First-Class Package Service"
+            - "Priority Mail"
+            - "Priority Mail Legal Flat Rate Envelope"
+            - "Priority Mail Flat Rate Padded Envelope"
+            - "Priority Mail Small Flat Rate Box"
+            - "Priority Mail Medium Flat Rate Box"
+            - "Priority Mail Large Flat Rate Box"
+            - "Priority Mail Regional Rate Box A"
+            - "Priority Mail Regional Rate Box B"
+            - "Parcel Select"
             - "Parcel Select Ground"
+            - "Priority Mail Flat Rate Envelope"
+            - "Priority Mail Cubic"
+            - "Priority Mail Large Flat Rate Board Game Box"
+            - "Priority Mail Medium Flat Rate Box"
+            - "Ground Advantage"
         weight:
           type: number
           example: 80.5
@@ -327,8 +342,8 @@ components:
         - postalCode
         - address1
       properties:
-#        pickupAddress:
-#          type: string
+        #        pickupAddress:
+        #          type: string
         country:
           type: string
           description: "Country code"
