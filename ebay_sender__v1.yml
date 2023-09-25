@@ -11,7 +11,7 @@ paths:
   /sender/send:
     post:
       tags:
-        - EbaySender
+        - Sender
       summary: "Make a ebay request"
       description: "Made a request to ebay with "
       requestBody:
