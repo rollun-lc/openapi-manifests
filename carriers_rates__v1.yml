@@ -176,3 +176,11 @@ components:
         totalPrice:
           type: number
           example: 7.85
+        shippingArriveDate:
+          type: string
+          nullable: true
+          example: '28.09.2023 21:00:00'
+        shippingSendDate:
+          type: string
+          nullable: true
+          example: '39.09.2023 21:00:00'
