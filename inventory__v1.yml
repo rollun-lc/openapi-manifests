@@ -610,7 +610,7 @@ components:
           type: object
           nullable: true
           additionalProperties: true
-        auto_accept_price:
+        autoAcceptPrice:
           type: number
           nullable: true
 
