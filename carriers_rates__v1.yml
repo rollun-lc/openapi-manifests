@@ -114,14 +114,16 @@ components:
             - ounce
         width:
           type: number
+          minimum: 1
           description: width in inches
         length:
           type: number
+          minimum: 1
           description: length in inches
         height:
           type: number
+          minimum: 1
           description: height in inches
-
     ## Resource object
     Rates:
       type: object
