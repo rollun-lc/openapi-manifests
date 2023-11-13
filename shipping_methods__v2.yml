@@ -176,11 +176,11 @@ components:
             $ref: '#/components/schemas/RequestedItem'
     RequestedItem:
       type: object
-      properties:
+      properties: 
         rid:
           type: string
           description: item rid
-          example: RID01
+          example: AHI7L
         qty:
           type: integer
           description: requested qty for item
