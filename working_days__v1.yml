@@ -20,7 +20,7 @@ paths:
           required: true
           schema:
             type: string
-            example: '1699975901'
+            example: '2038-01-19 03:14:07'
         - name: daysAmount
           in: query
           required: true
@@ -84,11 +84,11 @@ components:
     AddWorkingDaysResultItem:
       type: object
       required:
-        - endTimestamp
+        - endDate
       properties:
-        endTimestamp:
-          type: number
-          example: 1699975901
+        endDate:
+          type: string
+          example: '2038-01-19 03:14:07'
     AddWorkingDaysResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
