@@ -98,6 +98,7 @@ components:
           enum: 
             - USPS
             - FedEx
+            - UPS
         zipFrom:
           type: string
           example: "91601"
@@ -121,7 +122,10 @@ components:
         height:
           type: number
           description: height in inches
-
+        sendDateTime:
+          type: string
+          format: date-time
+          example: "2023-11-15 12:00:00"
     ## Resource object
     Rates:
       type: object
@@ -131,13 +135,13 @@ components:
           description: List of rates
           items:
             $ref: '#/components/schemas/Rate'
-
     Rate:
       type: object
       properties:
         shippingMethodName:
           type: string
-          enum: 
+          enum:
+            - UPS Ground
             - First-Class Package Service
             - Priority Mail Cubic
             - Parcel Select Ground
@@ -179,8 +183,8 @@ components:
         shippingArriveDate:
           type: string
           nullable: true
-          example: '28.09.2023 21:00:00'
+          example: '2023-11-19 21:00:00'
         shippingSendDate:
           type: string
           nullable: true
-          example: '39.09.2023 21:00:00'
+          example: '2023-11-16 21:00:00'
