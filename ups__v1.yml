@@ -135,14 +135,6 @@ components:
             - UPS Ground
           example: UPS Ground
     ## Resource object
-#    TimeInTransit:
-#      type: object
-#      properties:
-#        TimeInTransit:
-#          type: array
-#          description: List of services
-#          items:
-#            $ref: '#/components/schemas/TimeInTransitItem'
     TimeInTransitItem:
       type: object
       required:
