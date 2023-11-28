@@ -13,7 +13,7 @@ paths:
       tags:
         - TimeInTransit
       summary: "Get UPS Time In Transit"
-      description: ""
+      description: "Get Time and Transit Response"
       requestBody:
         description: ""
         required: true
@@ -33,11 +33,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResult'
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     # Basic results components
-    ErrorResult:
+    ErrorResponse:
       type: object
       properties:
         messages:
@@ -70,9 +70,9 @@ components:
         text:
           type: string
           description: Message, that describes what went wrong
-    SuccessResult:
+    SuccessResponse:
       allOf:
-        - $ref: '#/components/schemas/ErrorResult'
+        - $ref: '#/components/schemas/ErrorResponse'
       type: object
       properties:
         data:
@@ -80,6 +80,8 @@ components:
 
     ## One resource result
     TimeInTransitResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
       type: object
       properties:
         data:
@@ -87,11 +89,6 @@ components:
           description: 'Found delivery methods'
           items:
             $ref: '#/components/schemas/TimeInTransitItem'
-        messages:
-          type: array
-          description: 'Collection of messages. There may be errors, notes and more.'
-          items:
-            $ref: '#/components/schemas/Message'
 
     ## Body for post request
     TimeInTransitPostRequest:
@@ -141,6 +138,8 @@ components:
         - businessTransitDays
         - cutOffTime
         - shippingArriveDate
+        - pickupDateTime
+        - shippingShipDateTime
       properties:
         businessTransitDays:
           type: integer
@@ -148,7 +147,15 @@ components:
         cutOffTime:
           type: string
           example: '17:00:00'
-        shippingArriveDate:
+        arriveDateTime:
+          type: string
+          nullable: true
+          example: '2023-11-19 21:00:00'
+        pickupDateTime:
+          type: string
+          nullable: true
+          example: '2023-11-19 21:00:00'
+        shipDateTime:
           type: string
           nullable: true
           example: '2023-11-19 21:00:00'
