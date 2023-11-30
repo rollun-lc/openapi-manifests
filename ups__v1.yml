@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Ups"
-  description: Manifest description
+  description: UPS TimeInTransit 
 servers:
   - url: http://carriers/openapi/Ups/v1
 tags:
