@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Ups"
-  description: UPS TimeInTransit 
+  description: UPS TimeInTransit
 servers:
   - url: http://carriers/openapi/Ups/v1
 tags:
@@ -126,11 +126,13 @@ components:
         shipDateTime:
           type: string
           example: "2023-11-15 12:00:00"
+          description: Local Time Zone
         shippingMethodType:
           type: string
           enum:
             - UPS Ground
           example: UPS Ground
+          default: UPS Ground
     ## Resource object
     TimeInTransitItem:
       type: object
@@ -151,10 +153,12 @@ components:
           type: string
           nullable: true
           example: '2023-11-19 21:00:00'
+          description: Local Time
         pickupDateTime:
           type: string
           nullable: true
-          example: '2023-11-19 21:00:00'
+          example: '2023-11-17 21:00:00'
+          description: Local Time
         shipDateTime:
           type: string
           nullable: true
