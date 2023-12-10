@@ -166,7 +166,8 @@ components:
           description: Filter by sender
           items:
             type: string
-            default: au_ds_all
+            default: au_ds_a
+            example: [pu_ds_a, wps_ds_a, pickup_ut]
         customer:
           $ref: '#/components/schemas/Customer'
         items:
@@ -176,11 +177,11 @@ components:
             $ref: '#/components/schemas/RequestedItem'
     RequestedItem:
       type: object
-      properties: 
+      properties:
         rid:
           type: string
           description: item rid
-          example: AHI7L
+          example: 9RDHM
         qty:
           type: integer
           description: requested qty for item
