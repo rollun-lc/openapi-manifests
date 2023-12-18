@@ -215,6 +215,13 @@ components:
         shippingArriveDate:
           type: string
           example: '03.02.2020 09:00:00'
+        carrier:
+          type: string
+          enum:
+            - Usps
+            - Fedex
+          example: Fedex
+          nullable: true
       xml:
         name: Shipping
     ShippingMethodsResult:
