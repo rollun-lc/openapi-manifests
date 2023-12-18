@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "WorkingDays"
-  description: Retrieve data about failed processes in each service
+  description: Calculate Working Days
 servers:
   - url: http://localhost:8080/openapi/WorkingDays/v1
   - url: http://howtobuy5-ngx/openapi/WorkingDays/v1
@@ -20,7 +20,9 @@ paths:
           required: true
           schema:
             type: string
-            example: '2038-01-19 03:14:07'
+            format: date-time
+            example: '2038-01-19'
+            description: UTC format
         - name: daysAmount
           in: query
           required: true
@@ -35,6 +37,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AddWorkingDaysResult"
+        "422":
+          description: "Unprocessable Entity"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
         '500':
           description: "Internal error"
           content:
@@ -88,7 +96,7 @@ components:
       properties:
         endDate:
           type: string
-          example: '2038-01-19 03:14:07'
+          example: '2038-01-19'
     AddWorkingDaysResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
