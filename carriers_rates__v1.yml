@@ -2,9 +2,10 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "CarriersRates"
-  description: Manifest description
+  description: Get carrier shipping methods with price
 servers:
   - url: http://carriers/openapi/CarriersRates/v1
+  - url: http://localhost:8080/openapi/CarriersRates/v1
 tags:
   - name: Rates
 paths:
@@ -13,9 +14,7 @@ paths:
       tags:
         - Rates
       summary: "Get carrier rates"
-      description: ""
       requestBody:
-        description: ""
         required: true
         content:
           application/json:
