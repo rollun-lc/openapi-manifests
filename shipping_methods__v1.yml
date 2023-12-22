@@ -169,12 +169,9 @@ components:
         - shippingMethodId
         - shippingMethodName
         - trackNumberDate
-        - shippingSendDate
         - shippingArriveDate
-        - carrier
         - cost
       properties:
-
         deliverySender:
           type: string
           example: 'wps_ds'
