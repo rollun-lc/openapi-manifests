@@ -2,12 +2,38 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Feeds"
-  description: Feeds handling API
+  description: EbaySDK
 servers:
   - url: http://amz-orders-ngx/openapi/Feeds/v1
 tags:
   - name: Feeds
 paths:
+  "/feed/{feedId}":
+    get:
+      tags:
+        - Feeds
+      parameters:
+        - in: path
+          name: feedId
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the feed to get
+      summary: "Get Feed"
+      description: ""
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFeedResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
   "/feed":
     post:
       tags:
@@ -77,6 +103,40 @@ components:
         data:
           type: object
 
+    GetFeedResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Feed'
+    Feed:
+      type: object
+      properties:
+        feedId:
+          type: string
+        feedType:
+          type: string
+        marketplaceIds:
+          type: array
+          items:
+            type: string
+        createdTime:
+          type: string
+        processingStatus:
+          type: string
+          enum:
+            - CANCELLED
+            - DONE
+            - FATAL
+            - IN_PROGRESS
+            - IN_QUEUE
+        processingStartTime:
+          type: string
+        processingEndTime:
+          type: string
+        resultFeedDocumentId:
+          type: string
     ## One resource result
     CreateFeedResult:
       allOf:
@@ -84,7 +144,7 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/Feed'
+          $ref: '#/components/schemas/FeedCompact'
 
     CreateFeedRequest:
       type: object
@@ -92,7 +152,7 @@ components:
         xml:
           type: string
 
-    Feed:
+    FeedCompact:
       type: object
       properties:
         feed_id:
