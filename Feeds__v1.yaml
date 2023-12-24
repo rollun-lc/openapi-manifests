@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Feeds"
-  description: EbaySDK
+  description: Feeds handling API
 servers:
   - url: http://amz-orders-ngx/openapi/Feeds/v1
 tags:
