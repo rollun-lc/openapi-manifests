@@ -121,13 +121,21 @@ components:
     LabelPostRequest:
       type: object
       required:
-        - requiredField
+        - carrier
+        - receiver
+        - sender
+        - weight
+        - width
+        - length
+        - height
       properties:
         carrier:
           type: string
           enum:
             - USPS
             - FedEx
+            - UPS
+          example: FedEx
         receiver:
           allOf:
             - $ref: '#/components/schemas/Customer'
@@ -160,6 +168,8 @@ components:
             - Rlln_FEDEX_es_Box_1R
             - Rlln_FEDEX_hd_Reg
             - Rlln_FEDEX_sp_Reg
+            - UPS Ground
+          example: 'Rlln_FEDEX_sp_Reg'
         weight:
           type: number
           example: 80.5
@@ -168,21 +178,33 @@ components:
           enum:
             - pound
             - ounce
+          example: pound
         width:
           type: number
           description: width in inches
+          example: 5
         length:
           type: number
           description: length in inches
+          example: 5
         height:
           type: number
           description: height in inches
+          example: 5
         canFly:
           type: boolean
+          default: false
+          example: false
         hazardousMaterials:
           description: Indicate type of Dangerous Goods being reported.
           type: boolean
-
+          example: false
+          default: false
+        isSandbox:
+          type: boolean
+          default: true
+          example: true
+          description: Indicate is request to sandbox api
     LabelAmazonPostRequest:
       type: object
       required:
@@ -217,7 +239,6 @@ components:
             - "Priority Mail Flat Rate Envelope"
             - "Priority Mail Cubic"
             - "Priority Mail Large Flat Rate Board Game Box"
-            - "Priority Mail Medium Flat Rate Box"
             - "Ground Advantage"
         weight:
           type: number

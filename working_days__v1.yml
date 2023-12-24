@@ -1,0 +1,106 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "WorkingDays"
+  description: Calculate Working Days
+servers:
+  - url: http://localhost:8080/openapi/WorkingDays/v1
+  - url: http://howtobuy5-ngx/openapi/WorkingDays/v1
+tags:
+  - name: AddWorkingDays
+paths:
+  "/add-working-days":
+    get:
+      tags:
+        - AddWorkingDays
+      summary: "Add an amount of working time to a given start date/time"
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+            example: '2038-01-19'
+            description: UTC format
+        - name: daysAmount
+          in: query
+          required: true
+          schema:
+            type: number
+            example: 3
+            description: 'Amount of days need to add'
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddWorkingDaysResult"
+        "422":
+          description: "Unprocessable Entity"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+          description: >
+            UNDEFINED - Any undefined message type
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    AddWorkingDaysResultItem:
+      type: object
+      required:
+        - endDate
+      properties:
+        endDate:
+          type: string
+          example: '2038-01-19'
+    AddWorkingDaysResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AddWorkingDaysResultItem"

@@ -1,0 +1,99 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: EbaySender
+servers:
+  - url: http://ebay-p-inventory/openapi/EbaySender/v1
+  - url: http://ebay-r-inventory/openapi/EbaySender/v1
+  - url: http://l.ebay-inventory/openapi/EbaySender/v1
+  - url: http://localhost:8001/openapi/EbaySender/v1
+paths:
+  /sender/send:
+    post:
+      tags:
+        - Sender
+      summary: "Make a ebay request"
+      description: "Made a request to ebay with "
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EbayPostRequest'
+      responses:
+        201:
+          description: One item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    EbaySenderRequest:
+      type: object
+      required:
+        - url
+        - type
+      properties:
+        url:
+          type: string
+        type:
+          type: string
+        body:
+          type: object
+    SuccessResponse:
+      type: object
+      properties:
+        data:
+          type: string
+        code:
+          type: integer
+          example: 200
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    Message:
+      type: object
+      required:
+        - level
+        - text
+      properties:
+        level:
+          type: string
+          description: 'Message level  (like in a logger)'
+          example: 'error'
+        text:
+          type: string
+          description: 'Message text'
+          example: 'Something wrong.'
+        context:
+          type: array
+          description: 'Message context (like in a logger)'
+          items:
+            type: string
+
+    EbayPostRequest:
+      type: object
+      required:
+        - requiredField
+      properties:
+        url:
+          type: string
+          example: /sell/inventory/v1/inventory_item/1113A
+        type:
+          type: string
+          example: GET
+        body:
+          type: object
+          example: {"prop1" : 1}

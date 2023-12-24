@@ -1,0 +1,165 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Ups"
+  description: UPS TimeInTransit
+servers:
+  - url: http://carriers/openapi/Ups/v1
+tags:
+  - name: TimeInTransit
+paths:
+  "/timeInTransit":
+    post:
+      tags:
+        - TimeInTransit
+      summary: "Get UPS Time In Transit"
+      description: "Get Time and Transit Response"
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeInTransitPostRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeInTransitResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    # Basic results components
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## One resource result
+    TimeInTransitResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          type: array
+          description: 'Found delivery methods'
+          items:
+            $ref: '#/components/schemas/TimeInTransitItem'
+
+    ## Body for post request
+    TimeInTransitPostRequest:
+      type: object
+      required:
+        - zipFrom
+        - zipTo
+      properties:
+        zipFrom:
+          type: string
+          example: "91601"
+        zipTo:
+          type: string
+          example: "91730"
+        cityToName:
+          type: string
+          example: "OZARK"
+        stateToCode:
+          type: string
+          example: "OZARK"
+        cityFromName:
+          type: string
+          example: "HOLMES"
+        stateFromCode:
+          type: string
+          example: "PA"
+        weight:
+          type: number
+          example: 1.5
+          description: in LBS
+        shipmentContentsValue:
+          type: number
+          example: 1.5
+          description: The monetary value of shipment contents.
+        shipDateTime:
+          type: string
+          example: "2023-11-15 12:00:00"
+          description: Local Time Zone
+        shippingMethodType:
+          type: string
+          enum:
+            - UPS Ground
+          example: UPS Ground
+          default: UPS Ground
+    ## Resource object
+    TimeInTransitItem:
+      type: object
+      required:
+        - businessTransitDays
+        - cutOffTime
+        - shippingArriveDate
+        - pickupDateTime
+        - shippingShipDateTime
+      properties:
+        businessTransitDays:
+          type: integer
+          example: 3
+        cutOffTime:
+          type: string
+          example: '17:00:00'
+        arriveDateTime:
+          type: string
+          nullable: true
+          example: '2023-11-19 21:00:00'
+          description: Local Time
+        pickupDateTime:
+          type: string
+          nullable: true
+          example: '2023-11-17 21:00:00'
+          description: Local Time
+        shipDateTime:
+          type: string
+          nullable: true
+          example: '2023-11-19 21:00:00'

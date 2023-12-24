@@ -5,6 +5,7 @@ info:
   description: Get carrier shipping methods with price
 servers:
   - url: http://carriers/openapi/CarriersRates/v1
+  - url: http://localhost:8080/openapi/CarriersRates/v1
 tags:
   - name: Rates
 paths:
@@ -13,9 +14,7 @@ paths:
       tags:
         - Rates
       summary: "Get carrier rates"
-      description: ""
       requestBody:
-        description: ""
         required: true
         content:
           application/json:
@@ -98,6 +97,7 @@ components:
           enum: 
             - USPS
             - FedEx
+            - UPS
         zipFrom:
           type: string
           example: "91601"
@@ -121,7 +121,9 @@ components:
         height:
           type: number
           description: height in inches
-
+        sendDateTime:
+          type: string
+          example: "2023-11-15 12:00:00"
     ## Resource object
     Rates:
       type: object
@@ -131,13 +133,13 @@ components:
           description: List of rates
           items:
             $ref: '#/components/schemas/Rate'
-
     Rate:
       type: object
       properties:
         shippingMethodName:
           type: string
-          enum: 
+          enum:
+            - UPS Ground
             - First-Class Package Service
             - Priority Mail Cubic
             - Parcel Select Ground
@@ -145,6 +147,42 @@ components:
             - Priority Mail Flat Rate Envelope
             - Priority Mail Legal Flat Rate Envelope
             - Priority Mail Flat Rate Padded Envelope
+            - FEDEX_INTERNATIONAL_PRIORITY_EXPRESS
+            - INTERNATIONAL_FIRST
+            - FEDEX_INTERNATIONAL_PRIORITY
+            - INTERNATIONAL_ECONOMY
+            - FEDEX_GROUND
+            - FEDEX_CARGO_MAIL
+            - FEDEX_CARGO_INTERNATIONAL_PREMIUM
+            - FIRST_OVERNIGHT
+            - FIRST_OVERNIGHT_FREIGHT
+            - FEDEX_1_DAY_FREIGHT
+            - FEDEX_2_DAY_FREIGHT
+            - FEDEX_3_DAY_FREIGHT
+            - INTERNATIONAL_PRIORITY_FREIGHT
+            - INTERNATIONAL_ECONOMY_FREIGHT
+            - FEDEX_CARGO_AIRPORT_TO_AIRPORT
+            - INTERNATIONAL_PRIORITY_DISTRIBUTION
+            - FEDEX_IP_DIRECT_DISTRIBUTION_FREIGHT
+            - INTL_GROUND_DISTRIBUTION
+            - GROUND_HOME_DELIVERY
+            - SMART_POST
+            - PRIORITY_OVERNIGHT
+            - STANDARD_OVERNIGHT
+            - FEDEX_2_DAY
+            - FEDEX_2_DAY_AM
+            - FEDEX_EXPRESS_SAVER
+            - SAME_DAY
+            - SAME_DAY_CITY
+            - FEDEX_FIRST_FREIGHT
         totalPrice:
           type: number
           example: 7.85
+        shippingArriveDate:
+          type: string
+          nullable: true
+          example: '2023-11-19 21:00:00'
+        shippingSendDate:
+          type: string
+          nullable: true
+          example: '2023-11-16 21:00:00'
