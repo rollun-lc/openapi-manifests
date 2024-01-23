@@ -210,7 +210,12 @@ components:
         shippingMethodId:
           type: string
           example: 'ROF-CN-PickUp-Usps-PM-FR-LegalEnv'
-          description:  ""
+          description:  >
+            `ROF` - Rollun Office
+            `CN` - state Connecticut
+            `PickUp` - Shipping type PickUp
+            `Usps-PM-FR-LegalEn` - Shipping Method Usps Priority Mail Legal Flat Rate Envelope
+
         shippingMethodName:
           type: string
           example: 'Priority Mail Large Flat Rate Board Game Box'
