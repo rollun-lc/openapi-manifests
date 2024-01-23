@@ -191,6 +191,7 @@ components:
       required:
         - sender
         - cost
+        - carrier
         - shippingMethodId
         - shippingMethodName
         - trackNumberDate
@@ -199,9 +200,17 @@ components:
         sender:
           type: string
           example: 'wps_ds'
+        carrier:
+          type: string
+          enum:
+            - Usps
+            - Fedex
+          example: Fedex
+          nullable: true
         shippingMethodId:
           type: string
-          example: 'PU-PickUp-Usps-PM-FR-BgBox'
+          example: 'ROF-CN-PickUp-Usps-PM-FR-LegalEnv'
+          description:  ""
         shippingMethodName:
           type: string
           example: 'Priority Mail Large Flat Rate Board Game Box'
@@ -215,13 +224,6 @@ components:
         shippingArriveDate:
           type: string
           example: '03.02.2020 09:00:00'
-        carrier:
-          type: string
-          enum:
-            - Usps
-            - Fedex
-          example: Fedex
-          nullable: true
       xml:
         name: Shipping
     ShippingMethodsResult:
