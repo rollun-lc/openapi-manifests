@@ -1,13 +1,14 @@
 openapi: 3.0.0
 info:
-  version: "1"
-  title: "CarriersRates"
-  description: Get carrier shipping methods with price
+  version: '1'
+  title: 'CarriersRates'
+  description: Get carrier shipping methods with price. In this version was added transitInTime
 servers:
   - url: http://carriers/openapi/CarriersRates/v1
   - url: http://localhost:8080/openapi/CarriersRates/v1
 tags:
   - name: Rates
+  - name: TransitInTime
 paths:
   "/rates":
     post:
@@ -27,6 +28,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RatesResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/transitInTime":
+    post:
+      tags:
+        - TransitInTime
+      summary: "Get carrier arrive date"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostTransitInTimeRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransitInTimeResult'
         "500":
           description: 'Some internal error'
           content:
@@ -86,15 +111,29 @@ components:
         data:
           $ref: '#/components/schemas/Rates'
 
-    ## Body for post request
-    RatesPostRequest:
+    TransitInTimeResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TransitInTimeData'
+    PostTransitInTimeRequest:
       type: object
       required:
         - carrier
+        - zipFrom
+        - zipTo
+        - weight
+        - weightUnitOfMeasurement
+        - width
+        - length
+        - height
+        - shippingMethodName
       properties:
         carrier:
           type: string
-          enum: 
+          enum:
             - USPS
             - FedEx
             - UPS
@@ -109,7 +148,62 @@ components:
           example: 80.5
         weightUnitOfMeasurement:
           type: string
-          enum: 
+          enum:
+            - pound
+            - ounce
+        width:
+          type: number
+          description: width in inches
+        length:
+          type: number
+          description: length in inches
+        height:
+          type: number
+          description: height in inches
+        sendDate:
+          type: string
+          example: "2023-11-15"
+          description: By default now UTC
+        shippingMethodName:
+          type: string
+          description: Allowed methods
+          enum:
+            # UPS
+            - UPS Ground
+            # USPS
+            - USPS Ground Advantage
+            - Priority Mail
+            # Fedex
+            - GROUND_HOME_DELIVERY
+            - FIRST_OVERNIGHT
+            - PRIORITY_OVERNIGHT
+            - STANDARD_OVERNIGHT
+            - FEDEX_2_DAY
+            - FEDEX_EXPRESS_SAVER
+    ## Body for post request
+    RatesPostRequest:
+      type: object
+      required:
+        - carrier
+      properties:
+        carrier:
+          type: string
+          enum:
+            - USPS
+            - FedEx
+            - UPS
+        zipFrom:
+          type: string
+          example: "91601"
+        zipTo:
+          type: string
+          example: "91730"
+        weight:
+          type: number
+          example: 80.5
+        weightUnitOfMeasurement:
+          type: string
+          enum:
             - pound
             - ounce
         width:
@@ -133,6 +227,39 @@ components:
           description: List of rates
           items:
             $ref: '#/components/schemas/Rate'
+    TransitInTimeData:
+      type: array
+      items:
+        $ref: '#/components/schemas/TransitInTimeItem'
+    TransitInTimeItem:
+      type: object
+      required:
+        - shippingMethodName
+        - shippingArriveDate
+        - shippingSendDate
+      properties:
+        shippingMethodName:
+          type: string
+          description: Allowed methods
+          enum:
+            # UPS
+            - UPS Ground
+            # USPS
+            - USPS Ground Advantage
+            - Priority Mail
+            # Fedex
+            - GROUND_HOME_DELIVERY
+            - FIRST_OVERNIGHT
+            - PRIORITY_OVERNIGHT
+            - STANDARD_OVERNIGHT
+            - FEDEX_2_DAY
+            - FEDEX_EXPRESS_SAVER
+        shippingArriveDate:
+          type: string
+          example: '2023-11-19 21:00:00'
+        shippingSendDate:
+          type: string
+          example: '2023-11-16 21:00:00'
     Rate:
       type: object
       properties:
@@ -140,6 +267,7 @@ components:
           type: string
           enum:
             - UPS Ground
+            - USPS Ground Advantage
             - First-Class Package Service
             - Priority Mail Cubic
             - Parcel Select Ground
@@ -175,6 +303,13 @@ components:
             - SAME_DAY
             - SAME_DAY_CITY
             - FEDEX_FIRST_FREIGHT
+        shippingContainerName:
+          type: string
+          nullable: true
+          enum:
+            - One Rate Box
+            - One Rate Small Box
+            - One Rate Envelope
         totalPrice:
           type: number
           example: 7.85
