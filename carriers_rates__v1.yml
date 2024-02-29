@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  version: '1'
-  title: 'CarriersRates'
-  description: Get carrier shipping methods with price. In this version was added transitInTime
+  version: "1"
+  title: "CarriersRates"
+  description: Get carrier shipping methods with price
 servers:
   - url: http://carriers/openapi/CarriersRates/v1
   - url: http://localhost:8080/openapi/CarriersRates/v1
@@ -185,6 +185,13 @@ components:
       type: object
       required:
         - carrier
+        - zipFrom
+        - zipTo
+        - weight
+        - weightUnitOfMeasurement
+        - width
+        - length
+        - height
       properties:
         carrier:
           type: string
@@ -218,7 +225,66 @@ components:
         sendDateTime:
           type: string
           example: "2023-11-15 12:00:00"
+        stateFrom:
+          type: string
+          example: "CA"
+        stateTo:
+          type: string
+          example: "WV"
+        cityFrom:
+          type: string
+          example: "CHANDLER"
+        cityTo:
+          type: string
+          example: "FRAZIERS BTM"
+        addressLineFrom:
+          type: string
+          example: "5665 W GALVESTON ST UNIT 62"
+        addressLineTo:
+          type: string
+          example: "1911 EVERGREEN RD"
     ## Resource object
+    ShippingMethodName:
+      type: string
+      description: also need to change another shippingMethodName !!!
+      enum:
+        - UPS Ground
+        - USPS Ground Advantage
+        - First-Class Package Service
+        - Priority Mail Cubic
+        - Parcel Select Ground
+        - Priority Mail
+        - Priority Mail Flat Rate Envelope
+        - Priority Mail Legal Flat Rate Envelope
+        - Priority Mail Flat Rate Padded Envelope
+        - FEDEX_INTERNATIONAL_PRIORITY_EXPRESS
+        - INTERNATIONAL_FIRST
+        - FEDEX_INTERNATIONAL_PRIORITY
+        - INTERNATIONAL_ECONOMY
+        - FEDEX_GROUND
+        - FEDEX_CARGO_MAIL
+        - FEDEX_CARGO_INTERNATIONAL_PREMIUM
+        - FIRST_OVERNIGHT
+        - FIRST_OVERNIGHT_FREIGHT
+        - FEDEX_1_DAY_FREIGHT
+        - FEDEX_2_DAY_FREIGHT
+        - FEDEX_3_DAY_FREIGHT
+        - INTERNATIONAL_PRIORITY_FREIGHT
+        - INTERNATIONAL_ECONOMY_FREIGHT
+        - FEDEX_CARGO_AIRPORT_TO_AIRPORT
+        - INTERNATIONAL_PRIORITY_DISTRIBUTION
+        - FEDEX_IP_DIRECT_DISTRIBUTION_FREIGHT
+        - INTL_GROUND_DISTRIBUTION
+        - GROUND_HOME_DELIVERY
+        - SMART_POST
+        - PRIORITY_OVERNIGHT
+        - STANDARD_OVERNIGHT
+        - FEDEX_2_DAY
+        - FEDEX_2_DAY_AM
+        - FEDEX_EXPRESS_SAVER
+        - SAME_DAY
+        - SAME_DAY_CITY
+        - FEDEX_FIRST_FREIGHT
     Rates:
       type: object
       properties:
@@ -307,9 +373,13 @@ components:
           type: string
           nullable: true
           enum:
+            - One Rate Envelope
             - One Rate Box
             - One Rate Small Box
-            - One Rate Envelope
+            - One Rate Medium Box
+            - One Rate Large Box
+            - One Rate Pak
+            - One Rate Extra Large Box
         totalPrice:
           type: number
           example: 7.85
