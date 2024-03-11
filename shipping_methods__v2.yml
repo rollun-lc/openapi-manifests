@@ -167,7 +167,7 @@ components:
           items:
             type: string
             default: au_ds_a
-            example: [pu_ds_a, wps_ds_a, pickup_ut]
+            example: [au_ds_a, pu_ds_a, pu_ds_b, pu_ds_c, pu_ds_d, pu_ds_e, rm_ds_a, rm_ds_b, rm_ds_c, rm_ds_d, rm_ds_e, wps_ds_a, wps_ds_b, wps_ds_c, wps_ds_d, wps_ds_e, pickup_cn, pickup_ky, pickup_ny,pickup_cn, pickup_ut]
         customer:
           $ref: '#/components/schemas/Customer'
         items:
