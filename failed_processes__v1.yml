@@ -10,6 +10,7 @@ servers:
   - url: http://ebay-r-inventory/openapi/FailedProcesses/v1
   - url: http://ebay-p-inventory/openapi/FailedProcesses/v1
   - url: http://carriers/openapi/FailedProcesses/v1
+  - url: http://suppliers/openapi/FailedProcesses/v1
 tags:
   - name: ProcessData
 paths:
