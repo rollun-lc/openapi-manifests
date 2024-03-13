@@ -266,6 +266,8 @@ components:
             - LOGGER_MESSAGE
             - IGNORED_SHIPPING_METHOD
             - NO_ESTIMATES_FOR_SHIPPING_METHOD
+            - TOO_LARGE
+            - CANNOT_FIT
           description: >
             You can expose this enum for all your errors
             UNDEFINED - Any undefined message type
