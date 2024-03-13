@@ -87,6 +87,8 @@ components:
           enum:
             - UNDEFINED
             - LOGGER_MESSAGE
+            - TOO_LARGE
+            - CANNOT_FIT
           description: >
             You can expose this enum for all your errors
             UNDEFINED - Any undefined message type
