@@ -1,0 +1,247 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "ContainerCalculator"
+  description: Calculate optimal container for item
+servers:
+  - url: http://carriers/openapi/ContainerCalculator/v1
+  - url: http://localhost:8080/openapi/ContainerCalculator/v1
+tags:
+  - name: CalculateOptimalContainer
+paths:
+  "/calculateOptimalContainer":
+    post:
+      tags:
+        - CalculateOptimalContainer
+      summary: "Get optimal container for item"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptimalContainerRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimalContainerResponse'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    ## Response object
+    OptimalContainerResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/OptimalContainerData'
+    ## Request object
+    OptimalContainerRequest:
+      type: object
+      required:
+        - item
+        - container
+      properties:
+        item:
+          $ref: '#/components/schemas/Item'
+        container:
+          $ref: '#/components/schemas/Container'
+    ## Resource object
+    FixedContainer:
+      type: object
+      required:
+        - maxWeight
+        - type
+        - dimensions
+      properties:
+        maxWeight:
+          $ref: '#/components/schemas/Weight'
+        type:
+          $ref: '#/components/schemas/ContainerType'
+        dimensions:
+          $ref: '#/components/schemas/Dimensions'
+    DistanceUnitOfMeasurement:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          enum:
+            - inch
+          example: inch
+    DistanceNullable:
+      type: object
+      nullable: true
+      required:
+        - value
+        - unitOfMeasurement
+      properties:
+        value:
+          type: number
+          example: 3
+        unitOfMeasurement:
+          $ref: '#/components/schemas/DistanceUnitOfMeasurement'
+    Distance:
+      type: object
+      required:
+        - value
+        - unitOfMeasurement
+      properties:
+        value:
+          type: number
+          example: 3
+        unitOfMeasurement:
+          $ref: '#/components/schemas/DistanceUnitOfMeasurement'
+    Dimensions:
+      type: object
+      required:
+        - length
+        - width
+        - height
+      properties:
+        length:
+          $ref: '#/components/schemas/Distance'
+        width:
+          $ref: '#/components/schemas/Distance'
+        height:
+          $ref: '#/components/schemas/Distance'
+        girth1:
+          $ref: '#/components/schemas/DistanceNullable'
+        girth2:
+          $ref: '#/components/schemas/DistanceNullable'
+        girth3:
+          $ref: '#/components/schemas/DistanceNullable'
+    WeightUnitOfMeasurement:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          enum:
+            - ounce
+            - pound
+          example: pound
+    Weight:
+      type: object
+      required:
+        - value
+        - unitOfMeasurement
+      properties:
+        value:
+          type: number
+          example: 3
+        unitOfMeasurement:
+          $ref: '#/components/schemas/WeightUnitOfMeasurement'
+    ContainerType:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          enum:
+            - envelope
+            - box
+            - tube
+          example: box
+    Container:
+      type: object
+      required:
+        - type
+        - maxWeight
+        - boundaryDimensions
+      properties:
+        type:
+          $ref: '#/components/schemas/ContainerType'
+        maxWeight:
+          $ref: '#/components/schemas/Weight'
+        boundaryDimensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/BoundaryDimensionsItem"
+    BoundaryDimensionsItem:
+      type: object
+      properties:
+        maxDimensions:
+          $ref: "#/components/schemas/Dimensions"
+        minDimensions:
+          $ref: "#/components/schemas/Dimensions"
+    ItemAttributes:
+      type: object
+      properties:
+        isTire:
+          type: boolean
+          example: false
+          default: false
+    Item:
+      type: object
+      required:
+        - dimensions
+        - weight
+        - attributes
+      properties:
+        dimensions:
+          $ref: '#/components/schemas/Dimensions'
+        weight:
+          $ref: '#/components/schemas/Weight'
+        attributes:
+          $ref: '#/components/schemas/ItemAttributes'
+    OptimalContainerData:
+      type: object
+      properties:
+        container:
+          $ref: '#/components/schemas/FixedContainer'
