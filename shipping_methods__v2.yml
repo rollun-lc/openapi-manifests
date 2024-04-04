@@ -87,6 +87,22 @@ components:
             rid:
               type: string
               example: "1118V"
+            auFlatRateGroup:
+              type: string
+              example: "ATV TIRE/WHEEL"
+            rmFlatRateGroup:
+              type: string
+              example: "ATV TIRE/WHEEL"
+            puFlatRateGroup:
+              type: string
+              example: "ATV TIRE/WHEEL"
+            wpsFlatRateGroup:
+              type: string
+              example: "ATV TIRE/WHEEL"
+            wpsDropShipFee:
+              type: number
+              description: Shipping price
+              example: 14.0
     ErrorResult:
       type: object
       properties:
@@ -160,13 +176,15 @@ components:
       type: object
       required:
         - senders
+        - customer
+        - items
       properties:
         senders:
           type: array
           description: Filter by sender
           items:
             type: string
-            example: [au_ds_a, pu_ds_a, pu_ds_b, pu_ds_c, pu_ds_d, pu_ds_e, rm_ds_a, rm_ds_b, rm_ds_c, rm_ds_d, rm_ds_e, wps_ds_a, wps_ds_b, wps_ds_c, wps_ds_d, wps_ds_e, pickup_cn, pickup_ky, pickup_ny,pickup_cn, pickup_ut]
+            example: [au_ds_a, pu_ds_a, pu_ds_b, pu_ds_c, pu_ds_d, pu_ds_e, rm_ds_a, rm_ds_b, rm_ds_c, rm_ds_d, rm_ds_e, wps_ds_a, wps_ds_b, wps_ds_c, wps_ds_d, wps_ds_e, pickup_ky, pickup_cn, pickup_ut]
         customer:
           $ref: '#/components/schemas/Customer'
         items:
@@ -174,6 +192,30 @@ components:
           description: List of ordered products
           items:
             $ref: '#/components/schemas/RequestedItem'
+        startDateTime:
+          type: string
+          default: now in UTC
+          example: 2024-03-22T12:21:37
+        amazon:
+          type: object
+          required:
+            - items
+            - orderId
+          properties:
+            orderId:
+              type: string
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/AmazonLineItems'
+    AmazonLineItems:
+      type: object
+      properties:
+        OrderItemId:
+          type: string
+        Quantity:
+          type: number
+          example: 2
     RequestedItem:
       type: object
       properties:
@@ -204,6 +246,8 @@ components:
           enum:
             - Usps
             - Fedex
+            - Ups
+            - Turn14
           example: Fedex
           nullable: true
         shippingMethodId:
@@ -229,8 +273,21 @@ components:
           type: string
           description: In UTC
           example: '03.02.2020 3:59:00'
+        labelProvider:
+          $ref: '#/components/schemas/labelProvider'
       xml:
         name: Shipping
+    labelProvider:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Amazon
+        shippingMethods:
+          type: array
+          items:
+            type: string
+            example: [UPS Ground]
     ShippingMethodsResult:
       type: object
       properties:
