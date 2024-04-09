@@ -1,0 +1,233 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "RatesAmazon"
+  description: Get rates for labels Amazon
+servers:
+  - url: http://amz-orders-ngx/openapi/RatesAmazon/v1
+  - url: http://host.docker.internal:8080/openapi/RatesAmazon/v1
+tags:
+  - name: GetRates
+paths:
+  "/getRates":
+    post:
+      tags:
+        - GetRates
+      summary: "Get price for label Amazon"
+      description: "Get price for label Amazon"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetAmazonLabelRateRequest'
+      responses:
+        "200":
+          description: "Label Price Result"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAmazonLabelRateResponse'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - WRONG_SHIPPING_TYPE
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    ## Body for request
+    GetAmazonLabelRateRequest:
+      type: object
+      required:
+        - items
+        - orderId
+        - shippingMethodName
+        - package
+        - sender
+      properties:
+        orderId:
+          type: string
+          example: 112-6159810-5061807
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItems'
+        shippingMethodName:
+          type: string
+          enum:
+            - First-Class Package Service
+            - Priority Mail
+            - Priority Mail Legal Flat Rate Envelope
+            - Priority Mail Flat Rate Padded Envelope
+            - Priority Mail Small Flat Rate Box
+            - Priority Mail Large Flat Rate Box
+            - Priority Mail Regional Rate Box A
+            - Priority Mail Regional Rate Box B
+            - Parcel Select Ground
+            - Priority Mail Flat Rate Envelope
+            - Priority Mail Cubic
+            - Priority Mail Large Flat Rate Board Game Box
+            - Priority Mail Medium Flat Rate Box
+            - Ground Advantage
+            - UPS Ground
+            - FEDEX_2_DAY
+            - GROUND_HOME_DELIVERY
+        package:
+          $ref: '#/components/schemas/Package'
+        sender:
+          allOf:
+            - $ref: '#/components/schemas/Customer'
+          description: Sender of the shipment.
+    ## Body for response
+    GetAmazonLabelRateResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/LabelRates'
+    ## Resource object
+    Customer:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          description: Full name
+          example: Shawn Weisweaver
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person
+          example: "415-123-4567"
+        email:
+          type: string
+          nullable: true
+          description: Email address to reach the person
+          example: "test@mail.loc"
+        address:
+          $ref: "#/components/schemas/Address"
+    Address:
+      type: object
+      required:
+        - country
+        - state
+        - city
+        - postalCode
+        - address1
+      properties:
+        pickupAddress:
+          type: string
+        country:
+          type: string
+          description: "Country code"
+        state:
+          type: string
+          description: US state code
+          example: CA
+        city:
+          type: string
+          description: Full city name
+          example: San Francisco
+        postalCode:
+          type: string
+          description: ZIP or postal code
+          example: "94104"
+        address1:
+          type: string
+          description: First line of the address
+          example: "417 Montgomery St"
+    LabelRates:
+      type: object
+      required:
+        - totalPrice
+      properties:
+        totalPrice:
+          type: number
+          example: 17.85
+          description: Price for label in dollars
+    Package:
+      type: object
+      required:
+        - dimensions
+        - weight
+      properties:
+        dimensions:
+          $ref: '#/components/schemas/Dimensions'
+        weight:
+          type: number
+          example: 1.3
+          description: weight in lbs
+    Dimensions:
+      type: object
+      required:
+        - length
+        - width
+        - height
+      properties:
+        length:
+          type: number
+          example: 10.1
+          description: length in inches
+        width:
+          type: number
+          example: 8.7
+          description: width in inches
+        height:
+          type: number
+          example: 3.0
+          description: height in inches
+    LineItems:
+      type: object
+      properties:
+        OrderItemId:
+          type: string
+          example: 97488630894201
+        Quantity:
+          type: number
+          example: 2
