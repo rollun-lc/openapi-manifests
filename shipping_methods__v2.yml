@@ -288,6 +288,9 @@ components:
           items:
             type: string
             example: [UPS Ground]
+        labelPrice:
+          type: number
+          example: 14.0
     ShippingMethodsResult:
       type: object
       properties:
