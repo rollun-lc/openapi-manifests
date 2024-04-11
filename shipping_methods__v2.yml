@@ -196,23 +196,32 @@ components:
           type: string
           default: now in UTC
           example: 2024-03-22T12:21:37
-        amazon:
+        labels:
           type: object
           required:
+            - marketplaceName
             - items
             - orderId
           properties:
+            marketplaceName:
+              type: string
+              example: Amazon
+              enum:
+                - Amazon
+#                - Ebay
             orderId:
               type: string
+              example: 111-8958324-4542656
             items:
               type: array
               items:
-                $ref: '#/components/schemas/AmazonLineItems'
-    AmazonLineItems:
+                $ref: '#/components/schemas/LineItems'
+    LineItems:
       type: object
       properties:
         OrderItemId:
           type: string
+          example: 97757136216121
         Quantity:
           type: number
           example: 2
@@ -222,11 +231,11 @@ components:
         rid:
           type: string
           description: item rid
-          example: 9RDHM
+          example: 1SRPW
         qty:
           type: integer
           description: requested qty for item
-          example: 1
+          example: 2
     ShippingMethodsResponse:
       type: object
       required:
@@ -279,15 +288,17 @@ components:
         name: Shipping
     labelProvider:
       type: object
+      required:
+        - marketplaceName
+        - shippingMethod
+        - labelPrice
       properties:
-        name:
+        marketplaceName:
           type: string
           example: Amazon
-        shippingMethods:
-          type: array
-          items:
-            type: string
-            example: [UPS Ground]
+        shippingMethod:
+          type: string
+          example: UPS Ground
         labelPrice:
           type: number
           example: 14.0
