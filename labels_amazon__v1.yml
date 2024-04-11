@@ -4,7 +4,7 @@ info:
   title: "LabelsAmazon"
   description: Manifest description
 servers:
-  - url: http://carriers/openapi/LabelsAmazon/v1
+  - url: http://amz-orders-ngx/openapi/LabelsAmazon/v1
 tags:
   - name: Labels
 paths:
@@ -59,13 +59,13 @@ components:
   schemas:
     LabelShippingServiceListResponse:
       allOf:
-      - $ref: '#/components/schemas/SuccessResult'
+        - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
           $ref: '#/components/schemas/LabelShippingServiceList'
-        
-    LabelShippingServiceList:      
+
+    LabelShippingServiceList:
       type: array
       items:
         $ref: '#/components/schemas/LabelShippingServiceListItem'
@@ -115,8 +115,9 @@ components:
               type: boolean
               example: false
             LabelFormat:
+              nullable: true
               type: string
-              example: ''
+              example: 'PDF'
         AvailableLabelFormats:
           type: array
           items:
@@ -319,8 +320,8 @@ components:
         - postalCode
         - address1
       properties:
-#        pickupAddress:
-#          type: string
+        #        pickupAddress:
+        #          type: string
         country:
           type: string
           description: "Country code"
