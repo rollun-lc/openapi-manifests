@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "2"
   title: "Labels"
-  description: Manifest description
+  description: Manifest to making an label
 servers:
   - url: http://carriers/openapi/Labels/v2
 tags:
@@ -30,6 +30,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LabelResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/cancel-label":
+    post:
+      tags:
+        - CancelLabel
+      summary: "Cancel carrier label by track number"
+      description: "Cancel carrier label by track number"
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelLabelPostRequest'
+      responses:
+        "200":
+          description: "Label successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelLabelResult'
         "500":
           description: 'Some internal error'
           content:
@@ -205,6 +231,23 @@ components:
           default: true
           example: true
           description: Indicate is request to sandbox api
+    CancelLabelPostRequest:
+      type: object
+      required:
+        - trackingNumber
+        - carrier
+      properties:
+        trackingNumber:
+          type: string
+          example: '1ZISUS010330563105'
+          description: The package's tracking number.
+        carrier:
+          type: string
+          enum:
+#            - USPS
+            - FedEx
+            - UPS
+          example: FedEx
     LabelAmazonPostRequest:
       type: object
       required:
@@ -240,6 +283,7 @@ components:
             - "Priority Mail Cubic"
             - "Priority Mail Large Flat Rate Board Game Box"
             - "Ground Advantage"
+            - "Ground"
         weight:
           type: number
           example: 80.5
@@ -254,6 +298,8 @@ components:
           description: height in inches
         customId:
           type: string
+
+    ## Resource object
     LineItems:
       type: object
       properties:
@@ -261,8 +307,15 @@ components:
           type: string
         Quantity:
           type: number
-
-    ## Resource object
+    CancelLabelResult:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        description:
+          type: string
+          example: Success
     Label:
       type: object
       properties:
