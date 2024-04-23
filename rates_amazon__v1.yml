@@ -4,7 +4,7 @@ info:
   title: "RatesAmazon"
   description: Get rates for labels Amazon
 servers:
-  - url: http://amz-orders-ngx/openapi/RatesAmazon/v1
+  - url: http://marketplaces/openapi/RatesAmazon/v1
   - url: http://host.docker.internal:8080/openapi/RatesAmazon/v1
 tags:
   - name: GetRates
@@ -86,15 +86,17 @@ components:
         - orderId
         - shippingMethodName
         - package
-        - sender
       properties:
         orderId:
           type: string
-          example: 112-6159810-5061807
         items:
           type: array
           items:
             $ref: '#/components/schemas/LineItems'
+        sender:
+          allOf:
+            - $ref: '#/components/schemas/Customer'
+          description: Sender of the shipment.
         shippingMethodName:
           type: string
           enum:
@@ -117,10 +119,6 @@ components:
             - GROUND_HOME_DELIVERY
         package:
           $ref: '#/components/schemas/Package'
-        sender:
-          allOf:
-            - $ref: '#/components/schemas/Customer'
-          description: Sender of the shipment.
     ## Body for response
     GetAmazonLabelRateResponse:
       allOf:
@@ -130,58 +128,6 @@ components:
         data:
           $ref: '#/components/schemas/LabelRates'
     ## Resource object
-    Customer:
-      type: object
-      required:
-        - name
-        - address
-      properties:
-        name:
-          type: string
-          description: Full name
-          example: Shawn Weisweaver
-        phone:
-          type: string
-          nullable: true
-          description: Phone number to reach the person
-          example: "415-123-4567"
-        email:
-          type: string
-          nullable: true
-          description: Email address to reach the person
-          example: "test@mail.loc"
-        address:
-          $ref: "#/components/schemas/Address"
-    Address:
-      type: object
-      required:
-        - country
-        - state
-        - city
-        - postalCode
-        - address1
-      properties:
-        pickupAddress:
-          type: string
-        country:
-          type: string
-          description: "Country code"
-        state:
-          type: string
-          description: US state code
-          example: CA
-        city:
-          type: string
-          description: Full city name
-          example: San Francisco
-        postalCode:
-          type: string
-          description: ZIP or postal code
-          example: "94104"
-        address1:
-          type: string
-          description: First line of the address
-          example: "417 Montgomery St"
     LabelRates:
       type: object
       required:
@@ -191,6 +137,13 @@ components:
           type: number
           example: 17.85
           description: Price for label in dollars
+        shipDate:
+          type: string
+          example: 2023-05-01 17:14:15
+        ShippingServiceName:
+          type: string
+          example: Fedex
+          description: this need to be method name is miss click
     Package:
       type: object
       required:
@@ -227,7 +180,58 @@ components:
       properties:
         OrderItemId:
           type: string
-          example: 97488630894201
         Quantity:
           type: number
           example: 2
+    Customer:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          description: Full name
+          example: Shawn Weisweaver
+        phone:
+          type: string
+          nullable: true
+          description: Phone number to reach the person
+          example: "415-123-4567"
+        email:
+          type: string
+          nullable: true
+          description: Email address to reach the person
+          example: "test@mail.loc"
+        address:
+          $ref: "#/components/schemas/Address"
+    Address:
+      type: object
+      required:
+        - country
+        - state
+        - city
+        - postalCode
+        - address1
+      properties:
+        #        pickupAddress:
+        #          type: string
+        country:
+          type: string
+          description: "Country code"
+        state:
+          type: string
+          description: US state code
+          example: CA
+        city:
+          type: string
+          description: Full city name
+          example: San Francisco
+        postalCode:
+          type: string
+          description: ZIP or postal code
+          example: "94104"
+        address1:
+          type: string
+          description: First line of the address
+          example: "417 Montgomery St"
