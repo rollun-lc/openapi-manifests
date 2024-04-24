@@ -188,6 +188,11 @@ components:
             - Rlln_FEDEX_2day_Reg_1R
             - Rlln_FEDEX_2day_Let_1R
             - Rlln_FEDEX_2day_Box_1R
+            - Rlln_FEDEX_2day_Pak_1R
+            - Rlln_FEDEX_2day_SBox_1R
+            - Rlln_FEDEX_2day_MBox_1R
+            - Rlln_FEDEX_2day_LBox_1R
+            - Rlln_FEDEX_2day_XLBox_1R
             - Rlln_FEDEX_es_Reg
             - Rlln_FEDEX_es_Reg_1R
             - Rlln_FEDEX_es_Let_1R
