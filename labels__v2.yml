@@ -273,22 +273,23 @@ components:
         shippingMethodName:
           type: string
           enum:
-            - "First-Class Package Service"
-            - "Priority Mail"
-            - "Priority Mail Legal Flat Rate Envelope"
-            - "Priority Mail Flat Rate Padded Envelope"
-            - "Priority Mail Small Flat Rate Box"
-            - "Priority Mail Medium Flat Rate Box"
-            - "Priority Mail Large Flat Rate Box"
-            - "Priority Mail Regional Rate Box A"
-            - "Priority Mail Regional Rate Box B"
-            - "Parcel Select"
-            - "Parcel Select Ground"
-            - "Priority Mail Flat Rate Envelope"
-            - "Priority Mail Cubic"
-            - "Priority Mail Large Flat Rate Board Game Box"
-            - "Ground Advantage"
-            - "Ground"
+            - First-Class Package Service
+            - Priority Mail
+            - Priority Mail Legal Flat Rate Envelope
+            - Priority Mail Flat Rate Padded Envelope
+            - Priority Mail Small Flat Rate Box
+            - Priority Mail Medium Flat Rate Box
+            - Priority Mail Large Flat Rate Box
+            - Priority Mail Regional Rate Box A
+            - Priority Mail Regional Rate Box B
+            - Parcel Select
+            - Parcel Select Ground
+            - Priority Mail Flat Rate Envelope
+            - Priority Mail Cubic
+            - Priority Mail Large Flat Rate Board Game Box
+            - Ground Advantage
+            - Ground
+            - UPS Ground Saver
         weight:
           type: number
           example: 80.5
