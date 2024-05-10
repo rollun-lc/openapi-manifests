@@ -7,6 +7,7 @@ externalDocs:
   url: https://github.com/rollun-com/service-howtobay
 servers:
   - url: http://carriers/openapi/ShippingMethods/v2
+  - url: https://rollun.net/api/openapi/ShippingMethods/v2
 tags:
   - name: Shipping
     description: 'Everything about shipping methods.'
