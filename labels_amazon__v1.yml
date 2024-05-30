@@ -52,23 +52,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LabelShippingServiceListResponse'
+                $ref: '#/components/schemas/LabelShippingServiceList'
         '400':
           description: 'Invalid input data'
 components:
   schemas:
-    LabelShippingServiceListResponse:
+    LabelShippingServiceList:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/LabelShippingServiceList'
-
-    LabelShippingServiceList:
-      type: array
-      items:
-        $ref: '#/components/schemas/LabelShippingServiceListItem'
+          type: array
+          items:
+            $ref: '#/components/schemas/LabelShippingServiceListItem'
     LabelShippingServiceListItem:
       type: object
       required:
@@ -77,7 +74,7 @@ components:
       properties:
         ShippingServiceName:
           type: string
-          description: "UPS Next Day Air Saver"
+          description: "UPS Next Day Air Saver®"
         CarrierName:
           type: string
           example: "UPS"
@@ -115,9 +112,9 @@ components:
               type: boolean
               example: false
             LabelFormat:
-              nullable: true
               type: string
-              example: 'PDF'
+              nullable: true
+              example: ''
         AvailableLabelFormats:
           type: array
           items:
@@ -138,12 +135,12 @@ components:
     LabelAmazonPostRequest:
       type: object
       properties:
-        pickupAddress:
-          type: string
         orderId:
           type: string
+          example: "114-5985888-9227450"
         sellerOrderId:
           type: string
+          example: "510175"
         items:
           type: array
           items:
@@ -158,14 +155,22 @@ components:
         width:
           type: number
           description: width in inches
+          example: 12
         length:
           type: number
           description: length in inches
+          example: 13.13
         height:
           type: number
           description: height in inches
+          example: 0.13
         customId:
           type: string
+          example: "510234"
+        sendDate:
+          type: string
+          description: Sending date. When parcel will be send. Format - Y-m-d\TH:i:s in UTC
+          example: "2024-05-31T12:12:12"
     # Basic results components
     ErrorResult:
       type: object
@@ -222,8 +227,10 @@ components:
       properties:
         OrderItemId:
           type: string
+          example: "100046634443841"
         Quantity:
           type: number
+          example: 1
 
     ## Body for post request
     LabelPostRequest:
@@ -233,8 +240,10 @@ components:
       properties:
         orderId:
           type: string
+          example: "114-5985888-9227450"
         sellerOrderId:
           type: string
+          example: "510175"
         items:
           type: array
           items:
@@ -260,21 +269,29 @@ components:
             - "Priority Mail Flat Rate Envelope"
             - "Priority Mail Cubic"
             - "Priority Mail Large Flat Rate Board Game Box"
+            - "Priority Mail Medium Flat Rate Box"
             - "Ground Advantage"
+            - "Ground"
+            - "Ground Saver"
         weight:
+          description: Should be in LBS only
           type: number
           example: 80.5
         width:
           type: number
           description: width in inches
+          example: 12
         length:
           type: number
           description: length in inches
+          example: 10
         height:
           type: number
           description: height in inches
+          example: 3
         customId:
           type: string
+          example: "510234"
 
 
     ## Resource object
