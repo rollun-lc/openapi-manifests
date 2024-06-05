@@ -7,7 +7,6 @@ externalDocs:
   url: https://github.com/rollun-com/service-howtobay
 servers:
   - url: http://carriers/openapi/ShippingMethods/v2
-  - url: https://rollun.net/api/openapi/ShippingMethods/v2
 tags:
   - name: Shipping
     description: 'Everything about shipping methods.'
@@ -100,10 +99,10 @@ components:
             wpsFlatRateGroup:
               type: string
               example: "ATV TIRE/WHEEL"
-            wpsDropShipFee:
-              type: number
-              description: Shipping price
-              example: 14.0
+            wpsCategory:
+              type: string
+              example: "Wheels"
+              description: Enum Tubes, Tires, Wheels
     ErrorResult:
       type: object
       properties:
@@ -209,8 +208,8 @@ components:
               example: Amazon Shoptimistic
               enum:
                 - Amazon Shoptimistic
-#                - Ebay Plaisir
-#                - Ebay Rollun
+                - Ebay Plaisir
+                - Ebay Rollun
             orderId:
               type: string
               example: 111-8958324-4542656
@@ -255,11 +254,11 @@ components:
         carrier:
           type: string
           enum:
-            - Usps
-            - Fedex
-            - Ups
-            - Turn14
-          example: Fedex
+            - USPS
+            - FEDEX
+            - UPS
+            - TFT
+          example: FEDEX
           nullable: true
         shippingMethodId:
           type: string
