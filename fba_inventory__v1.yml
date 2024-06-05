@@ -1,0 +1,161 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "FbaInventory"
+  description: FbaInventory adapter
+servers:
+  - url: http://amz-orders-ngx/openapi/FbaInventory/v1
+  - url: http://host.docker.internal:8082/openapi/FbaInventory/v1
+tags:
+  - name: FbaInventory
+paths:
+  "/summaries":
+    get:
+      tags:
+        - FbaInventory
+      operationId: getListingOffers
+      description: "Returns the lowest priced offers for a single SKU listing."
+      parameters:
+        - in: query
+          name: startDateTime
+          schema:
+            type: string
+        - in: query
+          name: sellerSkus is not set, by default 50 items
+          description: If
+          schema:
+            type: array
+            items:
+              type: string
+              example: "00-RP1R-TYHT"
+
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSummariesResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - TRACKNUMBER_ALREADY_EXIST
+            - ORDER_NOT_FOUND
+            - UNKNOWN_SHIPPING_METHOD
+            - UNAVAILABLE_SHIPPING_METHOD
+            - INVALID_RESPONSE
+          description: >
+            UNDEFINED - Any undefined message type
+            TRACKNUMBER_ALREADY_EXIST - A tracking number already exists
+            ORDER_NOT_FOUND - Order not found by order number
+            UNKNOWN_SHIPPING_METHOD - The selected supplier does not have this shipping method (or needs to be added)
+            UNAVAILABLE_SHIPPING_METHOD - A shipping method exists but is not available for this order
+        text:
+          type: string
+          description: Message, that describes what went wrong
+
+    GetSummariesResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            Summaries:
+              type: array
+              items:
+                $ref: '#/components/schemas/Summary'
+    Summary:
+      type: object
+      properties:
+        asin:
+          type: string
+          description: The Amazon Standard Identification Number (ASIN) of an item.
+        sellerSku:
+          type: string
+          description: The seller SKU of the item.
+        totalQuantity:
+          type: number
+          example: 1
+          description: The total number of units in an inbound shipment or in Amazon fulfillment centers.
+        fulfillableQuantity:
+          type: number
+          example: 1
+          description: The item quantity that can be picked, packed, and shipped.
+        inboundQuantity:
+          type: number
+          example: 9
+          description: The number of units in an inbound shipment for which you have notified Amazon.
+        inboundShippedQuantity:
+          type: number
+          example: 0
+          description: The number of units in an inbound shipment that you have notified Amazon about and have provided a tracking number.
+        inboundReceivingQuantity:
+          type: number
+          example: 1
+          description: The number of units in an inbound shipment that you have notified Amazon about and have provided a tracking number.
+        reservedPendingQuantity:
+          type: number
+          example: 1
+          description: The number of units reserved for customer orders.
+        reservedFcProcessingQuantity:
+          type: number
+          example: 1
+          description: The number of units that have been sidelined at the fulfillment center for additional processing.
+        reservedPendingTransshipmentQuantity:
+          type: number
+          example: 1
+          description: The number of units being transferred from one fulfillment center to another.
+    ## Requests
+
+    ## Resources
+    MoneyType:
+      type: object
+      properties:
+        CurrencyCode:
+          type: string
+        Amount:
+          type: number
+    Points:
+      type: object
+      properties:
+        PointsNumber:
+          type: number
+        PointsMonetaryValue:
+          $ref: '#/components/schemas/MoneyType'
