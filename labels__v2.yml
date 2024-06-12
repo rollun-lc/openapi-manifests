@@ -174,7 +174,7 @@ components:
           type: string
           enum:
             - First-Class Package Service
-            - Ground Advantage
+            - USPS Ground Advantage
             - Priority Mail Cubic
             - Parcel Select Ground
             - Priority Mail
