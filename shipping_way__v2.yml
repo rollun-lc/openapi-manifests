@@ -5,6 +5,7 @@ info:
   description: Manifest for calculating shipping ways by items and zipCode
 servers:
   - url: http://suppliers/openapi/ShippingWay/v2
+  - url: http://host.docker.internal:8403/openapi/ShippingWay/v2
 tags:
   - name: ShippingWay
 paths:
@@ -339,6 +340,3 @@ components:
           nullable: true
           description: Second line of the address
           example: "Floor 5"
-          
-      
-  
