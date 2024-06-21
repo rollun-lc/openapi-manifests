@@ -5,6 +5,7 @@ info:
   description: Manifest description
 servers:
   - url: http://amz-orders-ngx/openapi/LabelsAmazon/v1
+  - url: http://host.docker.internal:8408/openapi/LabelsAmazon/v1
 tags:
   - name: Labels
 paths:
