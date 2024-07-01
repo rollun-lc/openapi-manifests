@@ -1,0 +1,129 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "AmazonFees"
+  description: API to retrieve referral fee estimate by ASIN
+servers:
+  - url: http://amz-orders-ngx/openapi/AmazonFees/v1
+  - url: http://host.docker.internal:8082/openapi/AmazonFees/v1
+tags:
+  - name: GetReferralFeeByAsin
+paths:
+  "/{asin}/referralFeeEstimate":
+    get:
+      tags:
+        - AsinReferralFeeByAsin
+      summary: Get referral fee estimate by ASIN
+      description: Retrieve an estimate of referral fee for a specified ASIN.
+        https://developer-docs.amazon.com/sp-api/docs/product-fees-api-v0-reference#getmyfeesestimateforasin
+      operationId: getReferralFeeEstimateByAsin
+      parameters:
+        - in: path
+          name: asin
+          description: The Amazon Standard Identification Number (ASIN)
+          required: true
+          schema:
+            type: string
+          example: "B011AO22Z0"
+        - in: query
+          name: marketplaceId
+          description: The marketplace identifier
+          required: true
+          schema:
+            type: string
+            example: "ATVPDKIKX0DER"
+        - in: query
+          name: listingPrice
+          description: The amount of the listing price in USD
+          required: true
+          schema:
+            type: number
+            format: float
+          example: 24.18
+        - in: query
+          name: isAmazonFulfilled
+          description: Indicates if the product is fulfilled by Amazon
+          required: false
+          schema:
+            type: boolean
+          example: true
+      responses:
+        '200':
+          description: Successful response with referral fee amount
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferralFeeAmountResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ReferralFeeAmount:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: float
+          example: 12
+    ReferralFeeAmountResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ReferralFeeAmount'
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      example:
+        messages:
+          - level: "error"
+            type: "UNDEFINED"
+            text: "2"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - TRACKNUMBER_ALREADY_EXIST
+            - ORDER_NOT_FOUND
+            - UNKNOWN_SHIPPING_METHOD
+            - UNAVAILABLE_SHIPPING_METHOD
+            - INVALID_RESPONSE
+          description: >
+            UNDEFINED - Any undefined message type
+            TRACKNUMBER_ALREADY_EXIST - A tracking number already exists
+            ORDER_NOT_FOUND - Order not found by order number
+            UNKNOWN_SHIPPING_METHOD - The selected supplier does not have this shipping method (or needs to be added)
+            UNAVAILABLE_SHIPPING_METHOD - A shipping method exists but is not available for this order
+        text:
+          type: string
+          description: Message that describes what went wrong
