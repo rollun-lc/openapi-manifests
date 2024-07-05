@@ -380,6 +380,7 @@ components:
           description: List of purchased items
           items:
             $ref: '#/components/schemas/OrderItem'
+          nullable: true
         shipments:
           type: array
           nullable: true
