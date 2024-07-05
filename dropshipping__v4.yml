@@ -368,6 +368,7 @@ components:
           description: The total price of the order including taxes and any additional costs
         originalOrder:
           type: string
+          nullable: true
           description: Serialized in json original response
         receiver:
           allOf:
@@ -515,6 +516,7 @@ components:
         trackNumbers:
           type: array
           description: The tracking code of the shipment this item is in
+          nullable: true
           items:
             type: string
             example: '9400100000000000000000'
