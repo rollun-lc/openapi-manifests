@@ -6,12 +6,12 @@ info:
 servers:
   - url: http://suppliers/openapi/SuppliersWarehouses/v1
 tags:
-  - name: Warehouse
+  - name: WarehousesWithDistance
 paths:
   "/warehousesWithDistance":
     get:
       tags:
-        - Warehouse
+        - WarehousesWithDistance
       summary: "Get list of orders"
       description: "Get list of orders"
       parameters:
