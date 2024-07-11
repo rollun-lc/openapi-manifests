@@ -5,7 +5,6 @@ info:
   description: Manifest for calculating shipping ways by items and zipCode
 servers:
   - url: http://suppliers/openapi/ShippingWay/v2
-  - url: http://host.docker.internal:8403/openapi/ShippingWay/v2
 tags:
   - name: ShippingWay
 paths:
@@ -49,6 +48,7 @@ components:
       properties:
         messages:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/Message"
       description: "Message field is not required"
@@ -87,6 +87,7 @@ components:
       type: object
       properties:
         data:
+          nullable: true
           type: object
 
     ## One resource result
@@ -96,7 +97,9 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/FullShippingWay'
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/FullShippingWay'
 
     ## Body for post request
     ShippingWayPostRequest:
