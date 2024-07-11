@@ -113,7 +113,7 @@ components:
           description: List of ordered products
           items:
             $ref: '#/components/schemas/RequestedItem'
-          
+
     RequestedItem:
       type: object
       properties:
@@ -129,6 +129,7 @@ components:
     ## Resource object
     FullShippingWay:
       type: object
+      nullable: true
       properties:
         containers:
           type: array
@@ -146,7 +147,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ShippingWay'
-        
+
     Container:
       type: object
       properties:
@@ -154,7 +155,7 @@ components:
           type: string
           description: container type
           example: Box
-    
+
     Package:
       type: object
       properties:
@@ -170,7 +171,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PackageItem'
-            
+
     PackageItem:
       type: object
       properties:
@@ -183,7 +184,7 @@ components:
         qty:
           type: number
           example: 1
-    
+
     Inventory:
       type: object
       properties:
@@ -200,7 +201,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/InventoryItem'
-            
+
     InventoryItem:
       type: object
       properties:
@@ -216,14 +217,14 @@ components:
         unitPrice:
           type: number
           example: 20.00
-    
+
     ShippingWay:
       type: object
       properties:
         package:
           type: number
           example: 1
-        sender: 
+        sender:
           type: string
           example: AU_DS_A
         carrier:
@@ -250,7 +251,7 @@ components:
         totalPrice:
           type: number
           example: 25.00
-    
+
     FromWarehouse:
       type: object
       properties:
@@ -261,7 +262,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FromWarehouseItem'
-    
+
     FromWarehouseItem:
       type: object
       properties:
@@ -274,7 +275,7 @@ components:
         qty:
           type: number
           example: 1
-    
+
     ShippingDates:
       type: object
       properties:
@@ -284,7 +285,7 @@ components:
         trackNumberReceiptDate:
           type: string
           format: date-time
-    
+
     Customer:
       type: object
       required:
