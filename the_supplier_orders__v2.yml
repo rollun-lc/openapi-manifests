@@ -171,6 +171,7 @@ components:
       properties:
         messages:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/Message"
       description: "Message field is not required"
@@ -224,6 +225,7 @@ components:
       type: object
       properties:
         data:
+          nullable: true
           type: object
 
     ## Order results
@@ -241,6 +243,7 @@ components:
       properties:
         data:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/SupplierOrder'
 
@@ -253,6 +256,7 @@ components:
       properties:
         data:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/CalculatedShippingMethod'
 
