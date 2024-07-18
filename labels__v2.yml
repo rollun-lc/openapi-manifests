@@ -250,7 +250,7 @@ components:
         carrier:
           type: string
           enum:
-#            - USPS
+            - USPS
             - FedEx
             - UPS
           example: FedEx
