@@ -1,0 +1,385 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "MarketplaceOrdersMWS"
+  description: Long running tasks interface
+servers:
+  - url: http://amz-orders-ngx/openapi/MarketplaceOrdersMWS/v1
+  - url: http://localhost:8408/openapi/MarketplaceOrdersMWS/v1
+tags:
+  - name: Orders
+  - name: Order Items
+paths:
+  "/orders":
+    get:
+      tags:
+        - Orders
+      summary: "Get list of orders"
+      description: "Get list of orders"
+      parameters:
+        - in: query
+          name: "fromDate"
+          description: "Get order list from date"
+          example: "2021-01-01 10:00:00"
+          required: false
+          schema:
+            type: string
+        - in: "query"
+          name: "toDate"
+          description: "Get order list to date"
+          example: "2021-02:01 09:59:59"
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: "fromDateModified"
+          description: "Get order list from date modified"
+          example: "2021-01-01 10:00:00"
+          required: false
+          schema:
+            type: string
+        - in: "query"
+          name: "toDateModified"
+          description: "Get order list to date  modified"
+          example: "2021-02:01 09:59:59"
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: "orderNumbers"
+          description: "A comma-separated list of the unique identifiers of the orders to retrieve. If one or more order ID values are specified through the orderIds query parameter, all other query parameters will be ignored"
+          required: false
+          #style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        #        - in: query
+        #          name: limit
+        #          description: The number of orders to return per page of the result set. Default 1000
+        #          required: false
+        #          schema:
+        #            type: integer
+        #        - in: query
+        #          name: offset
+        #          description: The number of orders to skip in the result set before returning the first order in the paginated response. Default 0
+        #          required: false
+        #          schema:
+        #            type: integer
+        - in: query
+          name: pageNumber
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderCollectionResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  "/order-items":
+    get:
+      tags:
+        - Order Items
+      summary: "Get list of order items"
+      description: "Get list of order items"
+      parameters:
+        - in: query
+          name: "orderId"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderItemsCollectionResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - TRACKNUMBER_ALREADY_EXIST
+            - ORDER_NOT_FOUND
+            - UNKNOWN_SHIPPING_METHOD
+            - UNAVAILABLE_SHIPPING_METHOD
+            - INVALID_RESPONSE
+          description: >
+            UNDEFINED - Any undefined message type
+            TRACKNUMBER_ALREADY_EXIST - A tracking number already exists
+            ORDER_NOT_FOUND - Order not found by order number
+            UNKNOWN_SHIPPING_METHOD - The selected supplier does not have this shipping method (or needs to be added)
+            UNAVAILABLE_SHIPPING_METHOD - A shipping method exists but is not available for this order
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+    CollectionResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - $ref: "#/components/schemas/PaginatedMetaResponse"
+      type: object
+    PaginatedMetaResponse:
+      properties:
+        meta:
+          $ref: "#/components/schemas/PaginatedMeta"
+    PaginatedMeta:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+
+    #    OrderList:
+    #      allOf:
+    #        - $ref: '#/components/schemas/Collection'
+    #      type: object
+    #      properties:
+    #        items:
+    #          type: array
+    #          items:
+    #            $ref: '#/components/schemas/Order'
+    OrderItemsCollectionResponse:
+      allOf:
+        - $ref: '#/components/schemas/CollectionResponse'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    OrderCollectionResponse:
+      allOf:
+        - $ref: '#/components/schemas/CollectionResponse'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+
+    ## Requests
+
+    Shipment:
+      type: object
+      properties:
+        trackNumber:
+          type: string
+          description: The tracking code provided by the carrier (if order items has sended)
+          example: '9400100000000000000000'
+          nullable: true
+        shippingMethodName:
+          type: string
+          example: USPS Priority
+          description: Name of shipping method (same as name in shippingMethod). Unfinished
+        shippingPrice:
+          type: number
+          description: Total price of this shipment
+          example: 9.45
+          nullable: true
+        carrierCode:
+          # TODO: Move as separate enum component
+          type: string
+          description: The name of the carrier handling the shipment
+
+    OrderItem:
+      type: object
+      properties:
+        asin:
+          type: string
+        sellerSKU:
+          type: string
+        orderItemId:
+          type: string
+        title:
+          type: string
+        quantityOrdered:
+          type: number
+        quantityShipped:
+          type: number
+        itemPrice:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MoneyAmount'
+        ShippingPrice:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MoneyAmount'
+        itemTax:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MoneyAmount'
+        promotionDiscount:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MoneyAmount'
+
+    ## Resources
+    Order:
+      type: object
+      properties:
+        amazon_order_id:
+          type: string
+        seller_order_id:
+          type: string
+          nullable: true
+        purchase_date:
+          type: string
+        last_update_date:
+          type: string
+        order_status:
+          type: string
+        fulfillment_channel:
+          type: string
+        sales_channel:
+          type: string
+        ship_service_level:
+          type: string
+        shipping_address:
+          $ref: "#/components/schemas/Address"
+        order_total:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/OrderTotal"
+        number_of_items_shipped:
+          type: number
+        number_of_items_unshipped:
+          type: number
+        payment_method:
+          type: string
+        payment_method_details:
+          $ref: "#/components/schemas/PaymentMethodDetails"
+        is_replacement_order:
+          type: string
+        replaced_order_id:
+          type: string
+        marketplace_id:
+          type: string
+        buyer_email:
+          type: string
+        shipment_service_level_category:
+          type: string
+        order_type:
+          type: string
+        earliest_ship_date:
+          type: string
+        latest_ship_date:
+          type: string
+        earliest_delivery_date:
+          type: string
+          nullable: true
+        latest_delivery_date:
+          type: string
+          nullable: true
+        is_business_order:
+          type: string
+        is_prime:
+          type: string
+        is_premium_order:
+          type: string
+    PaymentMethodDetails:
+      type: array
+      items:
+        type: string
+    OrderTotal:
+      type: object
+      properties:
+        amount:
+          type: string
+        currencyCode:
+          type: string
+    MoneyAmount:
+      type: object
+      properties:
+        amount:
+          type: string
+        currencyCode:
+          type: string
+    Address:
+      type: object
+      properties:
+        name:
+          type: string
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+        addressLine3:
+          type: string
+        city:
+          type: string
+        county:
+          type: string
+        district:
+          type: string
+        stateOrRegion:
+          type: string
+        postalCode:
+          type: string
+        countryCode:
+          type: string
+        phone:
+          type: string
