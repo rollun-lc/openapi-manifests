@@ -6,8 +6,9 @@ info:
 servers:
   - url: http://server-host/openapi/CrmDealCreator/v1
 paths:
-  "/deals":
+  "/deals/dropship":
     post:
+      operationId: createDropshipDeal
       summary: "Make an deal"
       description: ""
       requestBody:
@@ -16,7 +17,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DealPostRequest'
+              $ref: '#/components/schemas/DropshipDealPostRequest'
       responses:
         "200":
           description: "Order successfully created"
@@ -88,18 +89,75 @@ components:
             - $ref: '#/components/schemas/Deal'
 
     ## Body for post request
-    DealPostRequest:
+    DropshipDealPostRequest:
+      allOf:
+        - $ref: '#/components/schemas/AbstractDealPostRequest'
+      type: object
+    
+    PickupDealPostRequest:
+      allOf:
+        - $ref: '#/components/schemas/AbstractDealPostRequest'
+      type: object
+      properties:
+        labelProvider:
+          type: string
+          nullable: true
+          description: Only for pickup orders
+        
+      
+    AbstractDealPostRequest:
       type: object
       required:
         - requiredField
       properties:
-        requiredField:
+        mpName:
           type: string
-          description: required
-        optionalField:
+        mpOrderNumber:
+          type: string
+        srShipMethod:
+          type: string
+        enterTracknumber:
+          type: string
+          default: "products in order"
+        srName:
+          type: string
+        carrier:
+          type: string
+        relatedOrder:
+          type: string
+        owner:
           type: string
           nullable: true
-          description: optional
+        sender:
+          type: string
+        positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DealPosition'
+    
+    DealPosition:
+      type: object
+      properties:
+        id:
+          type: string
+        dealId:
+          type: string
+        offerId:
+          type: string
+        cost:
+          type: number
+          format: double
+          default: 0
+          minimum: 0
+        quantity:
+          type: integer
+          minimum: 0
+        article:
+          type: string
+        name:
+          type: string
+        
+        
 
     ## Deal object
     Deal:
