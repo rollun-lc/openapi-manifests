@@ -1,0 +1,229 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Feeds"
+  description: Feeds API
+servers:
+  - url: http://amz-orders-ngx/openapi/Feeds/v1
+  - url: http://host.docker.internal:8408/openapi/Feeds/v1
+tags:
+  - name: Feed
+paths:
+  "/feed/{feedId}":
+    get:
+      tags:
+        - Feed
+      parameters:
+        - in: path
+          name: feedId
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the feed to get
+      summary: "Get Feed"
+      description: ""
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFeedResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+  "/feed":
+    post:
+      tags:
+        - Feed
+      summary: "Create Feed"
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeedRequest'
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateFeedResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    GetFeedResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Feed'
+    Feed:
+      type: object
+      properties:
+        feedId:
+          type: string
+        feedType:
+          type: string
+        marketplaceIds:
+          type: array
+          items:
+            type: string
+        createdTime:
+          type: string
+        processingStatus:
+          type: string
+          enum:
+            - CANCELLED
+            - DONE
+            - FATAL
+            - IN_PROGRESS
+            - IN_QUEUE
+        processingStartTime:
+          type: string
+        processingEndTime:
+          type: string
+        resultFeedDocumentId:
+          type: string
+        documentUrl:
+          type: string
+    ## One resource result
+    CreateFeedResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/FeedCompact'
+
+    CreateFeedRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - AVAILABILITY
+            - INVLOADER
+            - ORDER_FULFILLMENT
+            - POST_FLAT_FILE_PRICEANDQUANTITYONLY_UPDATE_DATA
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+
+    Product:
+      type: object
+      properties:
+        sku:
+          type: string
+        msin:
+          type: string
+        price:
+          type: number
+        quantity:
+          type: number
+        MinimalAllowedPrice:
+          type: number
+          description: used for amazon repricer
+        MaximumAllowedPrice:
+          type: number
+          description: used for amazon repricer
+        HandlingTime:
+          type: string
+        MerchantShippingGroupName:
+          type: string
+
+    Order:
+      type: object
+      properties:
+        amazonOrderID:
+          type: string
+        fulfillmentDate:
+          type: string
+        fulfillmentData:
+          $ref: "#/components/schemas/FulfillmentData"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+
+    OrderItem:
+      type: object
+      properties:
+        amazonOrderItemCode:
+          type: string
+        quantity:
+          type: number
+
+    FulfillmentData:
+      type: object
+      properties:
+        carrierCode:
+          type: string
+        carrierName:
+          type: string
+        shipperTrackingNumber:
+          type: string
+
+    FeedCompact:
+      type: object
+      properties:
+        feed_id:
+          type: string
