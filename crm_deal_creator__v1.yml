@@ -4,15 +4,19 @@ info:
   title: "CrmDealCreator"
   description: API to create dropships and pickups in CRM
 servers:
-  - url: http://server-host/openapi/CrmDealCreator/v1
+  - url: http://rollun-crm/openapi/CrmDealCreator/v1
+tags:
+  - name: Deals
 paths:
   "/deals/dropships":
     post:
+      tags:
+        - Deals
       operationId: createDropshipDeal
       summary: "Make an deal"
-      description: ""
+      description: "Create dropship deal"
       requestBody:
-        description: ""
+        description: "Dropship deal data"
         required: true
         content:
           application/json:
@@ -20,7 +24,7 @@ paths:
               $ref: '#/components/schemas/DropshipDealPostRequest'
       responses:
         "200":
-          description: "Order successfully created"
+          description: "Deal successfully created"
           content:
             application/json:
               schema:
@@ -33,11 +37,13 @@ paths:
                 $ref: '#/components/schemas/ErrorResult'
   "/deals/pickups":
     post:
+      tags:
+        - Deals
       operationId: createPickupDeal
       summary: "Make an deal"
-      description: ""
+      description: "Create pickup deal"
       requestBody:
-        description: ""
+        description: "Pickup deal data"
         required: true
         content:
           application/json:
@@ -45,7 +51,7 @@ paths:
               $ref: '#/components/schemas/PickupDealPostRequest'
       responses:
         "200":
-          description: "Order successfully created"
+          description: "Deal successfully created"
           content:
             application/json:
               schema:
@@ -89,7 +95,7 @@ components:
           description: >
             You can expose this enum for all your errors
             UNDEFINED - Any undefined message type
-            LOGGER_MESSAGE - Same as undefined 
+            LOGGER_MESSAGE - Same as undefined
         text:
           type: string
           description: Message, that describes what went wrong
@@ -118,85 +124,82 @@ components:
       allOf:
         - $ref: '#/components/schemas/AbstractDealPostRequest'
       type: object
-    
+
     PickupDealPostRequest:
       allOf:
         - $ref: '#/components/schemas/AbstractDealPostRequest'
       type: object
-      required: 
+      required:
         - labelProvider
       properties:
         labelProvider:
           type: string
-          nullable: true
           description: Only for pickup orders
-        
-      
+          enum:
+            - Rollun
+            - Amazon
+
     AbstractDealPostRequest:
       type: object
       required:
         - mpName
         - mpOrderNumber
-        - srShipMethod
-        - enterTracknumber
         - srName
+        - srShipMethod
         - carrier
-        - relatedOrder
-        - owner
         - sender
+        - relatedOrder
         - positions
       properties:
         mpName:
           type: string
         mpOrderNumber:
           type: string
+        srName:
+          type: string
         srShipMethod:
           type: string
         enterTracknumber:
           type: string
           default: "products in order"
-        srName:
-          type: string
         carrier:
           type: string
-        relatedOrder:
-          type: string
-        owner:
-          type: string
-          nullable: true
         sender:
+          type: string
+        relatedOrder:
           type: string
         positions:
           type: array
           items:
             $ref: '#/components/schemas/DealPosition'
-    
+
     DealPosition:
       type: object
+      required:
+        - rid
+        - dealId
       properties:
-        id:
+        rid:
           type: string
         dealId:
           type: string
-        offerId:
-          type: string
+        quantity:
+          type: integer
+          default: 1
+          minimum: 1
         cost:
           type: number
           format: double
           default: 0
           minimum: 0
-        quantity:
-          type: integer
-          minimum: 0
-        article:
-          type: string
-        name:
-          type: string
-        
+
+
 
     ## Deal object
     Deal:
       type: object
+      required:
+        - id
       properties:
         id:
           type: string
