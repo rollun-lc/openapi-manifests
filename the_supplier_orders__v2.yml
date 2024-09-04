@@ -235,7 +235,9 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/SupplierOrder'
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/SupplierOrder'
     OrderListResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
