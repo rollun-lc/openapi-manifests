@@ -1,0 +1,141 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Utilities"
+  description: "Provides utility endpoints"
+servers:
+  - url: http://carriers/openapi/Utilities/v1
+  - url: http://localhost:8080/openapi/Utilities/v1
+tags:
+  - name: ValidatedAddress
+    description: "Endpoints for address validation using USPS API"
+paths:
+  "/validatedAddress":
+    get:
+      tags:
+        - ValidatedAddress
+      summary: "Validate and retrieve address details"
+      description: "Fetches detailed information for a given address based on query parameters using the USPS API."
+      parameters:
+        - in: query
+          name: streetAddress
+          description: "Street address for validation"
+          required: true
+          schema:
+            type: string
+          example: "5665 W GALVESTON ST UNIT 62"
+        - in: query
+          name: state
+          description: "State code (e.g., AZ for Arizona)"
+          required: true
+          schema:
+            type: string
+          example: "AZ"
+        - in: query
+          name: city
+          description: "City name (optional)"
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: carrier
+          description: "Carrier name (optional)"
+          required: false
+          schema:
+            type: string
+          example: "USPS"
+        - in: query
+          name: zipCode
+          description: "ZIP or postal code (optional)"
+          required: false
+          schema:
+            type: string
+            example: "85226-2756"
+      responses:
+        "200":
+          description: "Successful address validation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidatedAddressResponse"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+          description: "Severity level of the message"
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+          description: "Type of the message"
+        text:
+          type: string
+          description: "Description of the issue"
+    ValidatedAddressResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ValidatedAddressResult'
+    ValidatedAddressResult:
+      type: object
+      required:
+        - streetAddress
+        - city
+        - state
+        - zipCode
+      properties:
+        streetAddress:
+          type: string
+          description: "Full street address"
+          example: "5665 W GALVESTON ST UNIT 62"
+        city:
+          type: string
+          description: "City name"
+          example: "CHANDLER"
+        state:
+          type: string
+          description: "State code"
+          example: "AZ"
+        zipCode:
+          type: string
+          description: "ZIP code"
+          example: "85226"
+        country:
+          type: string
+          nullable: true
+          description: "Country name, if available"
+          example: null
