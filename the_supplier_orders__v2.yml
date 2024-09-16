@@ -490,6 +490,7 @@ components:
           type: string
           description: Rollun Id
           example: VW6A4
+          nullable: true
         csn: 
           type: string
           description: Supplier internal item identifier
