@@ -162,6 +162,25 @@ components:
             - '2'
             - '3'
           example: '1'
+        # PU
+        puCommodityCode:
+          description: 'Commodity Code for PU affects the price'
+          type: string
+          nullable: true
+          example: '0319'
+        # WPS
+        wpsFreightCategory:
+          description: 'Wps Flat Rate Group. Tubes, Tires, Wheels'
+          type: string
+          nullable: true
+          example: 'Tubes'
+
+        wpsCategory:
+          description: 'Wps Category. Tubes, Tires, Wheels'
+          type: string
+          nullable: true
+          example: 'Tubes'
+
     ShippingResponse:
       type: object
       required:
@@ -200,6 +219,7 @@ components:
           enum:
             - Usps
             - Fedex
+            - Ups
           example: Fedex
           nullable: true
       xml:
@@ -223,7 +243,6 @@ components:
       type: object
       required:
         - level
-        - message
       properties:
         level:
           type: string
@@ -231,6 +250,7 @@ components:
           example: 'error'
         message:
           type: string
+          nullable: true
           description: 'Message text'
           example: 'DataStore Test unavailable.'
       xml:
