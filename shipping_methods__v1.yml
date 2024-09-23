@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: '1'
   title: ShippingMethods
-  description: 'Service howtobuy. The service provides methods for obtaining possible delivery methods according to the specified parameters'
+  description: 'Service howtolist. The service provides methods for obtaining possible delivery methods according to the specified parameters'
 externalDocs:
   url: https://github.com/rollun-com/service-howtobay
 servers:
@@ -169,12 +169,6 @@ components:
           nullable: true
           example: '0319'
         # WPS
-        wpsFreightCategory:
-          description: 'Wps Flat Rate Group. Tubes, Tires, Wheels'
-          type: string
-          nullable: true
-          example: 'Tubes'
-
         wpsCategory:
           description: 'Wps Category. Tubes, Tires, Wheels'
           type: string
@@ -188,7 +182,6 @@ components:
         - shippingMethodId
         - shippingMethodName
         - trackNumberDate
-        - shippingArriveDate
         - cost
       properties:
         deliverySender:
