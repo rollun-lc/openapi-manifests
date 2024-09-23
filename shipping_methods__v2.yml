@@ -1,3 +1,4 @@
+
 openapi: 3.0.0
 info:
   version: '2'
@@ -303,19 +304,30 @@ components:
         labelPrice:
           type: number
           example: 14.0
+    ShippingMethods:
+      type: array
+      description: 'Found delivery methods'
+      items:
+        $ref: '#/components/schemas/ShippingMethodsResponse'
     ShippingMethodsResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
-          type: array
-          description: 'Found delivery methods'
-          items:
-            $ref: '#/components/schemas/ShippingMethodsResponse'
-        messages:
-          type: array
-          description: 'Collection of messages. There may be errors, notes and more.'
-          items:
-            $ref: '#/components/schemas/Message'
+          $ref: '#/components/schemas/ShippingMethods'
+#      type: object
+#      properties:
+#        data:
+#          type: array
+#          description: 'Found delivery methods'
+#          items:
+#            $ref: '#/components/schemas/ShippingMethodsResponse'
+#        messages:
+#          type: array
+#          description: 'Collection of messages. There may be errors, notes and more.'
+#          items:
+#            $ref: '#/components/schemas/Message'
       xml:
         name: GetShippingBody
     Message:
