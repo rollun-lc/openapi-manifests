@@ -444,6 +444,7 @@ components:
     ### CONCRETE ENTITY ITEM
     CatalogProductResponseItem:
       type: object
+      nullable: true
       allOf:
         - $ref: '#/components/schemas/CatalogProductItem'
         - $ref: '#/components/schemas/WithGeneralData'
@@ -668,6 +669,7 @@ components:
             - in_progress
             - done
             - error
+            - new
         best_offer_price:
           type: number
         return_profile_name:
@@ -712,8 +714,6 @@ components:
       type: object
       allOf:
         - $ref: "#/components/schemas/SuccessResponse"
-      required:
-        - data
       properties:
         data:
           type: array
