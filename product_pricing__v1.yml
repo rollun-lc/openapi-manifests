@@ -1,0 +1,634 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "ProductPricing"
+  description: Long running tasks interface
+servers:
+  - url: http://amz-orders-ngx/openapi/ProductPricing/v1
+  - url: http://host.docker.internal:8082/openapi/ProductPricing/v1
+tags:
+  - name: ProductPricing
+paths:
+  "/listing/{sku}/offers":
+    get:
+      tags:
+        - ProductPricing
+      operationId: getListingOffers
+      description: "Returns the lowest priced offers for a single SKU listing."
+      parameters:
+        - in: path
+          name: sku
+          description: Product SKU
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: itemCondition
+          description: "Filters the offer listings based on item condition. Possible values: New, Used, Collectible, Refurbished, Club."
+          required: true
+          schema:
+            type: string
+            # $ref: '#/components/schemas/ItemCondition'
+        - in: query
+          name: CustomerType
+          description: "Indicates whether to request Consumer or Business offers. Default is Consumer."
+          required: false
+          schema:
+            type: string
+            # $ref: '#/components/schemas/CustomerType'
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetOffersResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  "/listing/offersBulk":
+    get:
+      tags:
+        - ProductPricing
+      operationId: getListingOffersBulk
+      description: "Returns the lowest priced offers for a bunch of SKU listings."
+      parameters:
+        - in: query
+          name: sku
+          description: Product SKU
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetOffersResponseBulk"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  "/products/pricing/price":
+    get:
+      tags:
+        - ProductPricing
+      operationId: getPricing
+      description: Returns pricing information for a seller's offer listings based on seller SKU or ASIN.
+      parameters:
+        - in: query
+          name: asins
+          schema:
+            type: array
+            items: 
+              type: string
+        - in: query
+          name: skus
+          schema:
+            type: array
+            items: 
+              type: string
+        - in: query
+          name: itemType
+          required: true
+          schema:
+            type: string
+            enum:
+              - Asin
+              - Sku
+        - in: query
+          name: itemCondition
+          schema:
+            type: string
+            enum:
+              - New
+              - Used
+              - Collectible
+              - Refurbished
+              - Club
+        - in: query
+          name: offerType
+          schema:
+            type: string
+            enum:
+              - B2C
+              - B2B
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPricingResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    CustomerType:
+      type: string
+      enum: 
+        - Consumer
+        - Business
+    ItemCondition: 
+      type: string
+      enum: 
+        - New
+        - Used
+        - Collectible
+        - Refurbished
+        - Club
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - TRACKNUMBER_ALREADY_EXIST
+            - ORDER_NOT_FOUND
+            - UNKNOWN_SHIPPING_METHOD
+            - UNAVAILABLE_SHIPPING_METHOD
+            - INVALID_RESPONSE
+          description: >
+            UNDEFINED - Any undefined message type
+            TRACKNUMBER_ALREADY_EXIST - A tracking number already exists
+            ORDER_NOT_FOUND - Order not found by order number
+            UNKNOWN_SHIPPING_METHOD - The selected supplier does not have this shipping method (or needs to be added)
+            UNAVAILABLE_SHIPPING_METHOD - A shipping method exists but is not available for this order
+        text:
+          type: string
+          description: Message, that describes what went wrong
+
+    GetPricingResponse:
+      type: object
+      properties:
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Price'
+    
+    Price:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+        SellerSKU:
+          type: string
+        ASIN:
+          type: string
+        Product:
+          $ref: '#/components/schemas/Product'
+    Product:
+      type: object
+      required:
+        - Identifiers
+      properties:
+        Identifiers:
+          $ref: '#/components/schemas/IdentifierType'
+        AttributeSets:
+          type: object
+          description: due to a poor amazon documentation here be json object with no defined stucture
+          additionalProperties: true
+        Relationships:
+          type: object
+          description: due to a poor amazon documentation here be json object with no defined stucture
+          additionalProperties: true
+        CompetitivePricing:
+          $ref: '#/components/schemas/CompetitivePricingType'
+        SalesRankings:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesRankType'
+        Offers:
+          type: array
+          items:
+            type: string
+            # enum:
+            #   - B2C
+            #   - B2B
+    IdentifierType:
+      type: object
+      required:
+        - MarketplaceASIN
+      properties:
+        MarketplaceASIN:
+          $ref: '#/components/schemas/ASINIdentifier'
+        SKUIdentifier:
+          $ref: '#/components/schemas/SellerSKUIdentifier'
+    ASINIdentifier:
+      type: object
+      required:
+        - MarketplaceId
+        - ASIN
+      properties:
+        MarketplaceId:
+          type: string
+        ASIN:
+          type: string
+    SellerSKUIdentifier:
+      type: object
+      required:
+        - MarketplaceId
+        - SellerId
+        - SellerSKU
+      properties:
+        MarketplaceId:
+          type: string
+        SellerId:
+          type: string
+        SellerSKU:
+          type: string
+    CompetitivePricingType:
+      type: object
+      required:
+        - CompetitivePrices
+        - NumberOfOfferListings
+      properties:
+        CompetitivePrices:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompetitivePriceType'
+        NumberOfOfferListings:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferListingCountType'
+        TradeInValue:
+          $ref: '#/components/schemas/MoneyType'
+    OfferListingCountType:
+      type: object
+      required:
+        - Count
+        - condition
+      properties:
+        Count:
+          type: number
+        condition:
+          type: string
+    CompetitivePriceType:
+      type: object
+      required:
+        - CompetitivePriceId
+        - Price
+      properties:
+        CompetitivePriceId:
+          type: string
+        Price:
+          $ref: '#/components/schemas/PriceType'
+        condition:
+          type: string
+        subcondition:
+          type: string
+        offerType:
+          type: string
+          enum:
+            - B2C
+            - B2B
+        quantityTier:
+          type: number
+        quantityDiscountType:
+          type: string
+          enum:
+            - QUANTITY_DISCOUNT
+        sellerId:
+          type: string
+        belongsToRequester:
+          type: boolean
+    PriceType:
+      type: object
+      required:
+        - ListingPrice
+      properties:
+        LandedPrice:
+          $ref: '#/components/schemas/MoneyType'
+        ListingPrice:
+          $ref: '#/components/schemas/MoneyType'
+        Shipping:
+          $ref: '#/components/schemas/MoneyType'
+        Points:
+          $ref: '#/components/schemas/Points'
+    OfferResponseItem:
+      type: object
+      properties:
+        status:
+          type: string
+        ASIN:
+          type: string
+        Summary:
+          $ref: '#/components/schemas/Summary'
+        offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Offer'
+    GetOffersResponseBulk:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferResponseItem"
+    GetOffersResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+            ASIN:
+              type: string
+            Summary: 
+              $ref: '#/components/schemas/Summary'
+            offers:
+              type: array
+              items:
+                $ref: '#/components/schemas/Offer'
+    Summary:
+      type: object
+      required:
+        - TotalOfferCount
+      properties: 
+        TotalOfferCount:
+          type: number
+        NumberOfOffers:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferCountType'
+        LowestPrices:
+          type: array
+          items:
+            $ref: '#/components/schemas/LowestPriceType'
+        # BuyBoxPrices
+        ListPrice:
+          $ref: '#/components/schemas/MoneyType'
+        CompetitivePriceThreshold:
+          $ref: '#/components/schemas/MoneyType'
+        SuggestedLowerPricePlusShipping:
+          $ref: '#/components/schemas/MoneyType'
+        SalesRankings:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesRankType'
+        BuyBoxEligibleOffers:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferCountType'
+        OffersAvailableTime:
+          type: string
+    ## Requests
+
+    ## Resources
+    Offer:
+      type: object
+      required:
+        - SubCondition
+        - ShippingTime
+        - ListingPrice
+        - Shipping
+        - IsFulfilledByAmazon
+      properties:
+        MyOffer:
+          type: boolean
+          description: When true, this is the seller's offer.
+        offerType:
+          type: string
+          enum:
+            - B2C
+            - B2B
+        SubCondition:
+          type: string
+        SellerId:
+          type: string
+        ConditionNotes:
+          type: string
+        SellerFeedbackRating:
+          $ref: '#/components/schemas/SellerFeedbackType'
+        ShippingTime:
+          $ref: '#/components/schemas/DetailedShippingTimeType'
+        ListingPrice:
+          $ref: '#/components/schemas/MoneyType'
+        quantityDiscountPrices:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuantityDiscountPriceType'
+        Points:
+          $ref: '#/components/schemas/Points'
+        Shipping:
+          $ref: '#/components/schemas/MoneyType'
+        ShipsFrom:
+          $ref: '#/components/schemas/ShipsFromType'
+        IsFulfilledByAmazon:
+          type: boolean
+        PrimeInformation:
+          $ref: '#/components/schemas/PrimeInformationType'
+        IsBuyBoxWinner:
+          type: boolean
+          description: |
+            When true, the offer is currently in the Buy Box. 
+            There can be up to two Buy Box winners at any time per ASIN, 
+            one that is eligible for Prime and one that is not eligible for Prime.  
+        IsFeaturedMerchant:
+          type: boolean
+          description: |
+            When true, the seller of the item is eligible to win the Buy Box.  
+          
+    OfferCustomerType:
+      type: string
+      enum:
+        - B2C
+        - B2B
+    SellerFeedbackType:
+      type: object
+      required:
+        - FeedbackCount
+      properties:
+        SellerPositiveFeedbackRating:
+          type: number
+          description: |
+            The percentage of positive feedback for the seller in the past 365 days.  
+        FeedbackCount:
+          type: number
+          description: |
+            The number of ratings received about the seller.  
+    DetailedShippingTimeType:
+      type: object
+      properties:
+        minimumHours:
+          type: number
+        maximumHours:
+          type: number
+        availableDate:
+          type: string
+        availabilityType:
+          type: string
+          enum:
+            - NOW
+            - FUTURE_WITHOUT_DATE
+            - FUTURE_WITH_DATE
+            - ""
+    AvailabilityType:
+      type: string
+      enum:
+        - NOW
+        - FUTURE_WITHOUT_DATE
+        - FUTURE_WITH_DATE
+        - ""
+    MoneyType:
+      type: object
+      properties:
+        CurrencyCode:
+          type: string
+        Amount:
+          type: number
+    QuantityDiscountPriceType:
+      type: object
+      required:
+        - quantityTier
+        - quantityDiscountType
+        - listingPrice
+      properties: 
+        quantityTier:
+          type: number
+        quantityDiscountType:
+          type: string
+          enum:
+            - QUANTITY_DISCOUNT
+        listingPrice:
+          $ref: '#/components/schemas/MoneyType'
+    QuantityDiscountType:
+      type: string
+      enum:
+        - QUANTITY_DISCOUNT
+    Points:
+      type: object
+      properties:
+        PointsNumber:
+          type: number
+        PointsMonetaryValue:
+          $ref: '#/components/schemas/MoneyType'
+    ShipsFromType:
+      type: object
+      properties:
+        State:
+          type: string
+        Country:
+          type: string
+    PrimeInformationType:
+      type: object
+      required:
+        - IsPrime
+        - IsNationalPrime
+      properties:
+        IsPrime:
+          type: boolean
+          description: |
+            Indicates whether the offer is an Amazon Prime offer.  
+        IsNationalPrime:
+          type: boolean
+          description: |
+            Indicates whether the offer is an Amazon Prime offer throughout the entire marketplace where it is listed.  
+    OfferCountType:
+      type: object
+      properties:
+        condition:
+          type: string
+        fulfillmentChannel:
+          type: string
+          enum:
+            - Amazon
+            - Merchant
+            - ""
+        OfferCount:
+          type: number
+    LowestPriceType:
+      type: object
+      required:
+        - condition
+        - fulfillmentChannel
+        - LandedPrice
+        - ListingPrice
+        - Shipping
+      properties:
+        condition:
+          type: string
+        fulfillmentChannel:
+          type: string
+        offerType:
+          type: string
+          enum:
+            - B2C
+            - B2B
+        quantityTier:
+          type: number
+        quantityDiscountType:
+          type: string
+          enum:
+            - QUANTITY_DISCOUNT
+        LandedPrice:
+          $ref: '#/components/schemas/MoneyType'
+        ListingPrice:
+          $ref: '#/components/schemas/MoneyType'
+        Shipping:
+          $ref: '#/components/schemas/MoneyType'
+        Points:
+          $ref: '#/components/schemas/Points'
+    SalesRankType:
+      type: object
+      required:
+         - ProductCategoryId
+         - Rank
+      properties:
+        ProductCategoryId:
+          type: string
+        Rank:
+          type: number
