@@ -1,0 +1,95 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Tracking"
+  description: Tracking service
+servers:
+  - url: http://carriers/openapi/Tracking/v1
+  - url: http://host.docker.internal:8080/openapi/Tracking/v1
+  - url: http://localhost:8080/openapi/Tracking/v1
+tags:
+  - name: TrackNumber
+paths:
+  "/{trackNumber}/carrier":
+    get:
+      summary: Retrieve carrier name by tracking number
+      description: "Fetches the name of the carrier associated with a given tracking number."
+      tags:
+        - TrackNumber
+      parameters:
+        - in: path
+          name: trackNumber
+          required: true
+          schema:
+            type: string
+          description: "The tracking number used to identify the carrier."
+      responses:
+        '200':
+          description: "Successful response with the carrier's name."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTrackNumberCarrierResponse'
+        '500':
+          description: "An error occurred while processing the request."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      description: "Response schema for errors encountered during the request."
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+          description: "A list of error messages with levels and descriptions."
+    Message:
+      type: object
+      description: "An individual message detailing the level and content of an error."
+      properties:
+        level:
+          type: string
+          enum:
+            - info
+            - warning
+            - error
+          description: "The severity level of the message."
+        text:
+          type: string
+          description: "Message describing the error or information."
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "A base response schema with both error and success information."
+      properties:
+        data:
+          type: object
+          description: "Data returned in a successful response."
+    GetTrackNumberCarrierResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      description: "Response containing the carrier's name if the tracking number is valid."
+      properties:
+        data:
+          $ref: '#/components/schemas/GetTrackNumberCarrier'
+    GetTrackNumberCarrier:
+      type: object
+      description: "Schema representing the carrier information associated with the tracking number."
+      required:
+        - carrier
+      properties:
+        carrier:
+          type: string
+          enum:
+            - FedEx
+            - USPS
+            - UPS
+            - OnTrac
+          description: "The carrier name associated with the provided tracking number."
