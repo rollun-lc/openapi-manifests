@@ -65,8 +65,7 @@ components:
             example: UPS
           description: >
             "List of carriers matched with the provided tracking number.
-            FedEx, USPS, UPS, OnTrac
-            Nullable if no carrier is matched."
+            Enum: FedEx, USPS, UPS, OnTrac"
     ErrorResponse:
       type: object
       description: "Response schema for errors encountered during the request."
