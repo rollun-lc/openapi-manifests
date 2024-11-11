@@ -48,14 +48,6 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/TrackingNumber'
-    Carrier:
-      type: string
-      example: UPS
-      description: >
-        "The carrier name associated with the provided tracking number.
-        Possible values include, but are not limited to, FedEx, USPS, UPS, OnTrac.
-        Note! Additional carriers may be added over time, so client applications
-        should handle unexpected carrier names gracefully."
     TrackingNumber:
       type: object
       description: "Schema representing the carrier information associated with the tracking number."
@@ -69,8 +61,9 @@ components:
         carriers:
           type: array
           items:
-            $ref: '#/components/schemas/Carrier'
-          description: > 
+            type: string
+            example: UPS
+          description: >
             "List of carriers matched with the provided tracking number.
             FedEx, USPS, UPS, OnTrac
             Nullable if no carrier is matched."
