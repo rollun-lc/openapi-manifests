@@ -1,0 +1,107 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "CarrierIdentifier"
+  description: Tracking service
+servers:
+  - url: http://carriers/openapi/CarrierIdentifier/v1
+  - url: http://host.docker.internal:8080/openapi/CarrierIdentifier/v1
+  - url: http://localhost:8080/openapi/CarrierIdentifier/v1
+tags:
+  - name: TrackingNumbers
+paths:
+  "/trackingNumbers/{id}":
+    get:
+      summary: Retrieve carrier name by tracking number
+      description: "Fetches the name of the carrier associated with a given tracking number."
+      tags:
+        - TrackingNumbers
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "The tracking number used to identify the carrier."
+      responses:
+        '200':
+          description: "Successful response with the carrier's name."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTrackingNumbersCarriersResponse'
+        '500':
+          description: "An error occurred while processing the request."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    GetTrackingNumbersCarriersResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      description: "Response containing the carrier's name if the tracking number is valid."
+      properties:
+        data:
+          $ref: '#/components/schemas/GetTrackNumber'
+    GetTrackNumber:
+      type: object
+      description: "Schema representing the carrier information associated with the tracking number."
+      required:
+        - id
+        - carrier
+      properties:
+        id:
+          type: string
+          description: Tracking Number ID
+          example: 1Z093V6R0306587923
+        carrier:
+          type: string
+          example: UPS
+          description: "The carrier name associated with the provided tracking number. Enum :FedEx, USPS, UPS, OnTrac"
+    ErrorResponse:
+      type: object
+      description: "Response schema for errors encountered during the request."
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+          description: "A list of error messages with levels and descriptions."
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "A base response schema with both error and success information."
+      properties:
+        data:
+          type: object
+          description: "Data returned in a successful response."
