@@ -53,6 +53,7 @@ components:
       description: "Schema representing the carrier information associated with the tracking number."
       required:
         - id
+        - carriers
       properties:
         id:
           type: string
