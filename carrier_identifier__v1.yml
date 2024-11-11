@@ -54,7 +54,7 @@ components:
       description: >
         "The carrier name associated with the provided tracking number.
         Possible values include, but are not limited to, FedEx, USPS, UPS, OnTrac.
-        Note: Additional carriers may be added over time, so client applications
+        Note! Additional carriers may be added over time, so client applications
         should handle unexpected carrier names gracefully."
     TrackingNumber:
       type: object
