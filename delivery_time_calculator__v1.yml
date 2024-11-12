@@ -102,6 +102,7 @@ components:
         startDateTime:
           type: string
           format: date-time
+          example: "2024-11-12T16:00:00.000Z"
           description: "Start date and time of shipping in UTC format (Y-m-dTH:i:sZ)"
         warehouseCutOffTime:
           type: string
@@ -114,10 +115,12 @@ components:
           description: "Warehouse processing time represented by a symbol (A..E)"
         daysInTransit:
           type: integer
+          example: 2
           description: "Number of days in transit for delivery"
         saturdayDelivery:
           type: boolean
           default: false
+          example: true
           description: "Option for Saturday delivery, default is false"
 
     ## Resource object
@@ -129,8 +132,10 @@ components:
         trackNumberReceiveDateTime:
           type: string
           format: date-time
+          example: "2024-11-12T23:59:00.000Z"
           description: "Track number receipt date and time in UTC format (Y-m-dTH:i:sZ)"
         estDeliveryDateTime:
           type: string
+          example: "2024-11-14T23:59:00.000Z"
           format: date-time
           description: "Estimated delivery date in UTC with time set to 03:59 (U.S. time - day before)"
