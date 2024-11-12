@@ -1,0 +1,136 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "DeliveryTimeCalculator"
+  description: "DeliveryTimeCalculator"
+servers:
+  - url: http://utils/openapi/DeliveryTimeCalculator/v1
+  - url: http://host.docker.internal:8091/openapi/DeliveryTimeCalculator/v1
+  - url: http://localhost:8091/openapi/DeliveryTimeCalculator/v1
+tags:
+  - name: CalculateDeliveryDate
+paths:
+  "/calculateDeliveryDate":
+    post:
+      tags:
+        - CalculateDeliveryDate
+      summary: "Calculate estimated delivery date"
+      description: "Calculates the delivery date based on the start date, warehouse processing time, days in transit, and Saturday delivery option."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryDatePostRequest'
+
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryTimesResponse'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    # Basic results components
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            Enum for error types:
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: "Message describing what went wrong"
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+
+    ## One resource result
+    DeliveryTimesResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/DeliveryTime'
+
+
+    ## Body for post request
+    DeliveryDatePostRequest:
+      type: object
+      required:
+        - startDateTime
+        - warehouseCutOffTime
+        - warehouseHandlingTime
+        - daysInTransit
+      properties:
+        startDateTime:
+          type: string
+          format: date-time
+          description: "Start date and time of shipping in UTC format (Y-m-dTH:i:sZ)"
+        warehouseCutOffTime:
+          type: string
+          example: "12:00"
+          format: time
+          description: "Warehouse order cutoff time (H:i) in UTC format"
+        warehouseHandlingTime:
+          type: string
+          enum: ["A", "B", "C", "D", "E"]
+          description: "Warehouse processing time represented by a symbol (A..E)"
+        daysInTransit:
+          type: integer
+          description: "Number of days in transit for delivery"
+        saturdayDelivery:
+          type: boolean
+          default: false
+          description: "Option for Saturday delivery, default is false"
+
+    ## Resource object
+    DeliveryTime:
+      type: object
+      required:
+        - estDeliveryDateTime
+      properties:
+        trackNumberReceiveDateTime:
+          type: string
+          format: date-time
+          description: "Track number receipt date and time in UTC format (Y-m-dTH:i:sZ)"
+        estDeliveryDateTime:
+          type: string
+          format: date-time
+          description: "Estimated delivery date in UTC with time set to 03:59 (U.S. time - day before)"
