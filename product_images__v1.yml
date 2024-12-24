@@ -5,6 +5,7 @@ info:
   description: "" # todo
 servers:
   - url: http://catalog/openapi/ProductImages/v1
+  - url: https://rollun.net/api/openapi/ProductImages/v1
 tags:
   - name: Images # todo
 paths:
