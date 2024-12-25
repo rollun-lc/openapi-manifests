@@ -1,0 +1,139 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Listing"
+  description: "API for managing item listings, including fetching item data and statuses."
+servers:
+  - url: http://amz-orders-ngx/openapi/Listing/v1
+    description: "Internal network server"
+  - url: http://host.docker.internal:8082/openapi/Listing/v1
+    description: "Local development server"
+tags:
+  - name: Items
+    description: "Endpoints for retrieving items and their related data"
+paths:
+  "/items":
+    get:
+      tags:
+        - Items
+      summary: "Retrieve item data by SKU"
+      description: "Fetch detailed information about items, including attributes, issues, and availability, using a specific SKU."
+      parameters:
+        - in: query
+          name: "sku"
+          description: "The unique identifier for the item to retrieve."
+          required: true
+          example: "2XR9C"
+          schema:
+            type: string
+        - in: query
+          name: "includedData"
+          description: "Specify the data to include in the response, such as issues, attributes, summaries, etc."
+          required: true
+          example: "issues,attributes,summaries,offers,fulfillmentAvailability"
+          schema:
+            type: array
+            items:
+              type: string
+              description: "Type of data to include in the response."
+      responses:
+        "200":
+          description: "Request processed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetItemsResult"
+        '500':
+          description: "An internal server error occurred."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      description: "Represents an error response, including detailed error messages."
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+    Message:
+      type: object
+      description: "Details about an error or informational message."
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+          description: "The severity level of the message."
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: "The type of message. Defaults to LOGGER_MESSAGE if not specified."
+        text:
+          type: string
+          description: "A detailed description of the message."
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      description: "Represents a successful response, optionally including additional data."
+      properties:
+        data:
+          type: object
+          description: "Response-specific data."
+    GetItemsResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      description: "The result of a successful GetItems request."
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/GetItemsResultData'
+    GetItemsResultData:
+      type: object
+      required:
+        - statues
+        - errors
+        - warnings
+      description: "Contains detailed data for GetItems requests, including statuses, errors, and warnings."
+      properties:
+        statues:
+          type: array
+          description: "Statuses of the items, such as DISCOVERABLE or BUYABLE."
+          example: ["DISCOVERABLE"]
+          nullable: true
+          items:
+            $ref: '#/components/schemas/StatusItem'
+        errors:
+          type: array
+          description: "List of error messages related to the item."
+          items:
+            $ref: '#/components/schemas/ErrorsItem'
+        warnings:
+          type: array
+          description: "List of warning messages related to the item."
+          items:
+            $ref: '#/components/schemas/WarningsItem'
+    StatusItem:
+      type: string
+      description: "Represents the status of an item."
+      example: "BUYABLE"
+    ErrorsItem:
+      type: string
+      description: An error message describing an issue with the item.
+    WarningsItem:
+      type: string
+      description: A warning message highlighting a potential issue with the item.
