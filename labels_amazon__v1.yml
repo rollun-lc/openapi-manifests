@@ -75,7 +75,7 @@ components:
       properties:
         ShippingServiceName:
           type: string
-          description: "UPS Next Day Air Saver®"
+          description: "UPS Next Day Air Saverï¿½"
         CarrierName:
           type: string
           example: "UPS"
