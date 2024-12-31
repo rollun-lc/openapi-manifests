@@ -1,4 +1,3 @@
-
 openapi: 3.0.0
 info:
   version: '2'
@@ -8,6 +7,7 @@ externalDocs:
   url: https://github.com/rollun-com/service-howtobay
 servers:
   - url: http://carriers/openapi/ShippingMethods/v2
+  - url: https://rollun.net/api/openapi/ShippingMethods/v2
 tags:
   - name: Shipping
     description: 'Everything about shipping methods.'
@@ -104,6 +104,11 @@ components:
               type: string
               example: "Wheels"
               description: Enum Tubes, Tires, Wheels
+            wpsDropShipFee:
+              type: string
+              example: "FR"
+              description: Ship. price
+              nullable: true
     ErrorResult:
       type: object
       properties:
@@ -316,18 +321,6 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/ShippingMethods'
-#      type: object
-#      properties:
-#        data:
-#          type: array
-#          description: 'Found delivery methods'
-#          items:
-#            $ref: '#/components/schemas/ShippingMethodsResponse'
-#        messages:
-#          type: array
-#          description: 'Collection of messages. There may be errors, notes and more.'
-#          items:
-#            $ref: '#/components/schemas/Message'
       xml:
         name: GetShippingBody
     Message:
