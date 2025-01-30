@@ -208,22 +208,34 @@ components:
           type: number
           nullable: true
           example: 20.94
-          description: Full price of all order items without taxes.
+          description: >
+            Full price of all order items without taxes.
+            Normally the price is available, but it can be null if the price is
+            unknown, because of bug or another reason.
         itemsTax:
           type: number
           nullable: true
           example: 0
-          description: The total amount of taxes paid for items
+          description: >
+            The total amount of taxes paid for items
+            Normally the price is available, but it can be null if the price is
+            unknown, because of bug or another reason.
         totalTax:
           type: number
           nullable: true
           example: 0
-          description: The total amount of all taxes (including shipping and any additional taxes)
+          description: >
+            The total amount of all taxes (including shipping and any additional taxes)
+            Normally the price is available, but it can be null if the price is
+            unknown, because of bug or another reason.
         totalPrice:
           type: number
           nullable: true
           example: 30.39
-          description: The total price of the order including taxes and any additional costs
+          description: >
+            The total price of the order including taxes and any additional costs
+            Normally the price is available, but it can be null if the price is
+            unknown, because of bug or another reason.
         receiver:
           allOf:
             - $ref: '#/components/schemas/Customer'
