@@ -1,0 +1,127 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "ChatGptApi"
+  description: "OpenAI API"
+servers:
+  - url: http://utils/openapi/ChatGptApi/v1
+  - url: http://host.docker.internal:8091/openapi/ChatGptApi/v1
+tags:
+  - name: "ChatCompletion"
+paths:
+  /chatCompletion:
+    post:
+      operationId: createChatCompletion
+      tags:
+        - ChatCompletion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChatCompletionRequest"
+      responses:
+        '200':
+          description: "Successful response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateChatCompletionResponse"
+        '500':
+          description: "Internal server error."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+components:
+  schemas:
+    CreateChatCompletionRequest:
+      type: object
+      required:
+        - userPrompt
+      properties:
+        userPrompt:
+          description: "The main input from the user to the model"
+          type: string
+          example: "Give me some info about item"
+        systemPrompt:
+          description: "Instructions to guide the model's behavior (system-level prompt)"
+          type: string
+          example: "You are a helpful assistant specializing in technical documentation"
+        options:
+          $ref: "#/components/schemas/CreateChatCompletionOptions"
+    CreateChatCompletionResponseData:
+      type: string
+      description: "Generated response from OpenAI"
+      example: "This is the generated response"
+
+    CreateChatCompletionResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      properties:
+        data:
+          $ref: '#/components/schemas/CreateChatCompletionResponseData'
+
+    ErrorResult:
+      type: object
+      description: "Error response containing messages"
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+    Message:
+      type: object
+      description: "Detailed error message"
+      properties:
+        level:
+          type: string
+          example: error
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+          description: "Severity level of the message"
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: "Type of the message"
+        text:
+          type: string
+          example: "Invalid data"
+          description: "Human-readable error message"
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
+    CreateChatCompletionOptions:
+      type: object
+      properties:
+        maxTokens:
+          description: "Maximum number of tokens to generate in the response (includes input and output tokens)"
+          type: number
+          example: 1000
+          default: 1000
+        model:
+          description: "ID of the model to use for generating the response"
+          example: gpt-4o-mini
+          default: gpt-4o-mini
+          enum:
+            - gpt-4o
+            - gpt-4o-mini
+            - gpt-4-turbo
+            - gpt-4
+        responseFormat:
+          description: "Specifies the response format."
+          type: string
+          enum:
+            - json_object
