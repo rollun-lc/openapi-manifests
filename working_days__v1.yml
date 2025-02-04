@@ -2,18 +2,20 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "WorkingDays"
-  description: Calculate Working Days
+  description: "A service that performs operations with working days"
 servers:
-  - url: http://localhost:8080/openapi/WorkingDays/v1
-  - url: http://howtobuy5-ngx/openapi/WorkingDays/v1
+  - url: http://utils/openapi/WorkingDays/v1
+  - url: http://host.docker.internal:8091/openapi/WorkingDays/v1
+  - url: http://localhost:8091/openapi/WorkingDays/v1
 tags:
-  - name: AddWorkingDays
+  - name: EndWorkingDate
+  - name: WorkingDaysCount
 paths:
-  "/add-working-days":
+  "/endWorkingDate":
     get:
       tags:
-        - AddWorkingDays
-      summary: "Add an amount of working time to a given start date/time"
+        - EndWorkingDate
+      summary: "Add an amount of working time to a given start date-time"
       parameters:
         - name: startDate
           in: query
@@ -21,34 +23,80 @@ paths:
           schema:
             type: string
             format: date-time
-            example: '2038-01-19'
-            description: UTC format
+            example: '2025-01-27T16:00:00Z'
+            description: "Start date and time in UTC format (Y-m-dTH:i:sZ)"
         - name: daysAmount
           in: query
           required: true
           schema:
-            type: number
+            type: integer
             example: 3
             description: 'Amount of days need to add'
+        - name: weekendDays
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+            example: [4, 5]
+            description: 'Weekend days, where: 1 - Monday, 7 - Sunday (ISO-8601)'
       responses:
         "200":
           description: "Success"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AddWorkingDaysResult"
-        "422":
-          description: "Unprocessable Entity"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResult"
+                $ref: "#/components/schemas/EndWorkingDateResult"
         '500':
           description: "Internal error"
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
+
+  "/workingDaysCount":
+    get:
+      tags:
+        - WorkingDaysCount
+      summary: "Return the number of working days between dates (including borders)"
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2038-01-19'
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2038-01-25'
+        - name: weekendDays
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+            example: [4, 5]
+            description: 'Weekend days, where: 1 - Monday, 7 - Sunday (ISO-8601)'
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingDaysCountResult'
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
 components:
   schemas:
     ErrorResult:
@@ -72,16 +120,18 @@ components:
             - warning
             - notice
             - info
-            - debug
         type:
           type: string
           enum:
             - UNDEFINED
+            - LOGGER_MESSAGE
           description: >
+            Enum for error types:
             UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
         text:
           type: string
-          description: Message, that describes what went wrong
+          description: "Message describing what went wrong"
     SuccessResult:
       allOf:
         - $ref: '#/components/schemas/ErrorResult'
@@ -89,18 +139,34 @@ components:
       properties:
         data:
           type: object
-    AddWorkingDaysResultItem:
+    EndWorkingDateResultItem:
       type: object
       required:
         - endDate
       properties:
         endDate:
           type: string
-          example: '2038-01-19'
-    AddWorkingDaysResult:
+          example: '2025-01-30T16:00:00Z'
+          description: "Result of adding working days to a start date-time in UTC format (Y-m-dTH:i:sZ)"
+    EndWorkingDateResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/AddWorkingDaysResultItem"
+          $ref: "#/components/schemas/EndWorkingDateResultItem"
+    WorkingDaysCountResultItem:
+      type: object
+      required:
+        - workingDays
+      properties:
+        workingDays:
+          type: integer
+          example: 6
+    WorkingDaysCountResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkingDaysCountResultItem'
