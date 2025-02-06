@@ -2,7 +2,10 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "CRMEventHandler"
-  description: Manifest description
+  description: "A manifest that enables services to be notified after an action is performed in the CRM, with the possibility of receiving additional actions to execute.
+                It is typically used in two scenarios:
+                    1. When an action has been completed in the CRM.
+                    2. When a direct command needs to be executed by the receiving service, for example run a scenario by 'scenario_id' specified in the action body."
 servers:
   - url: http://rollun-crm/openapi/CRMEventHandler/v1
   - url: https://crm-node-red.rollun.net/openapi/CRMEventHandler/v1
@@ -14,10 +17,9 @@ paths:
     post:
       tags:
         - Event
-      summary: "Handle event"
-      description: ""
+      description: "An endpoint that receives information about an executed action and returns any additional actions that need to be performed."
       requestBody:
-        description: ""
+        description: "The request includes information about the entity and the action performed on it."
         required: true
         content:
           application/json:
@@ -25,13 +27,13 @@ paths:
               $ref: '#/components/schemas/EventPostRequest'
       responses:
         "200":
-          description: "Success response"
+          description: "In case of success, additional actions may be returned; otherwise, an empty array is provided if no further actions are needed."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActionsResponse'
         "500":
-          description: 'Some error'
+          description: "A response containing messages about any errors that occurred."
           content:
             application/json:
               schema:
@@ -140,6 +142,8 @@ components:
             - button
         context:
           type: object
+          description: "Changes requested to be performed during this action, such as updating specific fields or executing a scenario by its ID.
+                        In a CompletedAction, this field usually retains the same value as in the original Action."
           additionalProperties: true
         delay:
           type: integer
@@ -153,9 +157,12 @@ components:
       properties:
         row:
           type: object
+          description: "All fields of the entity after the action has been performed, reflecting updated values.
+                        Note: This property is not logged in the ActionsHistoryDataStore."
           additionalProperties: true
         changedFields:
           type: object
+          description: "Previous values of the fields that were changed during action execution."
           additionalProperties: true
 
     ActionEntity:
