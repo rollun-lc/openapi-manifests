@@ -122,9 +122,14 @@ components:
         level:
           type: string
           enum:
+            - emergency
+            - alert
+            - critical
             - error
             - warning
+            - notice
             - info
+            - debug
         message:
           example: 'app crashed'
           description: A short description of log message. Keep it short and undestandable
