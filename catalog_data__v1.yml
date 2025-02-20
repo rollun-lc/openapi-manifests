@@ -197,9 +197,11 @@ components:
         brand:
           type: string
           description: "Value need to match our brand_ids, as it will not be formatted"
+          example: "WSM"
         mpn:
           type: string
           description: "Value can be passed in its original form, as it will be automatically formatted by our general rules for rids catalog"
+          example: "002-048-01"
     NullableProduct:
       type: object
       properties:
