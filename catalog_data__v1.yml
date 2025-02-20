@@ -12,7 +12,9 @@ paths:
     post:
       tags:
         - Catalog
-      summary: "Find rids for pairs of brand and MPN"
+      summary: "Find rids for pairs of brand and MPN.
+                MPNs will be formatted by our general rules for rids catalog.
+                Brand names will be NOT formatted, and need to match our brand_ids."
       requestBody:
         required: true
         content:
@@ -194,8 +196,10 @@ components:
       properties:
         brand:
           type: string
+          description: "Value need to match our brand_ids, as it will not be formatted"
         mpn:
           type: string
+          description: "Value can be passed in its original form, as it will be automatically formatted by our general rules for rids catalog"
     NullableProduct:
       type: object
       properties:
