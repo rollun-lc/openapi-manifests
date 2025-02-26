@@ -6,12 +6,38 @@ info:
 servers:
   - url: http://amz-orders-ngx/openapi/Listing/v1
     description: "Internal network server"
-  - url: http://host.docker.internal:8082/openapi/Listing/v1
+  - url: http://host.docker.internal:8408/openapi/Listing/v1
     description: "Local development server"
 tags:
   - name: Items
     description: "Endpoints for retrieving items and their related data"
 paths:
+  "/prices":
+    get:
+      tags:
+        - Prices
+      summary: "Get all prices"
+      parameters:
+        - in: query
+          name: "sku"
+          description: "The unique identifier for the item to retrieve."
+          required: true
+          example: "2XR9C"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Request processed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetMpPricesResult"
+        "500":
+          description: "An internal server error occurred."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
   "/items":
     get:
       tags:
@@ -102,15 +128,46 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/GetItemsResultData'
+    GetMpPricesResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      description: "The result of a successful GetItems request."
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/GetMpPricesResultData'
+    GetMpPricesResultData:
+      type: object
+      required:
+        - price
+        - minPrice
+        - maxPrice
+      properties:
+        price:
+          type: number
+          example: 20.5
+          description: "Current price of item in Amazon"
+        minPrice:
+          type: number
+          nullable: true
+          example: 19.0
+          description: "Current min price of item in Amazon"
+        maxPrice:
+          type: number
+          nullable: true
+          example: 23.9
+          description: "Current max price of item in Amazon"
     GetItemsResultData:
       type: object
       required:
-        - statues
+        - statuses
         - errors
         - warnings
       description: "Contains detailed data for GetItems requests, including statuses, errors, and warnings."
       properties:
-        statues:
+        statuses:
           type: array
           description: "Statuses of the items, such as DISCOVERABLE or BUYABLE."
           example: ["DISCOVERABLE"]
