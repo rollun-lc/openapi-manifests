@@ -8,6 +8,8 @@ servers:
     description: "Internal network server"
   - url: http://host.docker.internal:8408/openapi/Listing/v1
     description: "Local development server"
+  - url: https://rollun.net/api/openapi/Listing/v1
+    description: "Proxy server"
 tags:
   - name: Items
     description: "Endpoints for retrieving items and their related data"
