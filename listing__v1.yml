@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "Listing"
-  description: "API for managing item listings, including fetching item data and statuses."
+  description: "API for managing item listings, including fetching item data, prices, and images."
 servers:
   - url: http://amz-orders-ngx/openapi/Listing/v1
     description: "Internal network server"
@@ -11,20 +11,27 @@ servers:
 tags:
   - name: Items
     description: "Endpoints for retrieving items and their related data"
+  - name: Prices
+    description: "Endpoints for retrieving item prices"
+  - name: Images
+    description: "Endpoints for retrieving item images"
+
 paths:
   "/prices":
     get:
       tags:
         - Prices
-      summary: "Get all prices"
+      summary: "Get all prices. Price, min, max"
       parameters:
         - in: query
-          name: "sku"
+          name: "skus"
           description: "The unique identifier for the item to retrieve."
           required: true
           example: "2XR9C"
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: "Request processed successfully."
@@ -38,6 +45,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
+
   "/items":
     get:
       tags:
@@ -75,6 +83,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
+
+  "/images":
+    get:
+      tags:
+        - Images
+      summary: "Retrieve images of an item by SKU"
+      description: "Fetch all available images of an item based on its SKU."
+      parameters:
+        - in: query
+          name: "sku"
+          description: "The unique identifier for the item."
+          required: true
+          example: "2XR9C"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Request processed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetImagesResult"
+        "500":
+          description: "An internal server error occurred."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
 components:
   schemas:
     ErrorResult:
@@ -85,6 +122,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Message"
+
     Message:
       type: object
       description: "Details about an error or informational message."
@@ -109,6 +147,7 @@ components:
         text:
           type: string
           description: "A detailed description of the message."
+
     SuccessResult:
       allOf:
         - $ref: '#/components/schemas/ErrorResult'
@@ -118,6 +157,7 @@ components:
         data:
           type: object
           description: "Response-specific data."
+
     GetItemsResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
@@ -128,23 +168,32 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/GetItemsResultData'
+
     GetMpPricesResult:
       allOf:
         - $ref: '#/components/schemas/SuccessResult'
       type: object
-      description: "The result of a successful GetItems request."
+      description: "The result of a successful GetMpPrices request."
       required:
         - data
       properties:
         data:
-          $ref: '#/components/schemas/GetMpPricesResultData'
+          type: array
+          items:
+            $ref: '#/components/schemas/GetMpPricesResultData'
+
     GetMpPricesResultData:
       type: object
       required:
+        - sku
         - price
         - minPrice
         - maxPrice
       properties:
+        sku:
+          type: string
+          example: 1030550001
+          description: "Sku"
         price:
           type: number
           example: 20.5
@@ -159,6 +208,7 @@ components:
           nullable: true
           example: 23.9
           description: "Current max price of item in Amazon"
+
     GetItemsResultData:
       type: object
       required:
@@ -184,13 +234,50 @@ components:
           description: "List of warning messages related to the item."
           items:
             $ref: '#/components/schemas/WarningsItem'
+
     StatusItem:
       type: string
       description: "Represents the status of an item."
       example: "BUYABLE"
+
     ErrorsItem:
       type: string
-      description: An error message describing an issue with the item.
+      description: "An error message describing an issue with the item."
+
     WarningsItem:
       type: string
-      description: A warning message highlighting a potential issue with the item.
+      description: "A warning message highlighting a potential issue with the item."
+
+    GetImagesResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      description: "The result of a successful GetImages request."
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageResultItem'
+
+    ImageResultItem:
+      type: object
+      required:
+        - link
+        - height
+        - width
+      properties:
+        link:
+          type: string
+          format: uri
+          description: "The URL of the image."
+          example: "https://m.media-amazon.com/images/I/71I8PMuDPcL.jpg"
+        height:
+          type: integer
+          description: "The height of the image in pixels."
+          example: 1500
+        width:
+          type: integer
+          description: "The width of the image in pixels."
+          example: 1744
