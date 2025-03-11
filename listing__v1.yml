@@ -94,10 +94,10 @@ paths:
       description: "Fetch all available images of an item based on its SKU."
       parameters:
         - in: query
-          name: "sku"
+          name: "asin"
           description: "The unique identifier for the item."
           required: true
-          example: "2XR9C"
+          example: "B009D2YV2Y"
           schema:
             type: string
       responses:
