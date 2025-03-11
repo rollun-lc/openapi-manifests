@@ -90,8 +90,8 @@ paths:
     get:
       tags:
         - Images
-      summary: "Retrieve images of an item by SKU"
-      description: "Fetch all available images of an item based on its SKU."
+      summary: "Retrieve images of an item by asin"
+      description: "Fetch all available images of an item based on its asin."
       parameters:
         - in: query
           name: "asin"
