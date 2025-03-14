@@ -1,0 +1,79 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "AmazonShipTemplates"
+  description: "Retrieve all available ship templates from Amazon"
+servers:
+  - url: http://amz-orders-php/openapi/AmazonShipTemplates/v1
+  - url: http://host.docker.internal:8080/openapi/AmazonShipTemplates/v1
+  - url: http://localhost:8080/openapi/AmazonShipTemplates/v1
+tags:
+  - name: ShipTemplates
+    description: "Endpoints for retrieving ship templates from Amazon"
+paths:
+  "/shipTemplates":
+    get:
+      tags:
+        - ShipTemplates
+      summary: "Get all available ship templates from Amazon"
+      description: "Retrieves a list of all available ship templates from Amazon MWS."
+      responses:
+        "200":
+          description: "Successful response with available ship templates."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShipTemplatesResult"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+components:
+  schemas:
+    ShipTemplatesResult:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResult"
+      type: object
+      properties:
+        data:
+          type: array
+          description: "List of available ship templates"
+          items:
+            type: object
+            properties:
+              templateId:
+                type: string
+                description: "Unique identifier of the ship template"
+                example: "3cc4b9f9-5875-436c-a5f8-3bc8dc93f864"
+              name:
+                type: string
+                description: "Ship template name"
+                example: "AU_DS_IN_NV_02_25"
+    SuccessResult:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResult"
+      type: object
+      properties:
+        data:
+          type: object
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum: [emergency, alert, critical, error, warning, notice, info, debug]
+        type:
+          type: string
+          enum: [UNDEFINED, LOGGER_MESSAGE, AMAZON_API_ERROR]
+        text:
+          type: string
+          description: "Message describing what went wrong"
