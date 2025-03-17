@@ -4,7 +4,7 @@ info:
   title: "AmazonShipTemplates"
   description: "Retrieve all available ship templates from Amazon"
 servers:
-  - url: http://amz-orders-php/openapi/AmazonShipTemplates/v1
+  - url: http://amz-orders-ngx/openapi/AmazonShipTemplates/v1
   - url: http://host.docker.internal:8080/openapi/AmazonShipTemplates/v1
   - url: http://localhost:8080/openapi/AmazonShipTemplates/v1
 tags:
@@ -17,6 +17,7 @@ paths:
         - ShipTemplates
       summary: "Get all available ship templates from Amazon"
       description: "Retrieves a list of all available ship templates from Amazon MWS."
+      operationId: getShipTemplates
       responses:
         "200":
           description: "Successful response with available ship templates."
@@ -41,16 +42,18 @@ components:
           type: array
           description: "List of available ship templates"
           items:
-            type: object
-            properties:
-              templateId:
-                type: string
-                description: "Unique identifier of the ship template"
-                example: "3cc4b9f9-5875-436c-a5f8-3bc8dc93f864"
-              name:
-                type: string
-                description: "Ship template name"
-                example: "AU_DS_IN_NV_02_25"
+            $ref: "#/components/schemas/ShipTemplateItem"
+    ShipTemplateItem:
+      type: object
+      properties:
+        templateId:
+          type: string
+          description: "Unique identifier of the ship template"
+          example: "3cc4b9f9-5875-436c-a5f8-3bc8dc93f864"
+        name:
+          type: string
+          description: "Ship template name"
+          example: "AU_DS_IN_NV_02_25"
     SuccessResult:
       allOf:
         - $ref: "#/components/schemas/ErrorResult"
