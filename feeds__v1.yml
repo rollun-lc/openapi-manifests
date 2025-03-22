@@ -129,9 +129,7 @@ components:
           example: ["marketplace1", "marketplace2"]
         createdTime:
           type: string
-          format: date-time
           description: Feed creation timestamp in UTC
-          example: "2024-03-15T10:15:30Z"
         processingStatus:
           type: string
           enum:
@@ -143,14 +141,10 @@ components:
           description: Current processing status of the feed
         processingStartTime:
           type: string
-          format: date-time
           description: Processing start time in UTC
-          example: "2024-03-15T11:00:00Z"
         processingEndTime:
           type: string
-          format: date-time
           description: Processing end time in UTC
-          example: "2024-03-15T12:00:00Z"
         resultFeedDocumentId:
           type: string
           description: ID of the result feed document
@@ -237,9 +231,7 @@ components:
           example: "AMZ12345"
         fulfillmentDate:
           type: string
-          format: date-time
           description: Fulfillment date in UTC
-          example: "2024-03-15T10:00:00Z"
         fulfillmentData:
           $ref: "#/components/schemas/FulfillmentData"
         items:
