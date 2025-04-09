@@ -199,6 +199,7 @@ components:
           description: Minimum Advertised Price
           example: 19.99
         price:
+          nullable: true
           type: number
           description: Product price
           example: 24.99
