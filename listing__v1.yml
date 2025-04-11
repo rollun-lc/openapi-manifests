@@ -191,6 +191,7 @@ components:
         - price
         - minPrice
         - maxPrice
+        - mapPrice
       properties:
         sku:
           type: string
@@ -200,6 +201,11 @@ components:
           type: number
           example: 20.5
           description: "Current price of item in Amazon"
+        mapPrice:
+          type: number
+          nullable: true
+          example: 20.5
+          description: "Current map price of item in Amazon"
         minPrice:
           type: number
           nullable: true
