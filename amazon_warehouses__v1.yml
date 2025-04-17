@@ -6,8 +6,8 @@ info:
 
 servers:
   - url: http://amz-orders-ngx/openapi/AmazonWarehouses/v1
-  - url: http://host.docker.internal:8280/openapi/AmazonWarehouses/v1
-  - url: http://localhost:8280/openapi/AmazonWarehouses/v1
+  - url: http://host.docker.internal:8408/openapi/AmazonWarehouses/v1
+  - url: http://localhost:8408/openapi/AmazonWarehouses/v1
 
 tags:
   - name: Warehouses
