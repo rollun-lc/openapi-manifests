@@ -29,7 +29,6 @@ paths:
               - "RockyMountain"
               - "Turn14"
               - "Wps"
-              - "RollunOffice"
         - name: csn
           in: query
           required: true
