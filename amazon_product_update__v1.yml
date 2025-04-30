@@ -48,6 +48,7 @@ components:
           description: List of products to update
           items:
             $ref: '#/components/schemas/ProductUpdateItem'
+
     ProductUpdateItem:
       type: object
       required:
@@ -57,6 +58,12 @@ components:
           type: string
           description: Product SKU used to identify the item on Amazon
           example: "002438"
+        price:
+          type: number
+          format: float
+          nullable: true
+          description: Direct price for the product, optional if using pricing rules
+          example: 14.95
         quantity:
           type: integer
           description: Available product quantity. Not used when set warehouses property!
@@ -65,16 +72,23 @@ components:
           type: number
           format: float
           description: Minimum allowed price for the product
-          example: 9.99
+          example: 9.00
         maxPrice:
           type: number
           format: float
           description: Maximum allowed price for the product
-          example: 19.99
-        handlingDays:
-          type: integer
-          description: Number of days required to handle and ship the product
-          example: 2
+          example: 19.10
+        mapPrice:
+          type: number
+          format: float
+          description: Minimum advertised price. Remove from amazon when is not set
+          example: 13.00
+        productType:
+          type: string
+          nullable: true
+          description: Amazon product type (e.g., "BOOKS", "TOYS", "ELECTRONICS")
+          example: "TOYS"
+          default: "PRODUCT"
         shipTemplate:
           type: string
           description: Shipping template assigned to the product (use `multilocation` to enable per-location quantity)
@@ -84,36 +98,15 @@ components:
           description: Required only if shipTemplate = multilocation
           items:
             $ref: '#/components/schemas/WarehousesItem'
-        productType:
-          type: string
-          nullable: true
-          description: Amazon product type (e.g., "BOOKS", "TOYS", "ELECTRONICS")
-          example: "TOYS"
-          default: "PRODUCT"
-        price:
-          type: number
-          format: float
-          nullable: true
-          description: Direct price for the product, optional if using pricing rules
-          example: 14.95
-        mapPrice:
-          type: number
-          format: float
-          nullable: true
-          description: Minimum advertised price. Remove from amazon when is nullable
-          example: 13.00
-
     WarehousesItem:
       type: object
       required:
         - warehouseId
-        - quantity
-        - handlingDays
       properties:
         warehouseId:
           type: string
           description: Unique identifier of the warehouse
-          example: "AZ1"
+          example: "05fa3c53-df62-4195-861a-8f369a3fbccd"
         quantity:
           type: integer
           description: Quantity of product available in this warehouse
@@ -135,20 +128,18 @@ components:
 
     UpdateProductResultItem:
       type: object
+      required:
+        - sku
+        - submissionId
       properties:
         sku:
           type: string
           description: Product SKU
           example: "002438"
-        status:
+        submissionId:
           type: string
           description: Update status
           example: "success"
-        updatedAt:
-          type: string
-          format: date-time
-          description: Timestamp of update
-          example: "2025-04-15T12:00:00Z"
 
     ErrorResult:
       type: object
