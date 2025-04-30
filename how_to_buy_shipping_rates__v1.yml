@@ -158,7 +158,7 @@ components:
           example: "46268"
         warehouseQty:
           type: integer
-          example: 1
+          example: 0
         warehouseHandlingTime:
           type: string
           example: "A"
@@ -169,12 +169,13 @@ components:
       type: object
       required:
         - sender
-        - cost
         - carrier
         - shippingMethodId
         - shippingMethodName
+        - cost
         - trackNumberDate
         - shippingArriveDate
+        - labelProvider
       properties:
         sender:
           type: string
@@ -187,10 +188,8 @@ components:
             - UPS
             - TFT
           example: "FEDEX"
-          nullable: true
         shippingMethodId:
           type: string
-          description: "Shipping method ID structure"
           example: "ROF-CN-PickUp-Usps-PM-FR-LegalEnv"
         shippingMethodName:
           type: string
@@ -198,16 +197,13 @@ components:
         cost:
           type: number
           example: 5.84
-          nullable: true
         trackNumberDate:
           type: string
           format: date-time
-          description: "Track number issue datetime in UTC"
           example: "2020-01-30T16:00:00Z"
         shippingArriveDate:
           type: string
           format: date-time
-          description: "Estimated arrival datetime in UTC"
           example: "2020-02-03T03:59:00Z"
         labelProvider:
           $ref: '#/components/schemas/LabelProvider'
@@ -226,7 +222,7 @@ components:
           example: "UPS Ground"
         labelPrice:
           type: number
-          example: 14.0
+          example: 14
     ShippingMethods:
       type: array
       description: "Found delivery methods"
@@ -238,7 +234,16 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/ShippingMethods'
+          type: object
+          required:
+            - id
+            - shippingMethods
+          properties:
+            id:
+              type: string
+              example: "abc123-operation"
+            shippingMethods:
+              $ref: '#/components/schemas/ShippingMethods'
     SuccessResult:
       allOf:
         - $ref: '#/components/schemas/ErrorResult'
@@ -275,7 +280,6 @@ components:
             - NO_ESTIMATES_FOR_SHIPPING_METHOD
             - TOO_LARGE
             - CANNOT_FIT
-          description: "Message type for error categorization"
         text:
           type: string
           description: "Message describing the issue"
