@@ -114,6 +114,10 @@ components:
           nullable: true
     RequestedItem:
       type: object
+      required:
+        - rid
+        - qty
+        - warehouses
       properties:
         rid:
           type: string
@@ -123,6 +127,11 @@ components:
           type: integer
           description: "Requested quantity for item"
           example: 2
+        warehouses:
+          type: array
+          description: "Availability information for the item"
+          items:
+            $ref: '#/components/schemas/WarehouseInfo'
     LineItems:
       type: object
       properties:
@@ -132,6 +141,30 @@ components:
         Quantity:
           type: number
           example: 2
+    WarehouseInfo:
+      type: object
+      required:
+        - warehouseId
+        - warehouseZip
+        - warehouseQty
+        - warehouseHandlingTime
+        - warehouseCutOffTime
+      properties:
+        warehouseId:
+          type: string
+          example: "AU_IN"
+        warehouseZip:
+          type: string
+          example: "46268"
+        warehouseQty:
+          type: integer
+          example: 1
+        warehouseHandlingTime:
+          type: string
+          example: "A"
+        warehouseCutOffTime:
+          type: string
+          example: "18"
     ShippingMethodsResponse:
       type: object
       required:
