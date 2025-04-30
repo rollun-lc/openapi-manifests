@@ -63,10 +63,6 @@ components:
           format: float
           description: Direct price for the product, optional if using pricing rules
           example: 14.95
-        quantity:
-          type: integer
-          description: Available product quantity. Not used when set warehouses property!
-          example: 10
         minPrice:
           type: number
           format: float
