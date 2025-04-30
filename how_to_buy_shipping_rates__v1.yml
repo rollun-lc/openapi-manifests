@@ -158,7 +158,7 @@ components:
           example: "46268"
         warehouseQty:
           type: integer
-          example: 0
+          example: 5
         warehouseHandlingTime:
           type: string
           example: "A"
