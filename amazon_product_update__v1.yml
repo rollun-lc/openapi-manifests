@@ -61,7 +61,6 @@ components:
         price:
           type: number
           format: float
-          nullable: true
           description: Direct price for the product, optional if using pricing rules
           example: 14.95
         quantity:
@@ -85,7 +84,6 @@ components:
           example: 13.00
         productType:
           type: string
-          nullable: true
           description: Amazon product type (e.g., "BOOKS", "TOYS", "ELECTRONICS")
           example: "TOYS"
           default: "PRODUCT"
