@@ -1,0 +1,234 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "AutodistCalculate"
+  description: >
+    Proxy for Autodist /order/calculate request used for HowToBuy <br>
+    Docs https://api.autodist.com/docs/gateway/resource_Order.html
+servers:
+  - url: http://server-host/openapi/AutodistCalculate/v1
+paths:
+  "/calculate":
+    post:
+      tags:
+        - Resource
+      summary: "Get available shipping methods with price"
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculateRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculateResponse'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+
+    CalculateRequest:
+      required:
+        - PONumber
+        - header
+      type: object
+      properties:
+        PONumber:
+          type: string
+          example: Some PO number
+        placeOrderOnBackorder:
+          type: boolean
+          example: false
+        comment:
+          type: string
+          example: Some message for the manager
+        promoCode:
+          type: string
+        header:
+          $ref: '#/components/schemas/OrderRequestHeader'
+        items:
+          maxItems: 2147483647
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/RequestedItem'
+        signatureRequired:
+          type: boolean
+
+    OrderRequestHeader:
+      required:
+        - shippingMethod
+      type: object
+      properties:
+        shippingMethod:
+          type: string
+          example: oneDay
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        amazonOrderID:
+          type: string
+
+    RequestedItem:
+      required:
+        - number
+        - quantity
+      type: object
+      properties:
+        quantity:
+          type: number
+          example: 2
+        number:
+          type: string
+          example: BR9ES
+
+    Address:
+      required:
+        - addressLine1
+        - city
+        - countryCode
+        - name
+        - state
+        - zipCode
+      type: object
+      properties:
+        name:
+          type: string
+          example: Some Name
+        contact:
+          type: string
+        addressLine1:
+          type: string
+          example: address line 1
+        addressLine2:
+          type: string
+          example: address line 2
+        addressLine3:
+          type: string
+        city:
+          type: string
+          example: MARS HILL
+        state:
+          type: string
+          example: ME
+        zipCode:
+          type: string
+          example: 04758-3480
+        countryCode:
+          type: string
+          example: US
+        phone:
+          type: string
+          example: "0123456789"
+        classification:
+          type: string
+          enum:
+            - COMMERCIAL
+            - RESIDENTIAL
+      description: ""
+
+    CalculateResponse:
+      type: object
+      properties:
+        totalOrderValue:
+          type: string
+          description: Price of ALL items, included out of stock items (can be bigger than totalInvoiceAmount)
+          example: "104.97"
+        totalSpecialCharge:
+          type: string
+        amtAuthCC:
+          type: string
+        salesAmount:
+          type: string
+          example: "104.97"
+        salesTaxAmount:
+          type: string
+          example: ".00"
+        totalOrderWeight:
+          type: string
+          example: "16.0500"
+        tradeDiscountAmount:
+          type: string
+        shippingOptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShippingOption'
+        message:
+          type: string
+        totalInvoiceAmount:
+          type: string
+          example: "104.97"
+          description: Price of items that available (ONLY AVAILABLE)
+        totalOrderDimWeight:
+          type: string
+        federalExciseAmount:
+          type: string
+          example: ".00"
+        totContnChrg:
+          type: string
+          example: ".00"
+        done:
+          type: string
+        currencyCode:
+          type: string
+
+    ShippingOption:
+      type: object
+      properties:
+        name:
+          type: string
+          example: FedEx Ground Economy
+        date:
+          type: number
+          nullable: true
+          example: 1710993540000
+        carrierCode:
+          type: string
+          description: shipping method code (can be converted to name)
+          example: FEDSP
+        cost:
+          type: number
+          description: only shipping price without items price included
+          example: 19.53
