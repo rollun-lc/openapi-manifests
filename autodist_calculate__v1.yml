@@ -6,7 +6,7 @@ info:
     Proxy for Autodist /order/calculate request used for HowToBuy <br>
     Docs https://api.autodist.com/docs/gateway/resource_Order.html
 servers:
-  - url: http://server-host/openapi/AutodistCalculate/v1
+  - url: http://suppliers/openapi/AutodistCalculate/v1
 tags: 
   - name: Calculate
 paths:
