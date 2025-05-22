@@ -7,11 +7,13 @@ info:
     Docs https://api.autodist.com/docs/gateway/resource_Order.html
 servers:
   - url: http://server-host/openapi/AutodistCalculate/v1
+tags: 
+  - name: Calculate
 paths:
   "/calculate":
     post:
       tags:
-        - Resource
+        - Calculate
       summary: "Get available shipping methods with price"
       description: ""
       requestBody:
