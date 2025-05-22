@@ -190,6 +190,7 @@ components:
         phone:
           type: string
           example: "0123456789"
+          nullable: true
         classification:
           type: string
           enum:
