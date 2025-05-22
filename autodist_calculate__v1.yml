@@ -27,7 +27,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CalculateResponse'
+                $ref: '#/components/schemas/CalculateResult'
         "500":
           description: 'Some internal error'
           content:
@@ -69,6 +69,26 @@ components:
         text:
           type: string
           description: Message, that describes what went wrong
+          
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          nullable: true
+          type: object
+
+    ## Order results
+    CalculateResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Calculate'
 
     CalculateRequest:
       required:
@@ -169,7 +189,7 @@ components:
             - RESIDENTIAL
       description: ""
 
-    CalculateResponse:
+    Calculate:
       type: object
       properties:
         totalOrderValue:
