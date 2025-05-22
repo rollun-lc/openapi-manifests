@@ -161,26 +161,32 @@ components:
           example: Some Name
         contact:
           type: string
+          nullable: true
         addressLine1:
           type: string
           example: address line 1
         addressLine2:
           type: string
           example: address line 2
+          nullable: true
         addressLine3:
           type: string
+          nullable: true
         city:
           type: string
           example: MARS HILL
+          nullable: true
         state:
           type: string
           example: ME
+          nullable: true
         zipCode:
           type: string
           example: 04758-3480
         countryCode:
           type: string
           example: US
+          nullable: true
         phone:
           type: string
           example: "0123456789"
@@ -189,6 +195,7 @@ components:
           enum:
             - COMMERCIAL
             - RESIDENTIAL
+          nullable: true
       description: ""
 
     Calculate:
@@ -198,49 +205,65 @@ components:
           type: string
           description: Price of ALL items, included out of stock items (can be bigger than totalInvoiceAmount)
           example: "104.97"
+          nullable: true
         totalSpecialCharge:
           type: string
+          nullable: true
         amtAuthCC:
           type: string
+          nullable: true
         salesAmount:
           type: string
+          nullable: true
           example: "104.97"
         salesTaxAmount:
           type: string
+          nullable: true
           example: ".00"
         totalOrderWeight:
           type: string
+          nullable: true
           example: "16.0500"
         tradeDiscountAmount:
           type: string
+          nullable: true
         shippingOptions:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/ShippingOption'
         message:
           type: string
+          nullable: true
         totalInvoiceAmount:
           type: string
+          nullable: true
           example: "104.97"
           description: Price of items that available (ONLY AVAILABLE)
         totalOrderDimWeight:
           type: string
+          nullable: true
         federalExciseAmount:
           type: string
+          nullable: true
           example: ".00"
         totContnChrg:
           type: string
+          nullable: true
           example: ".00"
         done:
           type: string
+          nullable: true
         currencyCode:
           type: string
+          nullable: true
 
     ShippingOption:
       type: object
       properties:
         name:
           type: string
+          nullable: true
           example: FedEx Ground Economy
         date:
           type: number
@@ -248,9 +271,11 @@ components:
           example: 1710993540000
         carrierCode:
           type: string
+          nullable: true
           description: shipping method code (can be converted to name)
           example: FEDSP
         cost:
           type: number
+          nullable: true
           description: only shipping price without items price included
           example: 19.53
