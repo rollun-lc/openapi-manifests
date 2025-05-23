@@ -1,0 +1,442 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Turn14Quote"
+  description: >
+    Proxy for Turn14 /v1/quote request used for HowToBuy <br>
+    Docs https://turn14.com/api/#quote-create-quote-post
+servers:
+  - url: http://suppliers/openapi/Turn14Quote/v1
+tags:
+  - name: Quote
+paths:
+  "/quote":
+    post:
+      tags:
+        - Quote
+      summary: "Submit a quote for an order to Turn 14 to obtain item, discount, and shipping pricing before placing an order."
+      description: ""
+      requestBody:
+        description: ""
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+      responses:
+        "200":
+          description: "Order successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResult'
+        "500":
+          description: 'Some internal error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+components:
+  schemas:
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - LOGGER_MESSAGE
+          description: >
+            You can expose this enum for all your errors
+            UNDEFINED - Any undefined message type
+            LOGGER_MESSAGE - Same as undefined
+        text:
+          type: string
+          description: Message, that describes what went wrong
+    
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          nullable: true
+          type: object
+    
+    QuoteRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            environment:
+              type: string
+              example: "production"
+            po_number:
+              type: string
+              nullable: true
+              example: "123456"
+            sales_source:
+              type: integer
+              nullable: true
+              example: 1
+            locations:
+              type: array
+              items:
+                $ref: '#/components/schemas/Location'
+              example:
+                - location: "default"
+                  combine_in_out_stock: false
+                  items:
+                    - item_identifier: "274426"
+                      item_identifier_type: "item_id"
+                      quantity: 1
+            recipient:
+              $ref: '#/components/schemas/RequestedRecipient'
+
+    Location:
+      type: object
+      properties:
+        location:
+          type: string
+          example: "default"
+        combine_in_out_stock:
+          type: boolean
+          example: false
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+
+    Item:
+      type: object
+      properties:
+        item_identifier:
+          type: string
+          example: "274426"
+        item_identifier_type:
+          type: string
+          example: "item_id"
+        quantity:
+          type: integer
+          example: 1
+
+    RequestedRecipient:
+      type: object
+      properties:
+        company:
+          type: string
+          nullable: true
+          example: "Turn 14 Distribution"
+        name:
+          type: string
+          example: "John Doe"
+        address:
+          type: string
+          example: "100 Tournament Drive"
+        address_2:
+          type: string
+          nullable: true
+          example: "Suite 100"
+        city:
+          type: string
+          example: "Horsham"
+        state:
+          type: string
+          example: "PA"
+        country:
+          type: string
+          example: "US"
+        zip:
+          type: string
+          example: "19044"
+        email_address:
+          type: string
+          nullable: true
+          format: email
+          example: "you@me.com"
+        phone_number:
+          type: string
+          nullable: true
+          example: "267-468-0350"
+        is_shop_address:
+          type: boolean
+          nullable: true
+          example: false
+
+    ## Order results
+    QuoteResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Quote'
+
+    # Success Response
+    Quote:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/QuoteData'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ErrorObject'
+
+    QuoteData:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123456
+        type:
+          type: string
+          enum: [Quote]
+          example: Quote
+        attributes:
+          $ref: '#/components/schemas/QuoteAttributes'
+
+    QuoteAttributes:
+      type: object
+      properties:
+        po_number:
+          type: string
+          example: "123456"
+        shipment:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shipment'
+        prop_65:
+          type: array
+          items:
+            $ref: '#/components/schemas/Prop65'
+        recipient:
+          $ref: '#/components/schemas/Recipient'
+        total:
+          type: number
+          format: float
+          example: 1025.14
+
+    Shipment:
+      type: object
+      properties:
+        location:
+          type: string
+          example: "01"
+        type:
+          type: string
+          example: "in_stock"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShipmentItem'
+        shipping:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShippingQuote'
+        expedited logistics:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpeditedLogistics'
+        promos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Promo'
+        fees:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fee'
+
+    ShipmentItem:
+      type: object
+      properties:
+        item_id:
+          type: string
+          example: "274426"
+        quantity:
+          type: integer
+          example: 2
+        promos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Promo'
+        core_charge:
+          type: number
+          format: float
+          example: 12.34
+        unit_price:
+          type: number
+          format: float
+          example: 24.48
+        line_total:
+          type: number
+          format: float
+          example: 48.96
+
+    ShippingQuote:
+      type: object
+      properties:
+        shipping_quote_id:
+          type: integer
+          example: 123456
+        shipping_code:
+          type: integer
+          example: 1
+        cost:
+          type: number
+          format: float
+          example: 45.67
+        days_in_transit:
+          type: integer
+          example: 2
+        verbose_eta:
+          type: string
+          example: "Saturday processing, Monday delivery"
+        saturday_delivery:
+          type: boolean
+          example: false
+        signature_required:
+          type: boolean
+          example: false
+        dropship_controller_id:
+          type: integer
+          example: 123
+
+    ExpeditedLogistics:
+      type: object
+      properties:
+        expedited_logistics_id:
+          type: integer
+          example: 1234
+        days:
+          type: integer
+          example: 0
+        cost:
+          type: number
+          format: float
+          example: 0
+
+    Promo:
+      type: object
+      properties:
+        promo_id:
+          type: string
+          example: "124"
+        promo_description:
+          type: string
+          example: "5% off of all orders"
+        promo_amount:
+          type: number
+          format: float
+          example: 25.49
+
+    Fee:
+      type: object
+      properties:
+        fee_type:
+          type: string
+          example: "dropship fee"
+        fee_description:
+          type: string
+          example: "$99 dropship fee"
+        fee_amount:
+          type: number
+          format: float
+          example: 99
+
+    Prop65:
+      type: object
+      properties:
+        item_id:
+          type: string
+          example: "123465"
+        part_number:
+          type: string
+          example: "afe123456"
+
+    Recipient:
+      type: object
+      properties:
+        company:
+          type: string
+          nullable: true
+          example: "Turn 14 Distribution"
+        name:
+          type: string
+          example: "John Doe"
+        address:
+          type: string
+          example: "100 Tournament Drive"
+        address_2:
+          type: string
+          example: "Suite 100"
+        city:
+          type: string
+          example: "Horsham"
+        state:
+          type: string
+          example: "PA"
+        country:
+          type: string
+          example: "US"
+        zip:
+          type: string
+          example: "19044"
+        email_address:
+          type: string
+          nullable: true
+          format: email
+          example: "you@me.com"
+        phone_number:
+          type: string
+          nullable: true
+          example: "267-468-0350"
+        is_shop_address:
+          type: string
+          nullable: true
+          enum: ["true", "false"]
+          example: "false"
+
+    ErrorObject:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "400"
+        title:
+          type: string
+          example: "Invalid shop address"
+        detail:
+          type: string
+          example: "The address you provided doesn't match the shop address on file. Please verify on Turn14.com or contact your sales representative."
+        source:
+          $ref: '#/components/schemas/ErrorSource'
+
+    ErrorSource:
+      type: object
+      properties:
+        pointer:
+          type: string
+          example: "/data/recipient/is_shop_address/"
