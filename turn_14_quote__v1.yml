@@ -416,7 +416,6 @@ components:
         is_shop_address:
           type: string
           nullable: true
-          enum: ["true", "false"]
           example: "false"
 
     ErrorObject:
