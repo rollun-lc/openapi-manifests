@@ -28,7 +28,7 @@ paths:
         based on the provided sender and receiver information, shipping method,
         and package details (weight, dimensions, etc.).
       requestBody:
-        description: "Request payload to create a shipping label."
+        description: "Request payload to create a shipping label. Example: { \"carrier\": \"FedEx\", \"receiver\": {...}, \"sender\": {...}, \"shippingMethodName\": \"Ground\", \"containerName\": \"1rEnvelope\", \"weight\": 10.0, \"width\": 5, \"length\": 5, \"height\": 2, \"isSandbox\": true }"
         required: true
         content:
           application/json:
@@ -54,7 +54,7 @@ paths:
       summary: "Cancel a carrier label by track number"
       description: |
         This endpoint cancels an existing shipping label based on the provided
-        tracking number and carrier.
+        tracking number and carrier. Example: { \"trackingNumber\": \"1ZISUS010330563105\", \"carrier\": \"UPS\" }"
       requestBody:
         description: "Request payload to cancel a shipping label."
         required: true
@@ -84,6 +84,7 @@ paths:
       description: |
         This endpoint generates a shipping label specifically for marketplaces
         such as Amazon, based on the provided order and shipping details.
+        Example: { \"orderId\": \"12345\", \"items\": [{\"OrderItemId\": \"item123\", \"Quantity\": 2}], \"sender\": {...}, \"shippingMethodName\": \"PriorityOvernight\" }"
       requestBody:
         description: "Request payload to create a marketplace shipping label."
         required: true
@@ -211,16 +212,18 @@ components:
         shippingMethodName:
           type: string
           enum:
-            - GroundAdvantage
             - PriorityMail
-            - GroundHomeDelivery
-            - 2Day
+            - GroundAdvantage
             - Ground
-          example: 'GroundAdvantage'
+            - GroundHomeDelivery
+            - SmartPost
+            - 2Day
+            - ExpressSaver
+            - StandardOvernight
+          example: Ground
         containerName:
           type: string
           nullable: true
-          example: 'MchOvrz'
           enum:
             # USPS
             - MchCubic
@@ -300,9 +303,15 @@ components:
             - LtsCubicSPack10
             - LtsSP
             - LtsFRLgBox
+            - 1rEnvelope
+            - 1rPak
+            - 1rMediumBox
+            - 1rLargeBox
+            - 1rExtraLargeBox
+          example: 1rEnvelope
         weight:
           type: number
-          example: 80.5
+          example: 10.0
         weightUnitOfMeasurement:
           type: string
           enum:
@@ -320,7 +329,7 @@ components:
         height:
           type: number
           description: height in inches
-          example: 5
+          example: 2
         canFly:
           type: boolean
           default: false
@@ -362,12 +371,17 @@ components:
       properties:
         orderId:
           type: string
+          example: '12345'
         sellerOrderId:
           type: string
+          example: 'S12345'
         items:
           type: array
           items:
             $ref: '#/components/schemas/LineItems'
+          example:
+            - OrderItemId: 'item123'
+              Quantity: 2
         sender:
           allOf:
             - $ref: '#/components/schemas/CustomerMP'
@@ -375,45 +389,45 @@ components:
         shippingMethodName:
           type: string
           enum:
-            - First-Class Package Service
-            - Priority Mail
-            - Priority Mail Legal Flat Rate Envelope
-            - Priority Mail Flat Rate Padded Envelope
-            - Priority Mail Small Flat Rate Box
-            - Priority Mail Medium Flat Rate Box
-            - Priority Mail Large Flat Rate Box
-            - Priority Mail Regional Rate Box A
-            - Priority Mail Regional Rate Box B
-            - Parcel Select
-            - Parcel Select Ground
-            - Priority Mail Flat Rate Envelope
-            - Priority Mail Cubic
-            - Priority Mail Large Flat Rate Board Game Box
-            - Ground Advantage
+            - PriorityMail
+            - GroundAdvantage
             - Ground
-            - Ground Saver
-          example: 'Ground Advantage'
+            - GroundHomeDelivery
+            - SmartPost
+            - 2Day
+            - ExpressSaver
+            - StandardOvernight
+          example: PriorityOvernight
         weight:
           type: number
           example: 80.5
         width:
           type: number
           description: width in inches
+          example: 5
         length:
           type: number
           description: length in inches
+          example: 5
         height:
           type: number
           description: height in inches
+          example: 2
         customId:
           type: string
+          example: 'CUST123'
     LineItems:
       type: object
       properties:
         OrderItemId:
           type: string
+          example: 'item123'
         Quantity:
           type: integer
+          example: 2
+      example:
+        OrderItemId: 'item123'
+        Quantity: 2
     Label:
       type: object
       properties:
@@ -433,12 +447,18 @@ components:
       properties:
         name:
           type: string
+          description: Full name
+          example: 'Shawn Weisweaver'
         phone:
           type: string
           nullable: true
+          description: Phone number to reach the person
+          example: '9292141374'
         email:
           type: string
           nullable: true
+          description: Email address to reach the person
+          example: 'test@mail.loc'
         address:
           $ref: '#/components/schemas/AddressMP'
     Customer:
@@ -449,12 +469,18 @@ components:
       properties:
         name:
           type: string
+          description: Full name
+          example: 'Shawn Weisweaver'
         phone:
           type: string
           nullable: true
+          description: Phone number to reach the person
+          example: '9292141374'
         email:
           type: string
           nullable: true
+          description: Email address to reach the person
+          example: 'test@mail.loc'
         address:
           $ref: '#/components/schemas/Address'
     Address:
@@ -469,22 +495,28 @@ components:
         country:
           type: string
           description: "Country code"
+          example: 'US'
         state:
           type: string
           description: US state code
+          example: 'CA'
         city:
           type: string
           description: Full city name
+          example: 'San Francisco'
         postalCode:
           type: string
           description: ZIP or postal code
+          example: '94104'
         address1:
           type: string
           description: First line of the address
+          example: '417 Montgomery St'
         address2:
           type: string
           nullable: true
           description: Second line of the address
+          example: 'Floor 5'
     AddressMP:
       type: object
       required:
@@ -497,22 +529,25 @@ components:
         country:
           type: string
           description: "Country code"
+          example: 'US'
         state:
           type: string
           description: US state code
-          example: CA
+          example: 'CA'
         city:
           type: string
           description: Full city name
-          example: San Francisco
+          example: 'San Francisco'
         postalCode:
           type: string
           description: ZIP or postal code
-          example: "94104"
+          example: '94104'
         address1:
           type: string
           description: First line of the address
+          example: '417 Montgomery St'
         address2:
           type: string
           nullable: true
           description: Second line of the address
+          example: 'Floor 5'
