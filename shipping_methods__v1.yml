@@ -121,6 +121,7 @@ components:
           items:
             type: string
             example: pu_fast_ds
+            description:  au_ds, rm_ds, tft_ds, pu_fast_ds, pu_short_delay_ds, pu_long_delay_ds, wps_ds, pickup_ut, pickup_cn
         isDangerous:
           description: "Whether the package contains hazardous materials. It is necessary to determine the possibility of sending by air."
           type: boolean
