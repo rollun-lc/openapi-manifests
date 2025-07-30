@@ -6,26 +6,26 @@ info:
 servers:
   - url: http://catalog/openapi/ProductInfoBySuppliers/v1
 tags:
-  - name: SupplierPrice
+  - name: SupplierPrices
 paths:
-  "/product/prices":
+  "/supplierPrices":
     get:
       tags:
-        - SupplierPrice
+        - SupplierPrices
       summary: "Get product prices by brand and mpn for every supplier"
       parameters:
         - name: brand
           in: query
           required: true
-          description: '' #todo
-          example: "WSM"
+          description: "Value need to match our brand_ids, as it will not be formatted"
+          example: "MOTIONPRO"
           schema:
             type: string
         - name: mpn
           in: query
           required: true
-          description: '' #todo
-          example: "002-048-01"
+          description: "Value can be passed in its original form, as it will be automatically formatted by our general rules for rids catalog"
+          example: "020468"
           schema:
             type: string
       responses:
@@ -104,18 +104,19 @@ components:
         supplierName:
           type: string
           nullable: false
+          example: Autodist
         csn:
           type: string
           nullable: false
-        rid:
-          type: string
-          nullable: true
+          example: '672468'
         dealerPrice:
           type: number
           nullable: true
+          example: 12.36
         totalQty:
           type: integer
           nullable: true
+          example: 9
         shippingOptions:
           type: array
           nullable: true
