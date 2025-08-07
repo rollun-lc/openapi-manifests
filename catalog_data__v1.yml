@@ -220,6 +220,15 @@ components:
         priceMax:
           type: number
           nullable: true
+        formula:
+          type: string
+          nullable: true
+        formulaMin:
+          type: string
+          nullable: true
+        shippingCost:
+          type: number
+          nullable: true
         shippingTemplate:
           type: string
           nullable: true
