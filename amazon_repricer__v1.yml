@@ -33,12 +33,12 @@ paths:
             examples:
               VW6A4:
                 value:
-                  repricingGeneralRuleId: "b2eeb69f-2c2f-4cbc-bea0-81f4cbee7255"
-                  repricingAdditionalRuleId: "183462638202-COMPETITIVE_BUYBOX"
+                  repricingGeneralRuleName: "Jul2023"
+                  repricingAdditionalRuleName: "Without BB"
               02100228:
                 value:
-                  repricingGeneralRuleId: "712a8546-2cdd-433c-a167-2c1d41ab2b17"
-                  repricingAdditionalRuleId: "68985f8d-8a15-45bc-9e0e-7e14f57056c7"
+                  repricingGeneralRuleName: "Aug2023"
+                  repricingAdditionalRuleName: "Without BB"
       responses:
         "200":
           description: "Repricer rule successfully changed"
@@ -95,30 +95,30 @@ components:
     ChangeRepricerRuleRequest:
       type: object
       required:
-        - repricingGeneralRuleId
+        - repricingGeneralRuleName
       properties:
-        repricingGeneralRuleId:
+        repricingGeneralRuleName:
           type: string
-          description: "ID of the repricer rule to apply"
-          example: "b2eeb69f-2c2f-4cbc-bea0-81f4cbee7255"
-        repricingAdditionalRuleId:
+          description: "Name of the repricer rule to apply"
+          example: "Jul2023"
+        repricingAdditionalRuleName:
           type: string
           description: >
-            ID of the repricer rule to apply if the current rule for this MLN in Amazon
-            equals the one provided in `repricingGeneralRule`
-          example: "81f4cbee7255-b2eeb69f-2c2f-4cbc-bea0"
+            Name of the repricer rule to apply if the current rule for this MLN in Amazon
+            equals the one provided in `repricingGeneralRuleName`
+          example: "Without BB"
     ChangeRepricerRuleResultItem:
       type: object
       required:
         - sku
-        - appliedRuleId
+        - appliedRuleName
       properties:
         sku:
           type: string
           description: "Marketplace Listing Number that was updated"
-        appliedRuleId:
+        appliedRuleName:
           type: string
-          description: "ID of the repricer rule that was finally applied"
+          description: "Name of the repricer rule that was finally applied"
     ChangeRepricerRuleResult:
       allOf:
         - $ref: "#/components/schemas/SuccessResult"
