@@ -11,6 +11,39 @@ servers:
 tags:
   - name: RepricerRules
 paths:
+  "/repricerRules":
+    post:
+      tags:
+        - RepricerRules
+      summary: "Bulk change repricer rules for multiple product listings"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeRepricerRulesBulkRequest"
+            examples:
+              example1:
+                value:
+                  - sku: "VW6A4"
+                    repricingGeneralRuleName: "Jul2023"
+                    repricingAdditionalRuleName: "Without BB"
+                  - sku: "02100228"
+                    repricingGeneralRuleName: "Aug2023"
+                    repricingAdditionalRuleName: "Without BB"
+      responses:
+        "200":
+          description: "Repricer rules successfully changed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRepricerRulesBulkResult"
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
   "/repricerRules/{sku}":
     put:
       tags:
@@ -54,6 +87,43 @@ paths:
                 $ref: "#/components/schemas/ErrorResult"
 components:
   schemas:
+    ChangeRepricerRulesBulkRequest:
+      type: array
+      description: "List of SKUs with rules to apply"
+      items:
+        $ref: "#/components/schemas/ChangeRepricerRuleRequestItem"
+
+    ChangeRepricerRuleRequestItem:
+      type: object
+      required:
+        - sku
+        - repricingGeneralRuleName
+      properties:
+        sku:
+          type: string
+          description: "Marketplace Listing Number (MLN)"
+          example: "VW6A4"
+        repricingGeneralRuleName:
+          type: string
+          description: "Name of the repricer rule to apply"
+          example: "Jul2023"
+        repricingAdditionalRuleName:
+          type: string
+          description: >
+            Name of the repricer rule to apply if the current rule equals the general rule
+          example: "Without BB"
+
+    ChangeRepricerRulesBulkResult:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResult"
+      type: object
+      properties:
+        data:
+          type: array
+          description: "Result for each SKU"
+          items:
+            $ref: "#/components/schemas/ChangeRepricerRuleResultItem"
+
     ErrorResult:
       type: object
       properties:
