@@ -13,9 +13,9 @@ paths:
       tags:
         - CreateRid
       summary: "Create rid for product and add this product to catalog"
-      description: "1. Create rid by supplier name and csn (ignores existing rid), 
-        2. then add mappings for every existing csn to created rid (ignores existing mappings), 
-        3. then send product to suppliers main caches for every existing csn"
+      description: "1. Create rid by supplier name and csn (if rid already exists - return it with status 'existed'), 
+        2. then add mappings for every available csn to created rid (if mapping already exists - return it with status 'existed'), 
+        3. then send product to every available supplier's cache for update"
       parameters:
         - name: supplierName
           in: query
@@ -109,7 +109,7 @@ components:
     RidCreationInfo:
       type: object
       required:
-        - rid
+        - ridStatus
         - processedMappings
         - csnsSentToCache
       properties:
