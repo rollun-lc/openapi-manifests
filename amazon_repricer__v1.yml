@@ -127,10 +127,15 @@ components:
       type: object
       properties:
         data:
-          type: array
-          description: "Result for each SKU"
-          items:
-            $ref: "#/components/schemas/ChangeRepricerRuleResultItem"
+          $ref: "#/components/schemas/SuccessStatusResultItem"
+
+    SuccessStatusResultItem:
+      type: object
+      description: "Simple success message"
+      properties:
+        status:
+          type: string
+          example: "Success"
 
     ErrorResult:
       type: object
@@ -197,10 +202,17 @@ components:
         appliedRuleName:
           type: string
           description: "Name of the repricer rule that was finally applied"
+    SuccessStatusLowercaseResultItem:
+      type: object
+      description: "Simple success message"
+      properties:
+        status:
+          type: string
+          example: "success"
     ChangeRepricerRuleResult:
       allOf:
         - $ref: "#/components/schemas/SuccessResult"
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/ChangeRepricerRuleResultItem"
+          $ref: "#/components/schemas/SuccessStatusLowercaseResultItem"
