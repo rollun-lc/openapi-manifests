@@ -575,10 +575,12 @@ components:
         rent:
           type: number
           format: float
+          example: 0.1
           nullable: true
         rent_fixed:
           type: number
           format: float
+          example: 0.1
           nullable: true
     CatalogProductItem:
       type: object
