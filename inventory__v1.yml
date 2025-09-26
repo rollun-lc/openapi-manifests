@@ -453,7 +453,7 @@ components:
       type: object
       allOf:
         - $ref: '#/components/schemas/ManagementProduct'
-        - $ref: '#/components/schemas/GeneralData'
+        - $ref: '#/components/schemas/WithGeneralData'
         - $ref: '#/components/schemas/EntityDates'
 
     ### ENTITIES GENERAL ###
@@ -572,6 +572,14 @@ components:
           items:
             #todo
             type: string
+        rent:
+          type: number
+          format: float
+          nullable: true
+        rent_fixed:
+          type: number
+          format: float
+          nullable: true
     CatalogProductItem:
       type: object
       allOf:
