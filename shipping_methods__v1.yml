@@ -240,6 +240,17 @@ components:
           type: string
           example: "9.75"
           nullable: true
+        # TFT
+        tftProductPrice:
+          description: "TFT product price, need to TFT discount"
+          type: number
+          example: 11.5
+          nullable: true
+        csn:
+          description: "Customer Stock Number"
+          type: string
+          example: "ABC12345"
+          nullable: true
     ShippingResponse:
       type: object
       required:
