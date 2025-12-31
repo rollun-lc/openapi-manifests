@@ -1,0 +1,207 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "GptProxy"
+  description: >
+    Rollun-net facade for GPT Agent Action traffic. Requests are authenticated
+    via Basic Auth, authorized by ACL, then proxied to internal proxy service.
+servers:
+  - url: http://rollun-net-prvt/openapi/GptProxy/v1
+  - url: https://rollun.net/api/openapi/GptProxy/v1
+tags:
+  - name: GptProxy
+components:
+  schemas:
+    CardSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Trello card id or shortLink
+        name:
+          type: string
+        desc:
+          type: string
+        shortLink:
+          type: string
+        shortUrl:
+          type: string
+          format: uri
+        url:
+          type: string
+          format: uri
+        idBoard:
+          type: string
+        idList:
+          type: string
+    CommentAction:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - commentCard
+        date:
+          type: string
+          format: date-time
+        data:
+          type: object
+          properties:
+            text:
+              type: string
+            card:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                shortLink:
+                  type: string
+        memberCreator:
+          type: object
+          properties:
+            id:
+              type: string
+            fullName:
+              type: string
+            username:
+              type: string
+    CommentActionsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommentAction"
+paths:
+  /search:
+    get:
+      tags:
+        - GptProxy
+      summary: Search cards by query text
+      description: Returns cards matching the provided free-form query string.
+      operationId: searchCards
+      parameters:
+        - name: query
+          in: query
+          description: Search phrase used to locate cards by name, description or comments.
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 16384
+        - name: modelTypes
+          in: query
+          description: Limits the search to card objects.
+          required: false
+          schema:
+            type: string
+            default: cards
+            enum:
+              - cards
+        - name: cards_limit
+          in: query
+          description: Maximum number of cards returned.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 10
+        - name: card_fields
+          in: query
+          description: Comma-separated list of card fields to include in the response.
+          required: false
+          schema:
+            type: string
+            default: name,desc,shortLink,shortUrl,idBoard,idList
+      responses:
+        "200":
+          description: Matching cards
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cards:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CardSummary"
+  /cards/{shortLink}:
+    get:
+      tags:
+        - GptProxy
+      summary: Get card by shortLink or id
+      description: Retrieves a single card using its shortLink or full id.
+      operationId: getCardByShortLink
+      parameters:
+        - name: shortLink
+          in: path
+          description: Card shortLink or id.
+          required: true
+          schema:
+            type: string
+        - name: fields
+          in: query
+          description: Comma-separated list of fields to include.
+          required: false
+          schema:
+            type: string
+            default: name,desc,shortLink,shortUrl,url,idBoard,idList
+      responses:
+        "200":
+          description: Card details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardSummary"
+  /cards/{cardId}/actions:
+    get:
+      tags:
+        - GptProxy
+      summary: List card comments
+      description: Returns comment actions for a given card.
+      operationId: getCardComments
+      parameters:
+        - name: cardId
+          in: path
+          description: Card id or shortLink.
+          required: true
+          schema:
+            type: string
+        - name: filter
+          in: query
+          description: Trello action filter.
+          required: false
+          schema:
+            type: string
+            default: commentCard
+            enum:
+              - commentCard
+        - name: limit
+          in: query
+          description: Maximum number of comment actions to return.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: page
+          in: query
+          description: Page number for paginated comment results (50 per page).
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Card comments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentActionsResponse"
