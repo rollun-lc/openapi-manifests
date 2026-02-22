@@ -1,0 +1,72 @@
+openapi: 3.0.0
+paths:
+  /stats:
+    get:
+      operationId: getStats
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /scheduled-tasks:
+    get:
+      operationId: getScheduledTasks
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /running-tasks:
+    get:
+      operationId: getRunningTasks
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  '/running-tasks/{id}':
+    delete:
+      operationId: deleteRunningTask
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  '/scheduled-tasks/{id}/enabled':
+    patch:
+      operationId: setScheduledTaskEnabled
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  '/scheduled-tasks/{id}/trigger':
+    post:
+      operationId: triggerScheduledTask
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+info:
+  title: PublicOpsAPI
+  description: OpenAPI schema for public UI endpoints
+  version: "1"
+  contact: {}
+tags: []
+servers:
+  - url: 'http://ops-api/openapi/OperationsApi/v1'
+  - url: 'http://host.docker.internal:3939/openapi/OperationsApi/v1'
+  - url: 'http://localhost:3939/openapi/OperationsApi/v1'
+  - url: 'https://rollun.net/api/openapi/OperationsApi/v1'
+components:
+  schemas: {}
