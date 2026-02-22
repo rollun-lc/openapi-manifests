@@ -3,27 +3,53 @@ paths:
   /stats:
     get:
       operationId: getStats
+      summary: Get high-level async task statistics
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Current stats for scheduled and running tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicStatsResponseDto'
+      tags:
+        - public-ops-api
   /scheduled-tasks:
     get:
       operationId: getScheduledTasks
+      summary: List all scheduled tasks
       parameters: []
       responses:
         '200':
-          description: ''
+          description: List of configured scheduled tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicScheduledTaskDto'
+      tags:
+        - public-ops-api
   /running-tasks:
     get:
       operationId: getRunningTasks
+      summary: List all currently running async tasks
       parameters: []
       responses:
         '200':
-          description: ''
+          description: List of currently running async task states
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicRunningTaskDto'
+      tags:
+        - public-ops-api
   '/running-tasks/{id}':
     delete:
       operationId: deleteRunningTask
+      summary: Delete running task by id
       parameters:
         - name: id
           required: true
@@ -32,10 +58,43 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Task deletion accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicActionOkResponseDto'
+      tags:
+        - public-ops-api
   '/scheduled-tasks/{id}/enabled':
     patch:
       operationId: setScheduledTaskEnabled
+      summary: Enable or disable scheduled task by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: Set scheduled task enabled state
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicSetScheduledTaskEnabledBodyDto'
+      responses:
+        '200':
+          description: Scheduled task state updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicActionOkResponseDto'
+      tags:
+        - public-ops-api
+  '/scheduled-tasks/{id}/trigger':
+    post:
+      operationId: triggerScheduledTask
+      summary: Trigger scheduled task immediately by id
       parameters:
         - name: id
           required: true
@@ -44,23 +103,17 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
-  '/scheduled-tasks/{id}/trigger':
-    post:
-      operationId: triggerScheduledTask
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '201':
-          description: ''
+          description: Scheduled task trigger accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicActionOkResponseDto'
+      tags:
+        - public-ops-api
 info:
-  title: PublicOpsAPI
+  title: Public Ops API
   description: OpenAPI schema for public UI endpoints
-  version: "1"
+  version: 1.0.0
   contact: {}
 tags: []
 servers:
@@ -69,4 +122,63 @@ servers:
   - url: 'http://localhost:3939/openapi/OperationsApi/v1'
   - url: 'https://rollun.net/api/openapi/OperationsApi/v1'
 components:
-  schemas: {}
+  schemas:
+    PublicStatsResponseDto:
+      type: object
+      properties:
+        totalScheduledTasks:
+          type: number
+        runningTasksCount:
+          type: number
+      required:
+        - totalScheduledTasks
+        - runningTasksCount
+    PublicScheduledTaskDto:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        cronExpression:
+          type: string
+        enabled:
+          type: boolean
+      required:
+        - id
+        - name
+        - cronExpression
+        - enabled
+    PublicRunningTaskDto:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        max_concurrency:
+          type: number
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required:
+        - id
+        - type
+        - max_concurrency
+        - created_at
+        - updated_at
+    PublicActionOkResponseDto:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required:
+        - ok
+    PublicSetScheduledTaskEnabledBodyDto:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+      required:
+        - enabled
