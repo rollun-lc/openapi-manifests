@@ -147,26 +147,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/PaginatedBackupsResponseDto"
       tags: *a1
-  /databases/{dbId}/backups/{backupId}/deployments/{deployId}:
+  /deployments:
     post:
       operationId: createDeployment
       summary: Start restore deployment for selected backup
-      parameters:
-        - name: dbId
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: backupId
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: deployId
-          required: true
-          in: path
-          schema:
-            type: string
+      parameters: []
+      requestBody:
+        required: true
+        description: Create deployment payload
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicCreateDeploymentBodyDto"
       responses:
         "200":
           description: Restore deployment task accepted
@@ -176,19 +168,37 @@ paths:
                 $ref: "#/components/schemas/PublicRunAsyncTaskResponseDto"
       tags: *a1
     get:
-      operationId: getDeployment
-      summary: Get restore deployment by id
+      operationId: getDeployments
+      summary: List deployments for selected backup
       parameters:
         - name: dbId
-          required: true
-          in: path
+          required: false
+          in: query
           schema:
             type: string
         - name: backupId
-          required: true
-          in: path
+          required: false
+          in: query
           schema:
             type: string
+        - name: deployId
+          required: false
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated list of restore deployments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedRestoreDeploymentsResponseDto"
+      tags: *a1
+  /deployments/{deployId}:
+    get:
+      operationId: getDeployment
+      summary: Get restore deployment by id
+      parameters:
         - name: deployId
           required: true
           in: path
@@ -206,16 +216,6 @@ paths:
       operationId: deleteDeployment
       summary: Delete restore deployment by id
       parameters:
-        - name: dbId
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: backupId
-          required: true
-          in: path
-          schema:
-            type: string
         - name: deployId
           required: true
           in: path
@@ -229,44 +229,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/PublicRunAsyncTaskResponseDto"
       tags: *a1
-  /databases/{dbId}/backups/{backupId}/deployments:
-    get:
-      operationId: getDeployments
-      summary: List deployments for selected backup
-      parameters:
-        - name: dbId
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: backupId
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Paginated list of restore deployments
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaginatedRestoreDeploymentsResponseDto"
-      tags: *a1
-  /databases/{dbId}/backups/{backupId}/deployments/{deployId}/password:
+  /deployments/{deployId}/password:
     get:
       operationId: getDeploymentPassword
       summary: Get deployment root password
       parameters:
-        - name: dbId
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: backupId
-          required: true
-          in: path
-          schema:
-            type: string
         - name: deployId
           required: true
           in: path
@@ -451,6 +418,19 @@ components:
       required:
         - data
         - page
+    PublicCreateDeploymentBodyDto:
+      type: object
+      properties:
+        dbId:
+          type: string
+        backupId:
+          type: string
+        deployId:
+          type: string
+      required:
+        - dbId
+        - backupId
+        - deployId
     PublicRunAsyncTaskResponseDto:
       type: object
       properties:
