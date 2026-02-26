@@ -1,0 +1,516 @@
+openapi: 3.0.0
+paths:
+  /scheduled-tasks:
+    get:
+      operationId: getScheduledTasks
+      summary: List all scheduled tasks
+      parameters: []
+      responses:
+        "200":
+          description: Paginated list of configured scheduled tasks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedScheduledTasksResponseDto"
+      tags: &a1
+        - public-ops-api-v3
+  /running-tasks:
+    get:
+      operationId: getRunningTasks
+      summary: List all currently running async tasks
+      parameters: []
+      responses:
+        "200":
+          description: Paginated list of currently running async task states
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedRunningTasksResponseDto"
+      tags: *a1
+  /task-history:
+    get:
+      operationId: getTaskHistory
+      summary: List task execution history
+      parameters:
+        - name: type
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: skip
+          required: false
+          in: query
+          schema:
+            type: number
+        - name: take
+          required: false
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Paginated list of task history records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTaskHistoryResponseDto"
+      tags: *a1
+  /running-tasks/{id}:
+    delete:
+      operationId: deleteRunningTask
+      summary: Force-remove a running task by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Task removal accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicActionOkResponseDto"
+      tags: *a1
+  /scheduled-tasks/{id}/enabled:
+    patch:
+      operationId: setScheduledTaskEnabled
+      summary: Enable or disable scheduled task by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: Set scheduled task enabled state
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicSetScheduledTaskEnabledBodyDto"
+      responses:
+        "200":
+          description: Scheduled task state updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicActionOkResponseDto"
+      tags: *a1
+  /scheduled-tasks/{id}/trigger:
+    post:
+      operationId: triggerScheduledTask
+      summary: Trigger scheduled task immediately by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scheduled task trigger accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicActionOkResponseDto"
+      tags: *a1
+  /databases:
+    get:
+      operationId: getDatabases
+      summary: List available databases
+      parameters: []
+      responses:
+        "200":
+          description: Paginated list of available databases
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedDatabasesResponseDto"
+      tags: *a1
+  /databases/{dbId}/backups:
+    get:
+      operationId: getBackups
+      summary: List available backups for database
+      parameters:
+        - name: dbId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated list of backups in S3
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedBackupsResponseDto"
+      tags: *a1
+  /databases/{dbId}/backups/{backupId}/deployments/{deployId}:
+    post:
+      operationId: createDeployment
+      summary: Start restore deployment for selected backup
+      parameters:
+        - name: dbId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: backupId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: deployId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Restore deployment task accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicRunAsyncTaskResponseDto"
+      tags: *a1
+    get:
+      operationId: getDeployment
+      summary: Get restore deployment by id
+      parameters:
+        - name: dbId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: backupId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: deployId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Restore deployment data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicRestoreDeploymentDto"
+      tags: *a1
+    delete:
+      operationId: deleteDeployment
+      summary: Delete restore deployment by id
+      parameters:
+        - name: dbId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: backupId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: deployId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Delete restore deployment task accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicRunAsyncTaskResponseDto"
+      tags: *a1
+  /databases/{dbId}/backups/{backupId}/deployments:
+    get:
+      operationId: getDeployments
+      summary: List deployments for selected backup
+      parameters:
+        - name: dbId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: backupId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated list of restore deployments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedRestoreDeploymentsResponseDto"
+      tags: *a1
+  /databases/{dbId}/backups/{backupId}/deployments/{deployId}/password:
+    get:
+      operationId: getDeploymentPassword
+      summary: Get deployment root password
+      parameters:
+        - name: dbId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: backupId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: deployId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Root password of deployment VM
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicRestoreDeploymentPasswordResponseDto"
+      tags: *a1
+info:
+  title: Public Ops API
+  description: OpenAPI schema for public UI endpoints
+  version: 3.0.0
+  contact: {}
+tags: []
+servers:
+  - url: http://ops-api/openapi/OperationsApi/v3
+  - url: http://host.docker.internal:3939/openapi/OperationsApi/v3
+  - url: http://localhost:3939/openapi/OperationsApi/v3
+  - url: https://rollun.net/api/openapi/OperationsApi/v3
+components:
+  schemas:
+    PublicScheduledTaskDto:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        cronExpression:
+          type: string
+        enabled:
+          type: boolean
+      required:
+        - id
+        - name
+        - cronExpression
+        - enabled
+    PageDto:
+      type: object
+      properties:
+        total:
+          type: number
+      required:
+        - total
+    PaginatedScheduledTasksResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicScheduledTaskDto"
+        page:
+          $ref: "#/components/schemas/PageDto"
+      required:
+        - data
+        - page
+    PublicRunningTaskDto:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        max_concurrency:
+          type: number
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required:
+        - id
+        - type
+        - max_concurrency
+        - created_at
+        - updated_at
+    PaginatedRunningTasksResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicRunningTaskDto"
+        page:
+          $ref: "#/components/schemas/PageDto"
+      required:
+        - data
+        - page
+    PublicTaskHistoryDto:
+      type: object
+      properties:
+        id:
+          type: number
+        task_id:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        started_at:
+          type: string
+        ended_at:
+          type: string
+      required:
+        - id
+        - task_id
+        - type
+        - status
+        - started_at
+        - ended_at
+    PaginatedTaskHistoryResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicTaskHistoryDto"
+        page:
+          $ref: "#/components/schemas/PageDto"
+      required:
+        - data
+        - page
+    PublicActionOkResponseDto:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required:
+        - ok
+    PublicSetScheduledTaskEnabledBodyDto:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+      required:
+        - enabled
+    PublicDatabaseDto:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    PaginatedDatabasesResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicDatabaseDto"
+        page:
+          $ref: "#/components/schemas/PageDto"
+      required:
+        - data
+        - page
+    PublicBackupDto:
+      type: object
+      properties:
+        id:
+          type: string
+        lastModified:
+          type: string
+        size:
+          type: number
+      required:
+        - id
+        - lastModified
+        - size
+    PaginatedBackupsResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicBackupDto"
+        page:
+          $ref: "#/components/schemas/PageDto"
+      required:
+        - data
+        - page
+    PublicRunAsyncTaskResponseDto:
+      type: object
+      properties:
+        started:
+          type: boolean
+        taskId:
+          type: string
+        msg:
+          type: string
+      required:
+        - started
+        - taskId
+        - msg
+    PublicRestoreDeploymentDto:
+      type: object
+      properties:
+        id:
+          type: string
+        db_id:
+          type: string
+        backup_id:
+          type: string
+        vm_id:
+          type: string
+        volume_id:
+          type: number
+        vm_ipv4:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required:
+        - id
+        - db_id
+        - backup_id
+        - vm_id
+        - volume_id
+        - vm_ipv4
+        - status
+        - created_at
+        - updated_at
+    PaginatedRestoreDeploymentsResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicRestoreDeploymentDto"
+        page:
+          $ref: "#/components/schemas/PageDto"
+      required:
+        - data
+        - page
+    PublicRestoreDeploymentPasswordResponseDto:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+        - password
