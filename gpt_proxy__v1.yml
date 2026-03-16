@@ -5,11 +5,15 @@ info:
   description: >
     Rollun-net facade for GPT Agent Action traffic. Requests are authenticated
     via Basic Auth, authorized by ACL, then proxied to internal proxy service.
+    This manifest exposes only resource roots; path segments are forwarded.
 servers:
-  - url: http://rollun-net-prvt/openapi/GptProxy/v1
-  - url: https://rollun.net/api/openapi/GptProxy/v1
+  - url: http://gpt-proxy
+  - url: http://host.docker.internal:8081
+  - url: https://rollun.net/openapi/GptProxy/v1
+  - url: http://localhost:8080/openapi/GptProxy/v1
 tags:
-  - name: GptProxy
+  - name: LightRAG
+  - name: Trello
 components:
   schemas:
     ProxyResponse:
@@ -27,6 +31,7 @@ components:
           type: string
           description: The query text
           minLength: 3
+          example: "Hello!"
           maxLength: 5000
         mode:
           type: string
@@ -68,7 +73,7 @@ paths:
   /trello:
     get:
       tags:
-        - GptProxy
+        - Trello
       summary: Proxy Trello request
       description: Proxies requests to Trello based on target_path; all other query params are forwarded as-is.
       operationId: proxyTrello
@@ -95,7 +100,7 @@ paths:
   /lightrag/query:
     post:
       tags:
-        - GptProxy
+        - LightRAG
       summary: Proxy LightRAG query
       description: Proxies POST query requests to LightRAG service. Forwards JSON body as-is.
       operationId: queryLightrag
