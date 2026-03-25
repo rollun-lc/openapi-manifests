@@ -22,6 +22,9 @@ components:
         data:
           type: object
           additionalProperties: true
+    ProxyRequestBody:
+      type: object
+      description: JSON body to forward to the target Trello endpoint as-is.
     LightragQueryRequest:
       type: object
       required:
@@ -77,6 +80,104 @@ paths:
       summary: Proxy Trello request
       description: Proxies requests to Trello based on target_path; all other query params are forwarded as-is.
       operationId: proxyTrello
+      parameters:
+        - name: target_path
+          in: query
+          description: Target endpoint path derived from the original request.
+          required: true
+          schema:
+            type: string
+        - name: target_query
+          in: query
+          description: Encoded query string for target request without leading "?".
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Proxied response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProxyResponse"
+    post:
+      tags:
+        - Trello
+      summary: Proxy Trello POST request
+      description: >
+        Proxies POST requests to Trello based on target_path.
+        Forwards JSON body and query params as-is.
+        Used for creating cards, comments, members, labels, checklists, check items, attachments.
+      operationId: postProxyTrello
+      parameters:
+        - name: target_path
+          in: query
+          description: Target endpoint path derived from the original request.
+          required: true
+          schema:
+            type: string
+        - name: target_query
+          in: query
+          description: Encoded query string for target request without leading "?".
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProxyRequestBody"
+      responses:
+        "200":
+          description: Proxied response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProxyResponse"
+    put:
+      tags:
+        - Trello
+      summary: Proxy Trello PUT request
+      description: >
+        Proxies PUT requests to Trello based on target_path.
+        Forwards JSON body and query params as-is.
+        Used for updating cards, comments, check items.
+      operationId: putProxyTrello
+      parameters:
+        - name: target_path
+          in: query
+          description: Target endpoint path derived from the original request.
+          required: true
+          schema:
+            type: string
+        - name: target_query
+          in: query
+          description: Encoded query string for target request without leading "?".
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProxyRequestBody"
+      responses:
+        "200":
+          description: Proxied response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProxyResponse"
+    delete:
+      tags:
+        - Trello
+      summary: Proxy Trello DELETE request
+      description: >
+        Proxies DELETE requests to Trello based on target_path.
+        Used for removing comments, labels, checklists, check items, attachments.
+      operationId: deleteProxyTrello
       parameters:
         - name: target_path
           in: query
