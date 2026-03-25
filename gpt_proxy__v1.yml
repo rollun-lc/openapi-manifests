@@ -7,10 +7,8 @@ info:
     via Basic Auth, authorized by ACL, then proxied to internal proxy service.
     This manifest exposes only resource roots; path segments are forwarded.
 servers:
-  - url: http://gpt-proxy
-  - url: http://host.docker.internal:8081
-  - url: https://rollun.net/openapi/GptProxy/v1
-  - url: http://localhost:8080/openapi/GptProxy/v1
+  - url: http://rollun-net-prvt/openapi/GptProxy/v1
+  - url: https://rollun.net/api/openapi/GptProxy/v1
 tags:
   - name: LightRAG
   - name: Trello
