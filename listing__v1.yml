@@ -16,6 +16,8 @@ tags:
     description: "Endpoints for retrieving item images"
   - name: Listings
     description: "Endpoints for retrieving listing details for multiple SKUs"
+  - name: Restrictions
+    description: "Endpoints for retrieving listing restrictions for an ASIN"
 
 paths:
   "/prices":
@@ -108,6 +110,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GetImagesResult"
+        "500":
+          description: "An internal server error occurred."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+  "/restrictions":
+    get:
+      tags:
+        - Restrictions
+      summary: "Retrieve listing restrictions for an ASIN"
+      description: "Fetch listing restrictions (e.g. APPROVAL_REQUIRED) for the given ASIN in a marketplace."
+      parameters:
+        - in: query
+          name: asin
+          description: "The ASIN of the item."
+          required: true
+          schema:
+            type: string
+            example: "B07XYZ1234"
+        - in: query
+          name: conditionType
+          description: "Condition type filter (e.g. new_new)."
+          required: false
+          schema:
+            type: string
+            example: "new_new"
+      responses:
+        "200":
+          description: "Request processed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetRestrictionsResult"
         "500":
           description: "An internal server error occurred."
           content:
@@ -382,6 +419,83 @@ components:
           example: 23.9
           nullable: true
           description: "Current maximum price of the item."
+
+    GetRestrictionsResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      description: "The result of a successful GetRestrictions request."
+      properties:
+        data:
+          type: array
+          description: "List of restrictions. Empty array means ASIN has no restrictions in the marketplace."
+          items:
+            $ref: '#/components/schemas/RestrictionItem'
+
+    RestrictionItem:
+      type: object
+      required:
+        - marketplaceId
+        - reasons
+      properties:
+        marketplaceId:
+          type: string
+          example: "ATVPDKIKX0DER"
+          description: "The marketplace identifier."
+        conditionType:
+          type: string
+          nullable: true
+          example: "new_new"
+          description: "The condition type to which the restriction applies."
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/RestrictionReasonItem'
+
+    RestrictionReasonItem:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: "You cannot list the product in this condition."
+          description: "Human-readable description of the restriction."
+        reasonCode:
+          type: string
+          nullable: true
+          example: "APPROVAL_REQUIRED"
+          description: "Machine-readable reason code."
+        links:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/RestrictionLinkItem'
+
+    RestrictionLinkItem:
+      type: object
+      required:
+        - resource
+        - verb
+      properties:
+        resource:
+          type: string
+          format: uri
+          description: "URI of the resource related to the restriction."
+        verb:
+          type: string
+          example: "GET"
+          description: "HTTP verb."
+        title:
+          type: string
+          nullable: true
+          example: "Apply to sell"
+          description: "Title of the link."
+        type:
+          type: string
+          nullable: true
+          example: "text/html"
+          description: "Media type of the link."
 
     FulfillmentAvailabilityItem:
       type: object
