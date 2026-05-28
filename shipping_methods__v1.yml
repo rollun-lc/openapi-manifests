@@ -9,6 +9,7 @@ servers:
   - url: http://carriers/openapi/ShippingMethods/v1
   - url: http://host.docker.internal:8080/openapi/ShippingMethods/v1
   - url: http://localhost:8080/openapi/ShippingMethods/v1
+  - url: https://rollun.net/api/openapi/ShippingMethods/v1
 tags:
   - name: Shipping
     description: "Everything about shipping methods."
@@ -240,14 +241,19 @@ components:
           type: string
           example: "9.75"
           nullable: true
+        wpsProductPrice:
+          description: "WPS product price, used to determine DS fee tier ($12.5 if <$50, $9.75 if >=$50)"
+          type: number
+          example: 45.99
+          nullable: true
         # TFT
         tftProductPrice:
           description: "TFT product price, need to TFT discount"
           type: number
           example: 11.5
           nullable: true
-        csn:
-          description: "Customer Stock Number"
+        tftProductCsn:
+          description: "Customer Stock Number by TFT"
           type: string
           example: "ABC12345"
           nullable: true
