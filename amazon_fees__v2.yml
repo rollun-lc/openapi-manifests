@@ -1,0 +1,147 @@
+openapi: 3.0.0
+info:
+  version: "2"
+  title: "AmazonFees"
+  description: API to retrieve full fee estimate breakdown by ASIN
+servers:
+  - url: http://amz-orders-ngx/openapi/AmazonFees/v2
+  - url: http://host.docker.internal:8280/openapi/AmazonFees/v2
+tags:
+  - name: AsinGetFeesEstimateByAsin
+paths:
+  "/{asin}/getFeesEstimateByAsin":
+    post:
+      tags:
+        - AsinGetFeesEstimateByAsin
+      summary: Get full fee estimate breakdown by ASIN
+      description: Retrieve the full fee estimate breakdown (total amount and per-fee prices) for a specified ASIN.
+        https://developer-docs.amazon.com/sp-api/docs/product-fees-api-v0-reference#getmyfeesestimateforasin
+      operationId: getFeesEstimateByAsin
+      parameters:
+        - in: path
+          name: asin
+          description: The Amazon Standard Identification Number (ASIN)
+          required: true
+          schema:
+            type: string
+          example: "B011AO22Z0"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetFeesEstimateByAsinRequest'
+      responses:
+        '200':
+          description: Successful response with full fee prices breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllFeesPricesResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    GetFeesEstimateByAsinRequest:
+      type: object
+      properties:
+        marketplaceId:
+          type: string
+          description: The marketplace identifier
+          example: "ATVPDKIKX0DER"
+        listingPrice:
+          type: number
+          format: float
+          description: Listing price amount in USD (mapped to FeesEstimateRequest.PriceToEstimateFees.ListingPrice.Amount)
+          example: 24.18
+        isAmazonFulfilled:
+          type: boolean
+          description: Indicates if the product is fulfilled by Amazon. Defaults to true when omitted.
+          default: true
+          example: true
+      required:
+        - marketplaceId
+        - listingPrice
+    FeePriceItem:
+      type: object
+      properties:
+        feeType:
+          type: string
+          example: "FBAFees"
+        amount:
+          type: number
+          format: float
+          example: 3.32
+    AllFeesPrices:
+      type: object
+      properties:
+        totalAmount:
+          type: number
+          format: float
+          example: 5.74
+        feePrices:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeePriceItem'
+    AllFeesPricesResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/AllFeesPrices'
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      example:
+        messages:
+          - level: "error"
+            type: "UNDEFINED"
+            text: "2"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          type: object
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+            - debug
+        type:
+          type: string
+          enum:
+            - UNDEFINED
+            - TRACKNUMBER_ALREADY_EXIST
+            - ORDER_NOT_FOUND
+            - UNKNOWN_SHIPPING_METHOD
+            - UNAVAILABLE_SHIPPING_METHOD
+            - INVALID_RESPONSE
+          description: >
+            UNDEFINED - Any undefined message type
+            TRACKNUMBER_ALREADY_EXIST - A tracking number already exists
+            ORDER_NOT_FOUND - Order not found by order number
+            UNKNOWN_SHIPPING_METHOD - The selected supplier does not have this shipping method (or needs to be added)
+            UNAVAILABLE_SHIPPING_METHOD - A shipping method exists but is not available for this order
+        text:
+          type: string
+          description: Message that describes what went wrong
