@@ -6,6 +6,7 @@ info:
 servers:
   - url: http://amz-orders-ngx/openapi/AmazonFees/v2
   - url: http://host.docker.internal:8280/openapi/AmazonFees/v2
+  - url: https://rollun.net/openapi/AmazonFees/v2
 tags:
   - name: AsinGetFeesEstimateByAsin
 paths:
