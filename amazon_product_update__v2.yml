@@ -1,0 +1,212 @@
+openapi: 3.0.0
+info:
+  version: "2"
+  title: "AmazonProductUpdate"
+  description: "Partially updates one or multiple Amazon product records by SKU, including multilocation availability. v2 additionally returns the Amazon submission status and issues."
+servers:
+  - url: http://amz-orders-ngx/openapi/AmazonProductUpdate/v2
+  - url: http://host.docker.internal:8280/openapi/AmazonProductUpdate/v2
+  - url: http://localhost:8280/openapi/AmazonProductUpdate/v2
+tags:
+  - name: Products
+
+paths:
+  /products/update:
+    post:
+      tags:
+        - Products
+      summary: "Partially update one or more Amazon product records"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductsRequest"
+      responses:
+        "200":
+          description: "Submission results per SKU"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateProductResult"
+        "500":
+          description: "Internal error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+
+components:
+  schemas:
+    UpdateProductsRequest:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: List of products to update
+          items:
+            $ref: '#/components/schemas/ProductUpdateItem'
+
+    ProductUpdateItem:
+      type: object
+      required:
+        - sku
+      properties:
+        sku:
+          type: string
+          description: Product SKU used to identify the item on Amazon
+          example: "002438"
+        price:
+          type: number
+          format: float
+          description: Direct price for the product, optional if using pricing rules
+          example: 14.95
+        minPrice:
+          type: number
+          format: float
+          description: Minimum allowed price for the product
+          example: 9.00
+        maxPrice:
+          type: number
+          format: float
+          description: Maximum allowed price for the product
+          example: 19.10
+        mapPrice:
+          type: number
+          format: float
+          description: Minimum advertised price. Remove from amazon when is not set
+          example: 13.00
+        productType:
+          type: string
+          description: Amazon product type (e.g., "BOOKS", "TOYS", "ELECTRONICS")
+          example: "TOYS"
+          default: "PRODUCT"
+        shipTemplate:
+          type: string
+          description: Shipping template assigned to the product (use `multilocation` to enable per-location quantity)
+          example: "TFT_DS_NV-TX_multi_2025-03-13"
+        warehouses:
+          type: array
+          description: Required only if shipTemplate = multilocation
+          items:
+            $ref: '#/components/schemas/WarehousesItem'
+
+    WarehousesItem:
+      type: object
+      required:
+        - warehouseId
+      properties:
+        warehouseId:
+          type: string
+          description: Unique identifier of the warehouse
+          example: "05fa3c53-df62-4195-861a-8f369a3fbccd"
+        quantity:
+          type: integer
+          description: Quantity of product available in this warehouse
+          example: 10
+        handlingDays:
+          type: integer
+          description: Days needed to ship from this warehouse
+          example: 1
+
+    UpdateProductResult:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResult'
+      type: object
+      properties:
+        data:
+          type: array
+          description: One entry per requested SKU
+          items:
+            $ref: '#/components/schemas/UpdateProductResultItem'
+
+    UpdateProductResultItem:
+      type: object
+      required:
+        - sku
+        - status
+      properties:
+        sku:
+          type: string
+          description: Product SKU
+          example: "002438"
+        status:
+          type: string
+          description: >
+            Outcome of the submission.
+            ACCEPTED/VALID - Amazon accepted the submission FOR PROCESSING (does NOT mean the listing was already updated).
+            INVALID - Amazon rejected the submission, see issues.
+            FAILED - the gateway could not deliver the patch to Amazon (transport error, retries exhausted).
+            This is not an Amazon value, submissionId is absent in this case.
+          enum: [ACCEPTED, VALID, INVALID, FAILED]
+          example: "ACCEPTED"
+        submissionId:
+          type: string
+          description: Amazon submission identifier, absent when status = FAILED. Used for correlation only, Amazon has no endpoint to query it afterwards
+          example: "07246a1b3c4d5e6f7a8b9c0d1e2f3a4b"
+        issues:
+          type: array
+          description: Issues reported by Amazon at submission time. Does not include issues arising later during async processing
+          items:
+            $ref: '#/components/schemas/ListingIssue'
+
+    ListingIssue:
+      type: object
+      required:
+        - code
+        - message
+        - severity
+      properties:
+        code:
+          type: string
+          description: Amazon issue code, or GATEWAY_EXCEPTION when status = FAILED
+          example: "90220"
+        message:
+          type: string
+          description: Human readable description of the issue
+          example: "The value provided for 'our_price' is invalid."
+        severity:
+          type: string
+          description: Issue severity as reported by Amazon
+          enum: [ERROR, WARNING, INFO]
+          example: "ERROR"
+        attributeNames:
+          type: array
+          description: Attributes the issue relates to, when applicable
+          items:
+            type: string
+            example: "purchasable_offer"
+
+    ErrorResult:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          description: 'Message level (like in a logger)'
+          enum: [emergency, alert, critical, error, warning, notice, info, debug]
+        type:
+          type: string
+          description: "Message type for error classification"
+          enum: [UNDEFINED, LOGGER_MESSAGE]
+        text:
+          type: string
+          description: "Message describing what went wrong"
+
+    SuccessResult:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResult'
+      type: object
+      properties:
+        data:
+          type: object
