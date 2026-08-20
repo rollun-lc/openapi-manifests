@@ -50,7 +50,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/BoxResponse'
         "500":
-          description: "Ошибка обработки."
+          description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
+                        приходят этим кодом с текстом в messages[].text:
+                        employee_not_resolved (нет X-User-Identity либо сотрудник
+                        с таким AclUserId не заведён в employees)."
           content:
             application/json:
               schema:
@@ -99,7 +102,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/BoxResponse'
         "500":
-          description: "Ошибка обработки."
+          description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
+                        приходят этим кодом с текстом в messages[].text:
+                        employee_not_resolved (нет X-User-Identity либо сотрудник
+                        с таким AclUserId не заведён в employees),
+                        box_not_opened (коробку не открывали — статус 1021/1022),
+                        duplicate_rid (в items два элемента с одним rid).
+                        Состав при этом не записывается."
           content:
             application/json:
               schema:
