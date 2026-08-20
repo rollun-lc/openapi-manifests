@@ -22,10 +22,10 @@ paths:
     post:
       tags:
         - FbaSrBoxes
-      description: "Кнопка «Box opened». Переводит коробку 1021/1022 -> 1024 Processing,
+      description: "Кнопка «Box opened». Переводит коробку в 1024 Processing,
                     проставляет DtOpened и IdScannedBy.
-                    Переход из 1023 допустим на будущее: в первой версии 1023 не ставится
-                    никем — скан пишущей команды не имеет.
+                    Исходные статусы: 1021 Parcel expecting, 1022 Parcel delivered;
+                    переход из 1023 допустим на будущее — в v1 его никто не ставит.
                     Идемпотентна: если коробка уже в 1024, отвечает 200 и ничего не меняет —
                     повторное нажатие должно пускать человека дальше, а не останавливать его.
                     Статус меняется условием внутри запроса (queriedUpdate по Status),
@@ -132,7 +132,9 @@ paths:
           description: "Итог по заказу построчно.
                         Бизнес-стоп приходит этим же кодом — в messages[].text
                         с level: error: order_has_open_boxes (у заказа есть незакрытые
-                        коробки), order_not_found (заказа с таким Id в CRM нет)."
+                        коробки), order_not_found (заказа с таким Id в CRM нет).
+                        Незакрытая коробка — коробка заказа в любом статусе,
+                        кроме 100 Archive."
           content:
             application/json:
               schema:
@@ -189,20 +191,20 @@ components:
     ## Custom responses
     BoxResponse:
       allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
+        - $ref: '#/components/schemas/ErrorResponse'
       type: object
-      required:
-        - data
+      description: "Успех — data с состоянием коробки.
+                    При бизнес-стопе (messages[].level = error) data отсутствует."
       properties:
         data:
           $ref: '#/components/schemas/BoxState'
 
     OrderSummaryResponse:
       allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
+        - $ref: '#/components/schemas/ErrorResponse'
       type: object
-      required:
-        - data
+      description: "Успех — data с итогом по заказу.
+                    При бизнес-стопе (messages[].level = error) data отсутствует."
       properties:
         data:
           $ref: '#/components/schemas/OrderSummary'
@@ -216,7 +218,8 @@ components:
         items:
           type: array
           description: "Весь состав коробки разом. Пустой массив допустим —
-                        это «коробка пришла пустой»."
+                        это «коробка пришла пустой».
+                        Дубликаты rid недопустимы."
           items:
             $ref: '#/components/schemas/ReceivedItem'
 
@@ -229,6 +232,7 @@ components:
       properties:
         rid:
           type: string
+          minLength: 1
           description: "Rollun ID товара, offers.Article"
           example: "3N2W2"
         qty:
@@ -310,7 +314,9 @@ components:
           example: 3
         unitsShort:
           type: integer
-          description: "Суммарный недобор по заказу, 0 если всё сошлось"
+          description: "Сумма недоборов по строкам с diff < 0, по модулю.
+                        Перебор по другим строкам недостачу не компенсирует.
+                        0 — если недоборов нет."
           example: 2
         lines:
           type: array
