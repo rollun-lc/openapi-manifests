@@ -1,0 +1,382 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "FbaPickup"
+  description: "Операции склада-подбора над сущностями FBA: приёмка коробок от поставщика
+                и подведение итога по закупке.
+                Сервис пишущий — всё чтение идёт существующими датасторами CRM
+                (FbaSrBoxesDataStore, FbaSrOrdersDataStore, FbaSrOrdersWithBoxesByPositions)
+                и каталога (RollunIdWithCsnView).
+                Имена путей повторяют имена сущностей CRM: fbaSrBoxes, fbaSrOrders.
+                Вторая версия добавит сюда же fbaParcels и fbaShipments.
+                HTTP-коды — только 200 и 500: бизнес-стоп не HTTP-ошибка, его код едет
+                в messages[].text с level: error внутри 200 (решение 20.08)."
+servers:
+  - url: http://rollun-crm/openapi/FbaPickup/v1
+  - url: https://rollun.net/api/openapi/FbaPickup/v1
+tags:
+  - name: FbaSrBoxes
+  - name: FbaSrOrders
+paths:
+  "/fbaSrBoxes/{id}/open":
+    post:
+      tags:
+        - FbaSrBoxes
+      description: "Кнопка «Box opened». Переводит коробку в 1024 Processing,
+                    проставляет DtOpened и IdScannedBy.
+                    Исходные статусы: 1021 Parcel expecting, 1022 Parcel delivered.
+                    1023 Parcel scanned в v1 никто не ставит: коробка в этом статусе —
+                    нештатное состояние, ответ 500 unexpected_box_status.
+                    Идемпотентна: если коробка уже в 1024, отвечает 200 и ничего не меняет —
+                    повторное нажатие должно пускать человека дальше, а не останавливать его.
+                    Повтор НЕ дозаполняет пустые DtOpened/IdScannedBy.
+                    Статус меняется условием внутри запроса (queriedUpdate по Status),
+                    а не проверкой перед записью."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id коробки, она же Id сделки CRM"
+          example: "690582"
+      responses:
+        "200":
+          description: "Коробка открыта либо уже была открыта.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: box_already_closed (коробка в 100 Archive),
+                        box_not_receivable (101 Wrong, 1025 Issue occurred),
+                        box_not_found (коробки с таким Id в CRM нет)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoxResponse'
+        "500":
+          description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
+                        приходят этим кодом с текстом в messages[].text:
+                        employee_not_resolved (нет X-User-Acl-Id либо сотрудник
+                        с таким AclUserId не заведён в employees),
+                        unexpected_box_status (коробка в статусе, которого v1
+                        не ставит, в том числе 1023 Parcel scanned)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaSrBoxes/{id}/complete":
+    post:
+      tags:
+        - FbaSrBoxes
+      description: "Кнопка «No items left». Записывает ВЕСЬ фактический состав коробки
+                    и переводит её 1024 -> 100 Archive одной транзакцией: либо записано
+                    целиком, либо не записано вовсе.
+                    Отдельной команды на строку состава нет намеренно — незакрытая коробка
+                    не должна оставлять в CRM следа, иначе откат на Google-таблицу перестаёт
+                    быть бесплатным, а полка показывает товар, которого на ней нет.
+                    Позиции, которых нет в items, означают «этого товара в коробке не было»;
+                    нулями их передавать не нужно.
+                    Полка (view_fba_shelf) отдельного обновления не требует — она вьюха
+                    над этими же позициями и меняется в тот же момент."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          example: "690582"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteBoxRequest'
+      responses:
+        "200":
+          description: "Коробка закрыта. Если она уже была закрыта, ответ тот же,
+                        alreadyClosed = true и items — то, что записано в CRM.
+                        Приложение показывает это как успех: двойное нажатие не должно
+                        уводить коробку в исключение.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: item_not_in_order, more_than_left,
+                        box_not_receivable (101 Wrong, 1025 Issue occurred),
+                        box_not_found (коробки с таким Id в CRM нет);
+                        состав при стопе не записывается."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoxResponse'
+        "500":
+          description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
+                        приходят этим кодом с текстом в messages[].text:
+                        employee_not_resolved (нет X-User-Acl-Id либо сотрудник
+                        с таким AclUserId не заведён в employees),
+                        box_not_opened (коробку не открывали — статус 1021/1022),
+                        unexpected_box_status (коробка в статусе, которого v1
+                        не ставит, в том числе 1023 Parcel scanned),
+                        duplicate_rid (в items два элемента с одним rid),
+                        invalid_qty (отрицательный qty — схема требует minimum: 0),
+                        origin_offer_not_found (rid есть в позициях заказа,
+                        но origin-оффера с таким Article в каталоге нет).
+                        Состав при этом не записывается."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaSrOrders/{id}/finish":
+    post:
+      tags:
+        - FbaSrOrders
+      description: "«Это была последняя коробка». Сверяет заказанное с фактически принятым
+                    по всем коробкам заказа и ВОЗВРАЩАЕТ РАЗНИЦУ ПИКАПЕРУ — он ещё стоит
+                    над коробками и может пересмотреть.
+                    Переводит заказ в 1004 Check discrepancy. Заказ НЕ архивирует:
+                    коробка по этому заказу может приехать и через 60 дней, архивирует
+                    менеджер.
+                    Идемпотентна: повтор на заказе уже в 1004 отвечает 200 с тем же
+                    пересчитанным итогом, статус не меняется.
+                    Ту же сверку считает колбэк при каждой закрытой коробке — он нужен
+                    и старому процессу, для коробок, закрытых руками в CRM."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id заказа поставщику (сделка FbaSrOrder)"
+          example: "662462"
+      responses:
+        "200":
+          description: "Итог по заказу построчно.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: order_has_open_boxes (у заказа есть незакрытые
+                        коробки ЛИБО коробок у него нет вовсе — в обоих случаях
+                        закрывать нечего и итог не отдаётся),
+                        order_not_found (заказа с таким Id в CRM нет).
+                        Незакрытая коробка — коробка заказа в любом статусе,
+                        кроме 100 Archive."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSummaryResponse'
+        "500":
+          description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
+                        приходят этим кодом с текстом в messages[].text:
+                        employee_not_resolved (нет X-User-Acl-Id либо сотрудник
+                        с таким AclUserId не заведён в employees — итог подводит
+                        человек, и в actions_history обязан лечь его employeeId),
+                        unexpected_order_status (заказ в статусе, из которого finish
+                        не работает: 100 Archive, 101 Wrong, 1005 Issue occurred —
+                        такой заказ двигает менеджер, а не пикапер;
+                        DscProblem при этом не переписывается).
+                        Разрешённые исходные статусы — 1001 Tracknumbers expecting,
+                        1002 On way, 1003 Unpacking (переводятся в 1004)
+                        и сам 1004 (повтор, статус не меняется)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ## General — по образцу crm_event_handler__v1.yml
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        text:
+          type: string
+          description: "Машиночитаемый код стопа либо текст ошибки.
+                        Канонический словарь кодов: item_not_in_order, more_than_left,
+                        box_not_receivable, box_not_found, box_already_closed,
+                        order_has_open_boxes, order_not_found.
+                        Восьмой код словаря — cannot_identify_item — чисто клиентский:
+                        до сервера не доходит, приложение логирует его само."
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+
+    ## Custom responses
+    BoxResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Успех — data с состоянием коробки.
+                    При бизнес-стопе (messages[].level = error) data, как правило,
+                    отсутствует. Исключение — box_already_closed: там data содержит
+                    фактическое состояние коробки, чтобы приложение показало,
+                    что именно уже записано."
+      properties:
+        data:
+          $ref: '#/components/schemas/BoxState'
+
+    OrderSummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Успех — data с итогом по заказу.
+                    При бизнес-стопе (messages[].level = error) data отсутствует."
+      properties:
+        data:
+          $ref: '#/components/schemas/OrderSummary'
+
+    ## Custom requests
+    CompleteBoxRequest:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: "Весь состав коробки разом. Пустой массив допустим —
+                        это «коробка пришла пустой».
+                        Дубликаты rid недопустимы."
+          items:
+            $ref: '#/components/schemas/ReceivedItem'
+
+    ## Resources
+    ReceivedItem:
+      type: object
+      required:
+        - rid
+        - qty
+      properties:
+        rid:
+          type: string
+          minLength: 1
+          description: "Rollun ID товара, offers.Article"
+          example: "3N2W2"
+        qty:
+          type: integer
+          minimum: 0
+          description: "Сколько штук этого товара нашлось В ЭТОЙ коробке.
+                        Целое и неотрицательное. Брак в первой версии не выделяется —
+                        число одно, сколько нашлось."
+          example: 3
+
+    BoxState:
+      type: object
+      required:
+        - id
+        - status
+        - statusName
+      properties:
+        id:
+          type: string
+          example: "690582"
+        idFbaSrOrder:
+          type: string
+          example: "662462"
+        tracking:
+          type: string
+          example: "1Z093V6R0306851422"
+        status:
+          type: integer
+          description: "1021 Parcel expecting, 1022 Parcel delivered, 1023 Parcel scanned,
+                        1024 Processing, 100 Archive, 101 Wrong, 1025 Issue occurred"
+          example: 100
+        statusName:
+          type: string
+          example: "Archive"
+        alreadyClosed:
+          type: boolean
+          description: "true — коробка была закрыта до этого запроса, мы ничего не записали.
+                        Для приложения это успех, а не ошибка."
+        openedAt:
+          type: string
+          description: "mysql date-time"
+          example: "2026-08-19 14:02:11"
+        idScannedBy:
+          type: integer
+          description: "employees.Id того, кто разбирал коробку"
+          example: 70
+        items:
+          type: array
+          description: "Состав, записанный в CRM по этой коробке"
+          items:
+            $ref: '#/components/schemas/ReceivedItem'
+
+    OrderSummary:
+      type: object
+      required:
+        - id
+        - status
+        - statusName
+        - lines
+      properties:
+        id:
+          type: string
+          example: "662462"
+        nmrSrOrder:
+          type: string
+          description: "Номер заказа в системе поставщика"
+          example: "A8230"
+        status:
+          type: integer
+          example: 1004
+        statusName:
+          type: string
+          example: "Check discrepancy"
+        boxesTotal:
+          type: integer
+          example: 3
+        boxesClosed:
+          type: integer
+          example: 3
+        unitsShort:
+          type: integer
+          description: "Сумма недоборов по строкам с diff < 0, по модулю.
+                        Перебор по другим строкам недостачу не компенсирует.
+                        0 — если недоборов нет."
+          example: 2
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSummaryLine'
+
+    OrderSummaryLine:
+      type: object
+      required:
+        - rid
+        - qtyOrdered
+        - qtyReceived
+      properties:
+        rid:
+          type: string
+          example: "3N2W2"
+        name:
+          type: string
+          example: "TUSK  K54"
+        qtyOrdered:
+          type: integer
+          example: 6
+        qtyReceived:
+          type: integer
+          example: 4
+        diff:
+          type: integer
+          description: "qtyReceived - qtyOrdered. Минус — недостача, плюс — перебор"
+          example: -2

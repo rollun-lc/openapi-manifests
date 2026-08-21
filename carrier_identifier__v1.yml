@@ -5,6 +5,7 @@ info:
   description: "Service for identifying carriers by tracking numbers."
 servers:
   - url: http://carriers/openapi/CarrierIdentifier/v1
+  - url: https://rollun.net/api/openapi/CarrierIdentifier/v1
   - url: http://host.docker.internal:8080/openapi/CarrierIdentifier/v1
   - url: http://localhost:8080/openapi/CarrierIdentifier/v1
 tags:
