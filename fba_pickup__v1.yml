@@ -24,10 +24,12 @@ paths:
         - FbaSrBoxes
       description: "Кнопка «Box opened». Переводит коробку в 1024 Processing,
                     проставляет DtOpened и IdScannedBy.
-                    Исходные статусы: 1021 Parcel expecting, 1022 Parcel delivered;
-                    переход из 1023 допустим на будущее — в v1 его никто не ставит.
+                    Исходные статусы: 1021 Parcel expecting, 1022 Parcel delivered.
+                    1023 Parcel scanned в v1 никто не ставит: коробка в этом статусе —
+                    нештатное состояние, ответ 500 unexpected_box_status.
                     Идемпотентна: если коробка уже в 1024, отвечает 200 и ничего не меняет —
                     повторное нажатие должно пускать человека дальше, а не останавливать его.
+                    Повтор НЕ дозаполняет пустые DtOpened/IdScannedBy.
                     Статус меняется условием внутри запроса (queriedUpdate по Status),
                     а не проверкой перед записью."
       parameters:
@@ -52,8 +54,10 @@ paths:
         "500":
           description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
                         приходят этим кодом с текстом в messages[].text:
-                        employee_not_resolved (нет X-User-Identity либо сотрудник
-                        с таким AclUserId не заведён в employees)."
+                        employee_not_resolved (нет X-User-Acl-Id либо сотрудник
+                        с таким AclUserId не заведён в employees),
+                        unexpected_box_status (коробка в статусе, которого v1
+                        не ставит, в том числе 1023 Parcel scanned)."
           content:
             application/json:
               schema:
@@ -104,10 +108,15 @@ paths:
         "500":
           description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
                         приходят этим кодом с текстом в messages[].text:
-                        employee_not_resolved (нет X-User-Identity либо сотрудник
+                        employee_not_resolved (нет X-User-Acl-Id либо сотрудник
                         с таким AclUserId не заведён в employees),
                         box_not_opened (коробку не открывали — статус 1021/1022),
-                        duplicate_rid (в items два элемента с одним rid).
+                        unexpected_box_status (коробка в статусе, которого v1
+                        не ставит, в том числе 1023 Parcel scanned),
+                        duplicate_rid (в items два элемента с одним rid),
+                        invalid_qty (отрицательный qty — схема требует minimum: 0),
+                        origin_offer_not_found (rid есть в позициях заказа,
+                        но origin-оффера с таким Article в каталоге нет).
                         Состав при этом не записывается."
           content:
             application/json:
@@ -203,7 +212,10 @@ components:
         - $ref: '#/components/schemas/ErrorResponse'
       type: object
       description: "Успех — data с состоянием коробки.
-                    При бизнес-стопе (messages[].level = error) data отсутствует."
+                    При бизнес-стопе (messages[].level = error) data, как правило,
+                    отсутствует. Исключение — box_already_closed: там data содержит
+                    фактическое состояние коробки, чтобы приложение показало,
+                    что именно уже записано."
       properties:
         data:
           $ref: '#/components/schemas/BoxState'
