@@ -2,13 +2,15 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "FbaPickup"
-  description: "Операции склада-подбора над сущностями FBA: приёмка коробок от поставщика
-                и подведение итога по закупке.
+  description: "Операции склада-подбора над сущностями FBA: приёмка коробок от поставщика,
+                подведение итога по закупке и упаковка товара с Полки в коробки,
+                уезжающие на Amazon.
                 Сервис пишущий — всё чтение идёт существующими датасторами CRM
-                (FbaSrBoxesDataStore, FbaSrOrdersDataStore, FbaSrOrdersWithBoxesByPositions)
-                и каталога (RollunIdWithCsnView).
-                Имена путей повторяют имена сущностей CRM: fbaSrBoxes, fbaSrOrders.
-                Вторая версия добавит сюда же fbaParcels и fbaShipments.
+                (FbaSrBoxesDataStore, FbaSrOrdersDataStore, FbaSrOrdersWithBoxesByPositions,
+                FbaShelf, FbaParcelsDataStore, FbaShipmentsDataStore,
+                FbaParselsWithShipmentsByPositions) и каталога (RollunIdWithCsnView).
+                Имена путей повторяют имена сущностей CRM: fbaSrBoxes и fbaSrOrders —
+                приёмка, fbaShipments и fbaParcels — упаковка.
                 HTTP-коды — только 200 и 500: бизнес-стоп не HTTP-ошибка, его код едет
                 в messages[].text с level: error внутри 200 (решение 20.08)."
 servers:
@@ -17,6 +19,8 @@ servers:
 tags:
   - name: FbaSrBoxes
   - name: FbaSrOrders
+  - name: FbaShipments
+  - name: FbaParcels
 paths:
   "/fbaSrBoxes/{id}/open":
     post:
@@ -76,7 +80,17 @@ paths:
                     Позиции, которых нет в items, означают «этого товара в коробке не было»;
                     нулями их передавать не нужно.
                     Полка (view_fba_shelf) отдельного обновления не требует — она вьюха
-                    над этими же позициями и меняется в тот же момент."
+                    над этими же позициями и меняется в тот же момент.
+                    Брак и лишний товар едут той же командой, необязательными полями строки
+                    (defectQty/defectReason, notInOrder) — отдельной команды на них нет.
+                    В состав коробки пишется ВСЁ найденное, включая брак, а на строку
+                    с браком заводится расхождение returnToSr; на строку, помеченную
+                    notInOrder и отсутствующую в составе Заказа, — расхождение extra.
+                    Расхождение несёт IdFbaSrBox (родитель-коробка), IdScannedBy и причину
+                    в DscProblem; IdFbaSrOrder остаётся пустым — этого требует
+                    констрейнт only_one_filled.
+                    Расхождения пишутся ТОЙ ЖЕ транзакцией, что состав и статус: коробка
+                    без расхождения либо расхождение без коробки не появляются."
       parameters:
         - in: path
           name: id
@@ -100,7 +114,11 @@ paths:
                         с level: error: item_not_in_order, more_than_left,
                         box_not_receivable (101 Wrong, 1025 Issue occurred),
                         box_not_found (коробки с таким Id в CRM нет);
-                        состав при стопе не записывается."
+                        состав при стопе не записывается.
+                        item_not_in_order срабатывает только на строке БЕЗ признака
+                        notInOrder: с признаком RID вне заказа — валидный лишний товар.
+                        more_than_left признак не ослабляет: RID, который в заказе есть,
+                        сверх Left не проходит и с ним."
           content:
             application/json:
               schema:
@@ -115,9 +133,17 @@ paths:
                         не ставит, в том числе 1023 Parcel scanned),
                         duplicate_rid (в items два элемента с одним rid),
                         invalid_qty (отрицательный qty — схема требует minimum: 0),
-                        origin_offer_not_found (rid есть в позициях заказа,
-                        но origin-оффера с таким Article в каталоге нет).
-                        Состав при этом не записывается."
+                        invalid_defect_qty (defectQty отрицательный либо больше qty —
+                        битого не бывает больше, чем нашлось; из UI недостижимо,
+                        экран гасит SAVE),
+                        defect_reason_required (defectQty > 0, а defectReason пуст либо
+                        из одних пробелов — причина обязательна: расхождение без причины
+                        менеджеру нечитаемо, и ровно этот пробел часть E и закрывает),
+                        origin_offer_not_found (для строки без признака notInOrder — rid есть
+                        в позициях заказа, но origin-оффера с таким Article в каталоге CRM нет;
+                        для строки С признаком — его не нашлось и досоздать не вышло,
+                        потому что каталог такого rid не знает либо недоступен).
+                        Состав и расхождения при этом не записываются."
           content:
             application/json:
               schema:
@@ -177,6 +203,296 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  "/fbaShipments":
+    post:
+      tags:
+        - FbaShipments
+      # operationId обязателен именно здесь и только здесь. Без него генератор
+      # выводит имя действия из пути и метода — fbaShipmentsPost, — а оно после
+      # отсечения имени тега схлопывается в зарезервированное «Post», и Rest-объект
+      # получает generic post($bodyData) вместо своего метода. Для команды БЕЗ ТЕЛА
+      # это тупик: generic post зовёт extractFromTypedData(null) и падает
+      # LogicException до контроллера. operationId уводит команду в custom action.
+      operationId: fbaShipmentsCreatePost
+      description: "Кнопка «+ SHIPMENT». Создаёт Отправку в статусе 1061 Shipment filling
+                    со складом вошедшего: строка в deals (ProgramId = 104) и строка
+                    в fba_shipments с NmSender = склад.
+                    Тела у запроса нет намеренно. Склад выводится сервером из вошедшего
+                    сотрудника, а не присылается клиентом: иначе серверный инвариант
+                    «открытая Отправка своего склада ровно одна» стал бы клиентским.
+                    IdShipment (Amazon Shipment ID), NmShipment (STA) и DscProblem
+                    остаются пустыми — их проставляет помощник менеджера позже.
+                    Повтор не создаёт вторую Отправку: у склада уже есть Отправка
+                    в 1061 — ответ 200 с кодом shipment_already_open, data несёт
+                    СУЩЕСТВУЮЩУЮ Отправку и alreadyOpen = true. Для приложения это
+                    успех, экран исключения не показывается.
+                    Отправку по лестнице приложение не ведёт и не закрывает —
+                    этим занят помощник менеджера."
+      responses:
+        "200":
+          description: "Отправка создана либо уже была открыта.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: shipment_already_open (у склада уже есть
+                        Отправка в 1061). Это единственный код словаря упаковки,
+                        после которого приложение НЕ показывает экран исключения:
+                        data несёт существующую Отправку, и апка просто открывает её.
+                        parcelsCount и parcelsLimit едут в data всегда — потолок
+                        в десять коробок это константа конфига сервиса, клиент
+                        его не знает и зашивать не должен."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentResponse'
+        "500":
+          description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
+                        приходят этим кодом с текстом в messages[].text:
+                        employee_not_resolved (нет X-User-Acl-Id либо сотрудника
+                        с таким AclUserId не заведено в employees),
+                        warehouse_not_resolved (сотрудник есть, а склада за ним
+                        не числится: колонки склада в employees нет вовсе, карта
+                        «employee -> склад» живёт константой конфига рядом
+                        с потолком коробок)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaShipments/{id}/parcels":
+    post:
+      tags:
+        - FbaShipments
+      description: "Кнопка «+ SHIPMENT PARCEL». Создаёт Коробку отправки в статусе
+                    1041 Parcel filling внутри указанной Отправки: строка в deals
+                    (ProgramId = 103) и строка в fba_parcels с IdShipmentCrm, NmrBox,
+                    IdScannedBy и NmPickuper вошедшего.
+                    Тела у запроса нет: всё, что нужно команде, — Id Отправки в пути
+                    и личность в заголовке.
+                    NmrBox присваивает СЕРВЕР — 1, 2, 3… по порядку внутри Отправки,
+                    под блокировкой строки Отправки: два одновременных нажатия
+                    не должны дать двух коробок с одним номером. Руками номер
+                    больше не вводится.
+                    Потолок коробок проверяется ПОД ТОЙ ЖЕ блокировкой, что
+                    и вычисление NmrBox, — иначе двойной тап заведёт коробку
+                    сверх потолка.
+                    Коробка создаётся пустой: ни состава, ни измерений до close,
+                    и Полка её не видит. Пустая коробка не удаляется — пикапер
+                    доиспользует её в следующий заход."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id Отправки, она же Id сделки CRM"
+          example: "719257"
+      responses:
+        "200":
+          description: "Коробка создана. data — состояние коробки, shipment —
+                        состояние Отправки уже с новой коробкой в parcelsCount,
+                        чтобы экран обновил «N of 10» без второго запроса.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: shipment_not_found (Отправки с таким Id
+                        в CRM нет), shipment_not_open (Отправка не в 1061),
+                        shipment_full (в Отправке уже parcelsLimit коробок).
+                        При стопе коробка не создаётся."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParcelResponse'
+        "500":
+          description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
+                        приходят этим кодом с текстом в messages[].text:
+                        employee_not_resolved (нет X-User-Acl-Id либо сотрудника
+                        с таким AclUserId не заведено в employees — коробка
+                        принадлежит человеку, и IdScannedBy обязан лечь непустым)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaParcels/{id}/close":
+    post:
+      tags:
+        - FbaParcels
+      description: "Кнопка «BOX READY». Записывает ВЕСЬ состав коробки, вес и три
+                    габарита и переводит её 1041 -> 1042 Measured одной транзакцией:
+                    либо записано целиком, либо не записано вовсе.
+                    Отдельной команды на строку состава нет намеренно — незакрытая
+                    коробка не должна оставлять в CRM следа, иначе откат на
+                    Google-таблицу перестаёт быть бесплатным, а Полка показывает
+                    товар, которого на ней нет.
+                    ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ В ТЕЛЕ НЕТ НИ ОДНОГО, и это не небрежность:
+                    закрытие без веса обязано дать 200 + measurements_required —
+                    то есть код словаря. Пометь поле required, и до команды запрос
+                    не дойдёт вовсе: каркас превращает провал валидации схемы
+                    в HTTP 500 со свободным текстом «Request validation failed»
+                    (AbstractHandler::runAction), а такой ответ приложению
+                    разбирать нечем — кода словаря в нём нет. Пустое тело {}
+                    валидно по схеме, и ответ на него — код словаря.
+                    ПОРЯДОК ПРОВЕРОК ОБЪЯВЛЕН И ОБЯЗАТЕЛЕН — тот же, каким уже
+                    идёт complete первой версии, чтобы у двух команд одного
+                    сервиса не было двух разных дисциплин:
+                      1. личность: employee_not_resolved (500);
+                      2. годность Id из пути: parcel_not_found (200), если Id
+                         не число — MySQL привёл бы «640367abc» к 640367
+                         и команда отработала бы по чужой коробке;
+                      3. форма запроса, ДО транзакции: empty_items,
+                         duplicate_rid (оба 500);
+                      4. захват коробки условным UPDATE: не захватили —
+                         разбор фактического состояния, parcel_not_found либо
+                         parcel_locked (200), повтор по своей закрытой — успех
+                         с alreadyClosed;
+                      5. измерения: measurements_required (200);
+                      6. остаток по Полке: not_enough_on_shelf (200);
+                      7. запись состава: origin_offer_not_found (500) —
+                         он всплывает при разрешении офферов, то есть последним,
+                         ровно как в complete v1.
+                    Отсюда однозначный ответ на пустое тело {} по существующей
+                    коробке: 500 empty_items, а не 200 measurements_required —
+                    форма запроса проверяется раньше измерений. Правило, из
+                    которого этот порядок следует: 200 — «запрос понятен,
+                    но склад против», 500 — «такого запроса экран прислать
+                    не мог».
+                    Габариты — три отдельных числа в inches, вес — одно число в lb,
+                    ровно так, как они лежат в fba_parcels (decimal(10,3)). Строка
+                    Dimensions не используется нигде: это мёртвое наследство карточки
+                    самовывоза, и колонки Dimensions в fba_parcels нет вовсе.
+                    НОЛЬ И ОТРИЦАТЕЛЬНОЕ РАВНОСИЛЬНЫ ОТСУТСТВИЮ: weight: 0
+                    и height: -1 это measurements_required, а не записанная
+                    коробка. Схема minimum на измерениях не ставит намеренно —
+                    иначе ответом станет тот самый 500 «Request validation failed»
+                    без кода словаря, а пикаперу нужен разбираемый стоп.
+                    Остаток сверяется по view_fba_shelf внутри той же транзакции;
+                    отдельного обновления Полка не требует — она вьюха над этими же
+                    позициями и меняется в тот же момент.
+                    Статус меняется условием внутри запроса (queriedUpdate по Status),
+                    а не проверкой перед записью."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id Коробки отправки, она же Id сделки CRM"
+          example: "719265"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseParcelRequest'
+      responses:
+        "200":
+          description: "Коробка закрыта. Если она уже была закрыта, ответ тот же,
+                        alreadyClosed = true, а items и измерения — то, что записано
+                        в CRM: двойное нажатие не уводит коробку в исключение.
+                        shipment несёт состояние Отправки после закрытия.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: parcel_not_found (Коробки отправки с таким Id
+                        в CRM нет), parcel_locked (коробка не в 1041 — после Measured
+                        состав и измерения заперты, вернуть в работу может только
+                        reopen), not_enough_on_shelf (по view_fba_shelf столько
+                        не набирается), measurements_required (нет веса либо любого
+                        из трёх габаритов — а также если любое из четырёх чисел
+                        пришло нулём или отрицательным: коробка нулевой ширины
+                        это незаполненное поле, а не измерение).
+                        При стопе не записывается ничего: ни состав, ни измерения,
+                        и коробка остаётся в 1041."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParcelResponse'
+        "500":
+          description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
+                        приходят этим кодом с текстом в messages[].text:
+                        employee_not_resolved (нет X-User-Acl-Id либо сотрудника
+                        с таким AclUserId не заведено в employees),
+                        empty_items (состав пуст — коробка без состава не бывает
+                        готовой, а экран туда не пускает),
+                        duplicate_rid (в items два элемента с одним rid),
+                        invalid_qty (qty меньше единицы),
+                        origin_offer_not_found (rid есть на Полке, но origin-оффера
+                        с таким Article в каталоге нет).
+                        Состав при этом не записывается.
+                        Про invalid_qty отдельно, чтобы не искали его в логах зря:
+                        ПО HTTP ДО НЕГО НЕ ДОХОДИТ. minimum: 1 у PackedItem.qty
+                        порождает валидатор схемы, и запрос с нулевым или
+                        отрицательным qty каркас отбивает раньше команды —
+                        ответом будет 500 «Request validation failed» со свободным
+                        текстом, а не этот код. Так же устроен и invalid_qty первой
+                        версии (там minimum: 0). Код остаётся подстраховкой самой
+                        команды — для DTO, собранного в коде: внутренний вызов,
+                        тест, будущий фоновый потребитель."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaParcels/{id}/reopen":
+    post:
+      tags:
+        - FbaParcels
+      description: "Возврат Коробки отправки в переделку: 1042 Measured (или
+                    100 Archive) -> 1041 Parcel filling с обязательной причиной.
+                    Команда помощника менеджера — путь из приложения пикапера
+                    к ней не ведёт.
+                    ОПУСТОШАЕТ коробку целиком: позиции удаляются, Weight, Length,
+                    Width, Height и FinalPrice обнуляются, причина пишется
+                    в DscProblem — всё одной транзакцией. Либо коробка опустела
+                    целиком, либо не тронута вовсе.
+                    Опустошение — не побочный эффект, а условие работоспособности.
+                    Полка вычитает позиции парсела без всякого условия на его статус,
+                    поэтому коробка, вернувшаяся в 1041 вместе с составом, не
+                    закрылась бы повторно никогда: close ответил бы
+                    not_enough_on_shelf на её же собственное содержимое.
+                    Товар возвращается на Полку сам и в тот же бакет — Полка считает
+                    по позициям и группирует по паре «RID + сотрудник», а бакет
+                    определял IdScannedBy этого же парсела.
+                    Прежние состав, вес и габариты остаются в actions_history.
+                    Тело метода — вторая очередь (часть D2); контракт, маршрут и DI
+                    стоят с A2."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id Коробки отправки, она же Id сделки CRM"
+          example: "719265"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReopenParcelRequest'
+      responses:
+        "200":
+          description: "Коробка вернулась в 1041 пустой: items пуст, weight и три
+                        габарита сняты, dscProblem — записанная причина.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: parcel_not_found (Коробки отправки с таким Id
+                        в CRM нет), parcel_locked (коробка не в 1042 и не в 100 —
+                        возвращать нечего), reason_required (причина пустая;
+                        при этом коробка не меняется ни в чём).
+                        Причина обязательна по требованию, но НЕ по схеме: пустое
+                        тело обязано дать код словаря, а не HTTP 500
+                        «Request validation failed» со свободным текстом, в котором
+                        разбирать нечего."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParcelResponse'
+        "500":
+          description: "Ошибка обработки. Нештатные состояния, из UI недостижимые,
+                        приходят этим кодом с текстом в messages[].text:
+                        employee_not_resolved (нет X-User-Acl-Id либо сотрудника
+                        с таким AclUserId не заведено в employees — возврат делает
+                        человек, и в actions_history обязан лечь его employeeId)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ## General — по образцу crm_event_handler__v1.yml
@@ -200,7 +516,20 @@ components:
                         box_not_receivable, box_not_found, box_already_closed,
                         order_has_open_boxes, order_not_found.
                         Восьмой код словаря — cannot_identify_item — чисто клиентский:
-                        до сервера не доходит, приложение логирует его само."
+                        до сервера не доходит, приложение логирует его само.
+                        Вторая версия добавляет девять кодов стопов упаковки:
+                        not_enough_on_shelf, shipment_not_open, shipment_not_found,
+                        shipment_already_open, shipment_full, parcel_locked,
+                        parcel_not_found, measurements_required, reason_required.
+                        И пять кодов 500, которых словарь выше не перечислял:
+                        warehouse_not_resolved и empty_items — новые,
+                        duplicate_rid, invalid_qty и origin_offer_not_found
+                        унаследованы от complete первой версии. Шестой код 500,
+                        employee_not_resolved, общий с обеими версиями и не меняется.
+                        Из девяти кодов упаковки shipment_already_open на экран
+                        исключения не выходит вовсе — для приложения это успех;
+                        measurements_required и reason_required экран не допускает
+                        раньше, но сервер проверяет их всё равно."
     ErrorResponse:
       type: object
       properties:
@@ -243,6 +572,43 @@ components:
         data:
           $ref: '#/components/schemas/OrderSummary'
 
+    ShipmentResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Успех — data с состоянием Отправки.
+                    При бизнес-стопе (messages[].level = error) data, как правило,
+                    отсутствует. Исключение — shipment_already_open: там data несёт
+                    состояние УЖЕ ОТКРЫТОЙ Отправки с alreadyOpen = true, чтобы
+                    приложение просто открыло её вместо новой."
+      properties:
+        data:
+          $ref: '#/components/schemas/ShipmentState'
+
+    ParcelResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Успех — data с состоянием Коробки отправки.
+                    При бизнес-стопе (messages[].level = error) data, как правило,
+                    отсутствует. Исключение — повторное закрытие своей коробки:
+                    там data содержит фактически записанное состояние
+                    с alreadyClosed = true.
+                    shipment едет рядом с data у команд, которые пикапер вызывает
+                    с экрана Отправки (создание коробки и закрытие), — чтобы экран
+                    перерисовался целиком одним ответом, без второго запроса
+                    за шапкой. Создание коробки меняет parcelsCount, закрытие —
+                    статус коробки в списке; и то и другое видно на одном экране.
+                    Потолок приходит там же, с данными Отправки: зашивать десятку
+                    в клиент нельзя.
+                    У reopen shipment не едет: это команда помощника менеджера,
+                    экрана Отправки за ней нет."
+      properties:
+        data:
+          $ref: '#/components/schemas/ParcelState'
+        shipment:
+          $ref: '#/components/schemas/ShipmentState'
+
     ## Custom requests
     CompleteBoxRequest:
       type: object
@@ -256,6 +622,70 @@ components:
                         Дубликаты rid недопустимы."
           items:
             $ref: '#/components/schemas/ReceivedItem'
+
+    CloseParcelRequest:
+      type: object
+      description: "Тело BOX READY. ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ НЕТ НИ ОДНОГО — ни items,
+                    ни измерений: отсутствие веса обязано дать 200
+                    + measurements_required, а пустой состав — 500 empty_items,
+                    и оба ответа команда обязана отдать САМА, кодом словаря.
+                    Помеченное required поле до команды не доедет: провал
+                    валидации схемы каркас превращает в HTTP 500
+                    «Request validation failed» со свободным текстом
+                    (AbstractHandler::runAction) — ответ без кода, разбирать
+                    его приложению нечем. Пустое тело {} валидно по схеме
+                    и всегда получает содержательный ответ; какой именно —
+                    см. порядок проверок в описании пути."
+      properties:
+        items:
+          type: array
+          description: "Весь состав коробки разом, ровно как в complete приёмки.
+                        Дубликаты rid недопустимы (500 duplicate_rid).
+                        Пустой массив и отсутствие поля означают одно и то же —
+                        коробка без состава, и это 500 empty_items: готовой
+                        коробки без состава не бывает."
+          items:
+            $ref: '#/components/schemas/PackedItem'
+        weight:
+          type: number
+          description: "Вес коробки в фунтах, одно число. fba_parcels.Weight,
+                        decimal(10,3)"
+          example: 14.5
+        length:
+          type: number
+          description: "Длина в дюймах. fba_parcels.Length, decimal(10,3).
+                        Три габарита едут ТРЕМЯ отдельными числами — строка
+                        Dimensions мертва, колонки под неё в таблице нет"
+          example: 18.0
+        width:
+          type: number
+          description: "Ширина в дюймах. fba_parcels.Width, decimal(10,3)"
+          example: 12.0
+        height:
+          type: number
+          description: "Высота в дюймах. fba_parcels.Height, decimal(10,3)"
+          example: 10.0
+
+    ReopenParcelRequest:
+      type: object
+      description: "Тело возврата в переделку. Обязательных полей нет: пустая
+                    причина обязана дать 200 + reason_required, то есть код
+                    словаря. Пометь reason required — и каркас ответит вместо
+                    этого HTTP 500 «Request validation failed» со свободным
+                    текстом (AbstractHandler::runAction), из которого приложение
+                    не достанет ни кода, ни подсказки человеку."
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          description: "Причина возврата. Пишется в fba_parcels.DscProblem
+                        как есть, свободным текстом. Потолок — ширина колонки
+                        (varchar(1000)): длиннее MySQL обрежет, а в строгом режиме
+                        уронит транзакцию возврата целиком.
+                        Пустая строка равносильна отсутствию поля, и строка
+                        из одних пробелов тоже: reason_required смотрит на причину
+                        после trim — «   » это не причина"
+          example: "Wrong item inside, repack"
 
     ## Resources
     ReceivedItem:
@@ -272,10 +702,37 @@ components:
         qty:
           type: integer
           minimum: 0
-          description: "Сколько штук этого товара нашлось В ЭТОЙ коробке.
-                        Целое и неотрицательное. Брак в первой версии не выделяется —
-                        число одно, сколько нашлось."
+          description: "Сколько штук этого товара нашлось В ЭТОЙ коробке — ВСЁ найденное,
+                        ВКЛЮЧАЯ битое. Целое и неотрицательное.
+                        Брак здесь не вычитается: его вычитает расхождение returnToSr,
+                        и ровно так устроена формула Полки."
           example: 3
+        defectQty:
+          type: integer
+          minimum: 0
+          description: "Сколько из этих qty штук битые. Поле необязательное: в нормальном
+                        дне его нет вовсе, и тело запроса совпадает с первой версией.
+                        Больше qty — 500 invalid_defect_qty.
+                        Больше нуля требует непустого defectReason —
+                        иначе 500 defect_reason_required.
+                        Тип расхождения пикапер не выбирает никогда: всегда returnToSr."
+          example: 2
+        defectReason:
+          type: string
+          description: "Короткая причина брака свободным текстом, как её написал пикапер.
+                        Ложится в DscProblem расхождения. Обязательна при defectQty > 0.
+                        Длиннее 1000 символов — ширины DscProblem — сервер РЕЖЕТ, а не отвергает:
+                        потерять хвост причины дешевле, чем не дать закрыть пересчитанную
+                        коробку. Экран ограничивает ввод теми же 1000."
+          example: "cracked"
+        notInOrder:
+          type: boolean
+          description: "true — строка явно помечена «этой позиции в заказе нет».
+                        Только с этим признаком RID вне состава Заказа проходит вместо
+                        стопа item_not_in_order, и по такой строке заводится расхождение
+                        extra. На RID, который в заказе ЕСТЬ, признак игнорируется:
+                        строка идёт обычной проверкой на Left, more_than_left
+                        не ослабляется ничем."
 
     BoxState:
       type: object
@@ -315,7 +772,11 @@ components:
           example: 70
         items:
           type: array
-          description: "Состав, записанный в CRM по этой коробке"
+          description: "Состав, записанный в CRM по этой коробке.
+                        Схема строки общая с запросом, но в ОТВЕТЕ заполняются только
+                        rid и qty: брак и признак «не из заказа» живут отдельными
+                        расхождениями, а не позициями коробки, и по составу закрытой
+                        коробки не восстанавливаются."
           items:
             $ref: '#/components/schemas/ReceivedItem'
 
@@ -380,3 +841,158 @@ components:
           type: integer
           description: "qtyReceived - qtyOrdered. Минус — недостача, плюс — перебор"
           example: -2
+
+    PackedItem:
+      type: object
+      required:
+        - rid
+        - qty
+      description: "Строка состава Коробки отправки. Внутри строки rid и qty
+                    обязательны, хотя у самого тела обязательных полей нет:
+                    кривой элемент состава — ошибка клиента, а не бизнес-случай,
+                    и ровно так же устроен ReceivedItem приёмки."
+      properties:
+        rid:
+          type: string
+          minLength: 1
+          description: "Rollun ID товара, offers.Article"
+          example: "3N2W2"
+        qty:
+          type: integer
+          minimum: 1
+          description: "Сколько штук этого товара положено В ЭТУ коробку.
+                        Целое и строго больше нуля: строка на ноль единиц —
+                        это отсутствие строки. Столько же этикеток FNSKU
+                        наклеено на товар."
+          example: 7
+
+    ShipmentState:
+      type: object
+      required:
+        - id
+        - status
+        - statusName
+        - parcelsCount
+        - parcelsLimit
+      properties:
+        id:
+          type: string
+          description: "Id Отправки, она же Id сделки CRM"
+          example: "719257"
+        status:
+          type: integer
+          description: "1061 Shipment filling, 1062 Shipment creation on mp,
+                        1063 Shipment ID created, 1064 Tracking,
+                        1065 Receiving by Amazon, 1066 Check discrepancy,
+                        100 Archive, 101 Wrong.
+                        Приложению нужен только 1061 — дальше Отправку ведёт
+                        помощник менеджера"
+          example: 1061
+        statusName:
+          type: string
+          example: "Shipment filling"
+        nmSender:
+          type: string
+          description: "Склад-отправитель, fba_shipments.NmSender.
+                        Выводится сервером из вошедшего сотрудника, клиентом
+                        не присылается"
+          example: "pickup_cn"
+        idShipment:
+          type: string
+          description: "Amazon Shipment ID, fba_shipments.IdShipment.
+                        Приложением не создаётся: его проставляет помощник
+                        менеджера, когда он появится"
+          example: "FBA19M0XLLTR"
+        nmShipment:
+          type: string
+          description: "STA (Ship to Amazon), fba_shipments.NmShipment.
+                        Начало упаковки не блокирует и приложением не пишется"
+          example: "STA (8/17/2026, 02:19 PM)"
+        parcelsCount:
+          type: integer
+          description: "Сколько Коробок отправки уже заведено в этой Отправке"
+          example: 3
+        parcelsLimit:
+          type: integer
+          description: "Потолок коробок в Отправке — константа конфига сервиса,
+                        по умолчанию 10. Едет в ответе, а не зашивается в клиент:
+                        «N of 10» на экране рисуется данными Отправки, и подъём
+                        потолка не требует релиза приложения"
+          example: 10
+        alreadyOpen:
+          type: boolean
+          description: "true — Отправка существовала до этого запроса, мы ничего
+                        не создали. Для приложения это успех: оно открывает
+                        существующую Отправку"
+
+    ParcelState:
+      type: object
+      required:
+        - id
+        - status
+        - statusName
+      properties:
+        id:
+          type: string
+          description: "Id Коробки отправки, она же Id сделки CRM"
+          example: "719265"
+        idShipmentCrm:
+          type: string
+          description: "Id Отправки, которой принадлежит коробка,
+                        fba_parcels.IdShipmentCrm. Коробка принадлежит ровно
+                        одной Отправке"
+          example: "719257"
+        nmrBox:
+          type: integer
+          description: "Номер коробки внутри Отправки, fba_parcels.NmrBox.
+                        Присваивает сервер по порядку создания"
+          example: 1
+        status:
+          type: integer
+          description: "1041 Parcel filling, 1042 Measured, 100 Archive, 101 Wrong"
+          example: 1042
+        statusName:
+          type: string
+          example: "Measured"
+        alreadyClosed:
+          type: boolean
+          description: "true — коробка была закрыта до этого запроса, мы ничего
+                        не записали. Для приложения это успех, а не ошибка"
+        weight:
+          type: number
+          description: "Вес в фунтах, fba_parcels.Weight"
+          example: 14.5
+        length:
+          type: number
+          description: "Длина в дюймах, fba_parcels.Length"
+          example: 18.0
+        width:
+          type: number
+          description: "Ширина в дюймах, fba_parcels.Width"
+          example: 12.0
+        height:
+          type: number
+          description: "Высота в дюймах, fba_parcels.Height"
+          example: 10.0
+        idScannedBy:
+          type: integer
+          description: "employees.Id того, кто собирал коробку"
+          example: 70
+        nmPickuper:
+          type: string
+          description: "Имя пикапера, производное от idScannedBy —
+                        берётся из employees, а не вводится руками"
+          example: "Victoria Hrushak"
+        dscProblem:
+          type: string
+          description: "Причина возврата в переделку, fba_parcels.DscProblem.
+                        Заполняется командой reopen; при закрытии коробки
+                        не трогается"
+          example: "Wrong item inside, repack"
+        items:
+          type: array
+          description: "Состав, записанный в CRM по этой коробке. У коробки,
+                        только что созданной либо вернувшейся из переделки,
+                        пуст — и это не ошибка, а нормальное состояние"
+          items:
+            $ref: '#/components/schemas/PackedItem'
