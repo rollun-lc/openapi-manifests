@@ -1,0 +1,621 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "FbaPurchase"
+  description: "Автозакупка FBA, пилот на PartsUnlimited (7UxJOaje). Команды над заказом
+                поставщику FbaSrOrder, которые до сих пор делались руками: загрузка
+                согласованного списка закупки, дальше — закупка и треки.
+                Сервис пишущий и единственный владелец таблиц fba_sr_orders, fba_sr_boxes,
+                positions и deals (AD-1); чтение идёт существующими датасторами CRM.
+                Контур независим от FbaPickup v1: у него свой манифест, свои теги
+                и ни одного ребра к приёмке. Теги глобально уникальны по всем манифестам
+                сервиса (AD-17): алиас контроллера — плоское имя <Tag>1Controller,
+                и совпавший с приёмкой тег молча отобрал бы у неё контроллер.
+                HTTP-коды — только 200 и 500: бизнес-стоп не HTTP-ошибка, его код едет
+                в messages[].text с level: error внутри 200 (AD-11) — так же, как у FbaPickup."
+servers:
+  - url: http://rollun-crm/openapi/FbaPurchase/v1
+  - url: https://rollun.net/api/openapi/FbaPurchase/v1
+tags:
+  - name: PurchaseLists
+  - name: FbaPurchaseOrders
+paths:
+  "/purchaseLists":
+    post:
+      tags:
+        - PurchaseLists
+      # operationId обязателен. Без него генератор выводит имя действия из пути
+      # и метода — purchaseListsPost, — а оно после отсечения имени тега
+      # (PurchaseLists) схлопывается в зарезервированное «Post», и Rest-объект
+      # получает generic post($bodyData) вместо своего метода. operationId уводит
+      # команду в custom action и оставляет ей собственное имя — ровно так же,
+      # как у /fbaShipments и /itemLabels в fba_pickup__v1.yml.
+      operationId: purchaseListsUploadPost
+      description: "Кнопка «Загрузить список» в шапке таблицы FBA. Превращает согласованный
+                    список закупки в заказ поставщику FbaSrOrder со статусом
+                    1000 Purchase expecting и позициями — одной транзакцией.
+                    Файл (CSV, две колонки: rid и количество) разбирает браузер; сюда
+                    приезжает уже разобранный массив строк одним запросом (FR-1).
+                    Поставщика и склада в файле нет — это константы пилота:
+                    SrName = PartsUnlimited, Receiver = pickup_cn. Тип отгрузки пилота —
+                    Delivery, колонкой он не хранится.
+                    ДВА ХОДА. Сначала dryRun: true — предпросмотр: та же валидация и та же
+                    разбивка, что у боевого вызова, в CRM не пишется ничего (FR-3); ответ
+                    несёт rowsHash. Затем dryRun: false с теми же строками и rowsHash
+                    из предпросмотра — создание (FR-4). Хэш сервер пересчитывает сам;
+                    присланный — только проверка, что создаётся ровно то, что человек
+                    видел на предпросмотре.
+                    ФАЙЛ ПРИНИМАЕТСЯ ЦЕЛИКОМ ЛИБО НИКАК (FR-2): хоть одна плохая строка —
+                    не пишется ничего, а в ответе ВСЕ плохие строки сразу, каждая
+                    со всеми своими причинами.
+                    ПОРЯДОК ОТВЕТОВ. У списка с плохими строками — rows_rejected, даже
+                    если прислан rowsHash: хэш сверяется только у списка без ошибок
+                    формы. У списка без них сначала сверяется rowsHash, затем ищется
+                    заказ по ключу загрузки — и повтор (заказ найден) отвечает ДО
+                    каталога: каталог не зовётся вовсе, а имена строк берутся
+                    из CRM. Лежащий каталог либо rid, с тех пор из него пропавший,
+                    повтору уже загруженного списка не помеха.
+                    Для нового списка каждый rid проверяется в каталоге одним запросом
+                    ДО транзакции, со своим таймаутом в 5 секунд: ответ ручки
+                    укладывается в 10 секунд (NFR-2, AD-14).
+                    ЧТО ПИШЕТСЯ — одной транзакцией: строка deals (ProgramId 101 — Id
+                    выдаёт deals, не мы), заказ в fba_sr_orders, в offers — origin-оффер
+                    каждого rid, которого CRM ещё не знает, и child-оффер на каждую
+                    позицию, позиции в positions и запись о загрузке в actions_history.
+                    Сбой на любом шаге — 500 и ни заказа, ни сделки, ни офферов,
+                    ни позиций. Цены в файле нет: позиции пишутся с Cost = 0, FinalPrice
+                    заказа остаётся 0 — подтверждённая цена приедет с закупкой в свои
+                    колонки.
+                    ИДЕМПОТЕНТНА (FR-6). Ключ загрузки — дата по UTC плюс хэш поставщика,
+                    склада и строк; хранится в fba_sr_orders.NmUploadKey под UNIQUE.
+                    Повтор того же списка в те же сутки UTC нового заказа не создаёт:
+                    ответ 200 с тем же order.id и alreadyCreated = true. Сутки меняются
+                    в 00:00 UTC — это 03:00 по Киеву летом и 02:00 зимой. Тот же список
+                    на следующие сутки — новый заказ: дата в ключе отделяет законный
+                    повтор от случайного дубля. Порядок строк в файле на ключ не влияет.
+                    Две одновременные загрузки одного списка разводит UNIQUE: проигравший
+                    откатывается и отдаёт заказ победителя с alreadyCreated = true.
+                    ОГРАНИЧЕНИЕ. Ключ держит заказ в ЛЮБОМ статусе: тот же список в те же
+                    сутки после отмены заказа (101 Wrong) вернёт отменённый заказ, а не
+                    создаст новый. Обход — очистить NmUploadKey у отменённого заказа
+                    (в карточке CRM; пустое значение пишется NULL) и загрузить список
+                    заново."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseListRequest'
+      responses:
+        "200":
+          description: "Предпросмотр, созданный заказ либо ранее созданный заказ.
+                        Бизнес-стоп приходит этим же кодом — в messages[0].text
+                        с level: error, и НИ ОДИН из них в CRM не пишет ничего:
+                        empty_rows (rows пуст либо поля нет; каталог не зовётся),
+                        too_many_rows (строк больше 200 — прод-максимум 74 позиции
+                        на заказ, двести с запасом; каталог не зовётся),
+                        rows_rejected (есть плохие строки: data.rejectedRows несёт ВСЕ
+                        плохие строки, у каждой — все её коды; поправить файл и загрузить
+                        заново),
+                        rows_hash_mismatch (присланный rowsHash не совпал с пересчитанным
+                        по присланным строкам — список изменился после предпросмотра;
+                        повторить предпросмотр),
+                        catalog_unavailable (каталог не ответил, ответил ошибкой, не уложился
+                        в таймаут либо отдал ответ, которому нельзя верить: строк больше,
+                        чем спрошено rid, строка не объект, без id, с id, которого
+                        не спрашивали, или тот же id дважды; файл тут ни при чём —
+                        повторить позже, а не править файл).
+                        Предупреждение приходит с level: warning и data:
+                        order_changed_since_upload (заказ по этому ключу уже есть, и его
+                        состав с тех пор правили руками — order.compositionChanged = true;
+                        заказ возвращается как есть, список его не перезаписывает)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseListResponse'
+        "500":
+          description: "Ошибка обработки: сбой записи в БД (транзакция откатывается целиком —
+                        частичного заказа не бывает), схема без миграции 0015 либо
+                        непредвиденное исключение, со свободным текстом в messages[].text.
+                        Сюда же каркас кладёт тело, не прошедшее схему: поле не того типа
+                        (qty числом, а не строкой; line строкой, а не числом) либо null
+                        вместо значения — «Request validation failed», без кода словаря."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaSrOrders/{id}/trackings":
+    post:
+      tags:
+        - FbaPurchaseOrders
+      # operationId задан явно — как у /purchaseLists и у /fbaShipments приёмки.
+      # Выведенное из пути имя совпало бы с ним и сегодня, но выводится оно
+      # генератором, а не нами: правка пути молча переименовала бы метод
+      # Rest-объекта, и каркас стал бы отвечать «Not implemented method»
+      # при зелёных юнитах, зовущих контроллер напрямую.
+      operationId: fbaSrOrdersIdTrackingsPost
+      description: "Кнопка «Добавить трек» в карточке заказа (FR-22). Заводит коробку
+                    FbaSrBox по трек-номеру, который менеджер увидел у поставщика раньше,
+                    чем его нашёл автомат.
+                    ПУТЬ ЗАПИСИ ОДИН. Коробку создаёт BoxWriter — тот же объект, которым
+                    её заведёт крон треков (AD-5): гейт статуса заказа, дедуп по паре
+                    (заказ, трек), вставка, подъём заказа 1001 -> 1002 и запись
+                    в actions_history идут под одной блокировкой строки заказа и одной
+                    транзакцией. Разница между человеком и автоматом ровно одна — подпись
+                    в журнале (AD-18).
+                    ЧТО ПИШЕТСЯ: строка deals (ProgramId 102 — Id выдаёт deals, не мы),
+                    строка в fba_sr_boxes со статусом 1021 Parcel expecting (DEFAULT
+                    колонки, явно не ставится), трек и, если приехали, перевозчик
+                    со способом доставки. ПОЗИЦИЙ У КОРОБКИ НЕТ и в 100 Archive она
+                    не уходит (FR-20, AD-10): приёмка её откроет и посчитает сама.
+                    Статусы чужих коробок не трогаются.
+                    ЗАКАЗ ПОДНИМАЕТСЯ ТОЛЬКО ИЗ 1001 Tracknumbers expecting — условным
+                    UPDATE-ом (WHERE Id AND Status). Заказ уже в пути (1002, 1003, 1004,
+                    1005) коробку принимает, но статуса не меняет (FR-18): назад по
+                    лестнице его не двигает ни автомат, ни человек.
+                    ИДЕМПОТЕНТНА (FR-17). Пара (заказ, трек) уникальна — индексом БД,
+                    то есть на ЛЮБОМ пути записи (уровень 1 AD-8). Повтор того же трека
+                    возвращает ту же коробку с alreadyExists = true и не пишет ничего,
+                    в том числе в журнал. Трек перед сравнением нормализуется: края
+                    режутся вместе с неразрывными пробелами, BOM и символами нулевой
+                    ширины, внутренние пробелы удаляются целиком, латиница — в верхний
+                    регистр. «1z999aa1 0123 4567» и «1Z999AA101234567» — один и тот же
+                    трек, а не две коробки.
+                    ПЕРЕВОЗЧИК КОРОБКУ НЕ БЛОКИРУЕТ (FR-16): пустой, UNKNOWN либо
+                    не влезающий в колонку код — это NULL в обеих колонках, а не мусорная
+                    строка. Трек важнее перевозчика. Способ доставки без перевозчика
+                    тоже NULL."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id заказа поставщику (сделка FbaSrOrder)"
+          example: "731042"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackingRequest'
+      responses:
+        "200":
+          description: "Коробка заведена либо уже была заведена по этому треку.
+                        Бизнес-стоп приходит этим же кодом — в messages[0].text
+                        с level: error, и НИ ОДИН из них в CRM не пишет ничего:
+                        tracking_empty (трек не прислан, пуст либо из одних пробелов,
+                        в том числе невидимых),
+                        tracking_invalid (после нормализации — короче 4 либо длиннее
+                        64 символов, либо есть символы вне [A-Z0-9-]),
+                        order_not_found (заказа с таким Id в CRM нет),
+                        order_not_purchased (заказ в 1000 Purchase expecting: закупки
+                        по нему в CRM ещё нет, а коробки уже едут — сначала закупка,
+                        кнопкой либо руками в карточке, FR-23),
+                        order_closed (заказ в 100 Archive либо 101 Wrong — приёмка
+                        не откроет коробку в закрытом заказе),
+                        unexpected_order_status (заказ в статусе, которого словарь
+                        не знает вовсе — состояние нештатное, коробку по нему
+                        не заводим).
+                        Стопы едут без data: коробки нет, показывать нечего."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackingResponse'
+        "500":
+          description: "Ошибка обработки: сбой записи в БД (транзакция откатывается
+                        целиком — ни коробки, ни строки deals, а статус заказа остаётся
+                        прежним), схема без миграции 0016 либо непредвиденное исключение,
+                        со свободным текстом в messages[].text.
+                        Сюда же каркас кладёт тело, не прошедшее схему: поле не того типа
+                        либо null вместо значения — «Request validation failed», без кода
+                        словаря."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ## General — по образцу fba_pickup__v1.yml
+    Message:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - emergency
+            - alert
+            - critical
+            - error
+            - warning
+            - notice
+            - info
+        text:
+          type: string
+          description: "Машиночитаемый код стопа либо текст ошибки. Словарь у каждой
+                        ручки свой и закрытый.
+                        Загрузка списка — пять стопов всей команды (level: error,
+                        HTTP 200): empty_rows, too_many_rows, rows_rejected,
+                        rows_hash_mismatch, catalog_unavailable; и одно предупреждение
+                        (level: warning, HTTP 200, data есть): order_changed_since_upload.
+                        Построчные коды в messages не едут: их место —
+                        data.rejectedRows[].codes, см. RejectedRow.
+                        Добавление трека — шесть стопов (level: error, HTTP 200, data нет):
+                        tracking_empty, tracking_invalid, order_not_found,
+                        order_not_purchased, order_closed, unexpected_order_status."
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      description: "Message field is not required"
+
+    ## Custom responses
+    PurchaseListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Успех — data с разбивкой списка и, после создания либо при повторе,
+                    с заказом. Среди бизнес-стопов (messages[0].level = error) data есть
+                    ТОЛЬКО у rows_rejected — rowsTotal и rejectedRows, иначе человеку
+                    нечего исправлять; у empty_rows, too_many_rows, rows_hash_mismatch
+                    и catalog_unavailable data нет. Предупреждение
+                    order_changed_since_upload приходит вместе с полной data."
+      properties:
+        data:
+          $ref: '#/components/schemas/PurchaseListResult'
+
+    ## Custom requests
+    PurchaseListRequest:
+      type: object
+      description: "Тело загрузки. ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ НЕТ НИ ОДНОГО, и это граница, а не
+                    небрежность: помеченное required поле до команды не доедет — провал
+                    валидации схемы каркас превращает в HTTP 500 «Request validation
+                    failed» без кода словаря. Пустой список обязан дать 200 + empty_rows,
+                    и этот ответ команда отдаёт сама."
+      properties:
+        rows:
+          type: array
+          description: "Строки файла в порядке файла, без строки заголовка и без пустых
+                        строк. Не больше 200. Порядок на ключ загрузки не влияет."
+          items:
+            $ref: '#/components/schemas/PurchaseListRow'
+        rowsHash:
+          type: string
+          description: "rowsHash из ответа предпросмотра — эхом, считать его на фронте
+                        не нужно. Сверяется только у списка без ошибок формы: не совпал
+                        с пересчитанным по присланным строкам — rows_hash_mismatch,
+                        ничего не пишется; у списка с плохими строками ответ — rows_rejected
+                        при любом хэше. Не прислан либо пуст — проверки нет. Регистр
+                        hex-цифр не важен.
+                        Сервер считает его так: sha256 (hex) от склейки строк вида
+                        RID\\tQTY\\n, где RID — rid после нормализации (см.
+                        PurchaseListRow.rid), QTY — целое количество без ведущих нулей
+                        и дробной части, а строки отсортированы по RID побайтно."
+          example: "5b3fc1a0d6a4c1b2e1f0a9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8"
+        dryRun:
+          type: boolean
+          description: "true — предпросмотр: валидация и разбивка без записи в CRM,
+                        ключ загрузки не расходуется. false либо поле отсутствует —
+                        создание заказа."
+          example: true
+
+    PurchaseListRow:
+      type: object
+      description: "Одна строка файла. Поля необязательны по той же причине, что и у тела:
+                    строка без rid обязана дойти до команды и получить rid_empty,
+                    а не уронить запрос в 500. null не присылать — каркас отвергнет
+                    его до команды; пустую ячейку присылать пустой строкой либо
+                    не присылать поле вовсе."
+      properties:
+        line:
+          type: integer
+          description: "Номер строки в исходном файле — ровно тот, что человек увидит
+                        в своём редакторе. Возвращается в rejectedRows, чтобы плохую
+                        строку можно было найти. Не прислан — сервер подставляет
+                        порядковый номер строки в rows, начиная с 1."
+          example: 3
+        rid:
+          type: string
+          description: "Rollun ID товара, как в ячейке файла. Сервер ДО всех проверок,
+                        в том числе до поиска дублей, обрезает края — вместе
+                        с неразрывными пробелами, BOM (Excel ставит его в первую ячейку
+                        CSV) и символами нулевой ширины — и переводит в верхний регистр
+                        ТОЛЬКО латиницу: 3n2w2 и 3N2W2 — один товар, а не-латинская буква
+                        остаётся как есть и даёт rid_invalid (иначе ß превратилась бы
+                        в SS и строка стала бы ДРУГИМ товаром). После этого rid обязан
+                        быть ровно пятью символами [A-Z0-9] — таков offers.Article
+                        (varchar(5)) и все 12 022 origin-оффера прода."
+          example: "3N2W2"
+        qty:
+          type: string
+          description: "Количество — СТРОКОЙ, как в ячейке файла, а не числом: иначе
+                        12.0 или abc отверг бы каркас кодом 500 без словаря, а не
+                        команда кодом qty_invalid в 200. Края обрезаются так же, как
+                        у rid. Принимается целое не меньше 1: «12» и «12.0» (Excel) —
+                        это 12. Ноль, дробное, отрицательное, нечисловое и больше
+                        2147483647 (ширина positions.Count) — qty_invalid."
+          example: "12"
+
+    ## Custom data
+    PurchaseListResult:
+      type: object
+      required:
+        - rowsTotal
+      properties:
+        rowsTotal:
+          type: integer
+          description: "Сколько строк прислано."
+          example: 18
+        unitsTotal:
+          type: integer
+          description: "Сумма количеств по всем строкам. Только у принятого списка."
+          example: 140
+        rowsHash:
+          type: string
+          description: "Хэш принятых строк — прислать его обратно при создании (см.
+                        PurchaseListRequest.rowsHash). Только у принятого списка."
+          example: "5b3fc1a0d6a4c1b2e1f0a9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8"
+        lines:
+          type: array
+          description: "Разбивка принятого списка в порядке файла: rid, количество и имя
+                        товара. У предпросмотра, у созданного заказа и у повтора."
+          items:
+            $ref: '#/components/schemas/PurchaseListLine'
+        order:
+          $ref: '#/components/schemas/PurchaseListOrder'
+        rejectedRows:
+          type: array
+          description: "ВСЕ плохие строки файла — только при стопе rows_rejected."
+          items:
+            $ref: '#/components/schemas/RejectedRow'
+
+    PurchaseListLine:
+      type: object
+      required:
+        - rid
+        - qty
+        - name
+      properties:
+        rid:
+          type: string
+          description: "rid после нормализации — ровно так он ляжет в offers.Article"
+          example: "3N2W2"
+        qty:
+          type: integer
+          example: 6
+        name:
+          type: string
+          description: "Имя товара по правилу дома: brand_id и manufacturer_part_number
+                        через ДВА пробела — так названы все origin-офферы CRM, и таким
+                        станет имя оффера, если CRM этот rid ещё не знает. У нового
+                        списка имя — из каталога. У повтора (заказ по ключу уже есть)
+                        каталог не зовётся: имя — из origin-оффера CRM, а если оффера
+                        нет — сам rid."
+          example: "TUSK  K54"
+
+    PurchaseListOrder:
+      type: object
+      description: "Заказ поставщику FbaSrOrder, созданный этой загрузкой либо найденный
+                    по ключу загрузки. У предпросмотра приходит, только если заказ по ключу
+                    уже есть."
+      required:
+        - id
+        - status
+        - statusName
+        - alreadyCreated
+        - compositionChanged
+      properties:
+        id:
+          type: string
+          description: "Id заказа, он же Id сделки CRM. Фронт подставляет его в следующие
+                        команды — руками его никто не набирает."
+          example: "731042"
+        status:
+          type: integer
+          description: "Текущий статус заказа. У только что созданного — всегда
+                        1000 Purchase expecting. У найденного по ключу — какой есть:
+                        ключ держит заказ в любом статусе, его могли уже закупить,
+                        закрыть либо отменить (см. ОГРАНИЧЕНИЕ в описании ручки)."
+          example: 1000
+        statusName:
+          type: string
+          example: "Purchase expecting"
+        srName:
+          type: string
+          example: "PartsUnlimited"
+        receiver:
+          type: string
+          example: "pickup_cn"
+        uploadKey:
+          type: string
+          description: "Ключ загрузки, fba_sr_orders.NmUploadKey: дата UTC ГГГГММДД,
+                        дефис и 40 hex-символов хэша."
+          example: "20260911-0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c"
+        alreadyCreated:
+          type: boolean
+          description: "false — заказ создан этим вызовом. true — заказ по этому ключу уже
+                        был (повтор, проигранная гонка, предпросмотр уже загруженного
+                        списка); ничего не создано."
+          example: false
+        compositionChanged:
+          type: boolean
+          description: "Только при alreadyCreated = true: состав заказа (rid и количества
+                        его позиций) разошёлся с присланным списком — заказ правили руками:
+                        изменили количество, добавили либо удалили позицию. Вместе с ним
+                        приходит предупреждение order_changed_since_upload."
+          example: false
+
+    RejectedRow:
+      type: object
+      required:
+        - line
+        - codes
+      properties:
+        line:
+          type: integer
+          description: "Номер строки в файле — как прислан в rows[].line"
+          example: 7
+        rid:
+          type: string
+          description: "rid как прислан, без нормализации — чтобы человек узнал свою
+                        строку. Поля нет — rid в строке не прислан вовсе."
+          example: "3n2w"
+        qty:
+          type: string
+          description: "Количество как прислано. Поля нет — количество не прислано вовсе."
+          example: "1.5"
+        codes:
+          type: array
+          description: "Все причины этой строки, в порядке словаря:
+                        rid_empty (rid пуст либо из одних пробелов, в том числе невидимых),
+                        rid_invalid (после обрезки краёв и верхнего регистра латиницы —
+                        не ровно пять символов [A-Z0-9]),
+                        qty_invalid (не целое не меньше 1, см. PurchaseListRow.qty),
+                        rid_duplicate (тот же rid есть в других строках файла — это ошибка
+                        сборки списка, а не повод сложить количества; помечены ВСЕ
+                        вхождения, их номера — в duplicateLines),
+                        rid_not_in_catalog (каталог такого rid не знает либо у его строки
+                        нет brand_id или manufacturer_part_number — назвать товар нечем)."
+          items:
+            type: string
+          example:
+            - rid_invalid
+            - qty_invalid
+        duplicateLines:
+          type: array
+          description: "Только при rid_duplicate: номера ДРУГИХ строк с тем же rid"
+          items:
+            type: integer
+          example:
+            - 12
+
+    ## Добавление трека — POST /fbaSrOrders/{id}/trackings.
+    ## Ответ, тело и данные команды «Добавить трек» держатся вместе: словари
+    ## двух ручек не пересекаются ни одним полем, и смешивать их незачем.
+    TrackingResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Успех — data с заведённой (либо уже заведённой) коробкой и с заказом,
+                    к которому она привязана. У бизнес-стопов data нет ни у одного:
+                    коробки не появилось, показывать нечего."
+      properties:
+        data:
+          $ref: '#/components/schemas/TrackingResult'
+
+    TrackingRequest:
+      type: object
+      description: "Тело команды. ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ НЕТ НИ ОДНОГО, и это граница, а не
+                    небрежность: помеченное required поле до команды не доедет — провал
+                    валидации схемы каркас превращает в HTTP 500 «Request validation
+                    failed» без кода словаря. Пустой трек обязан дать 200 + tracking_empty,
+                    и этот ответ команда отдаёт сама."
+      properties:
+        tracking:
+          type: string
+          description: "Трек-номер как его скопировал человек. Сервер ДО всех проверок,
+                        в том числе до поиска дубля, режет края вместе с неразрывными
+                        пробелами, BOM и символами нулевой ширины, удаляет ВСЕ внутренние
+                        пробелы (с сайта перевозчика трек копируется группами) и переводит
+                        в верхний регистр ТОЛЬКО латиницу — не-латинская буква остаётся
+                        как есть и честно даёт tracking_invalid.
+                        После этого трек обязан быть от 4 до 64 символов [A-Z0-9-]:
+                        в проде треки 6–18 символов, все заглавные."
+          example: "1Z999AA10123456784"
+        carrier:
+          type: string
+          description: "Код перевозчика, как его знает дропшип (FEDEX, UPS, USPS, ONTRAC,
+                        AMZL, SWISHIP, OTHER). Справочника перевозчиков в service-crm нет:
+                        код приезжает готовым и здесь только проверяется по длине.
+                        Пустой, UNKNOWN либо длиннее 64 символов — в NmCarrier ляжет NULL,
+                        а коробка создастся всё равно (FR-16)."
+          example: "UPS"
+        carrierShipMethod:
+          type: string
+          description: "Способ доставки свободным текстом, как в dropships.CarrierShipMethod.
+                        Пустой либо длиннее 255 символов — NULL. Без перевозчика тоже NULL:
+                        способ доставки ничьей службы смысла не несёт."
+          example: "UPS Ground"
+
+    TrackingResult:
+      type: object
+      required:
+        - box
+      properties:
+        box:
+          $ref: '#/components/schemas/TrackingBox'
+        order:
+          $ref: '#/components/schemas/TrackingOrder'
+
+    TrackingBox:
+      type: object
+      description: "Коробка FbaSrBox — заведённая этим вызовом либо найденная по паре
+                    (заказ, трек)."
+      required:
+        - id
+        - status
+        - statusName
+        - tracking
+        - alreadyExists
+      properties:
+        id:
+          type: string
+          description: "Id коробки, он же Id сделки CRM."
+          example: "731118"
+        status:
+          type: integer
+          description: "Статус коробки. У только что заведённой — всегда 1021 Parcel
+                        expecting: он приходит DEFAULT-ом колонки и явно не ставится.
+                        У найденной по паре — какой есть: её могли уже принять либо
+                        закрыть."
+          example: 1021
+        statusName:
+          type: string
+          example: "Parcel expecting"
+        tracking:
+          type: string
+          description: "Трек ПОСЛЕ нормализации — ровно так он лежит в fba_sr_boxes.Tracking
+                        и ровно по нему работает дедуп."
+          example: "1Z999AA10123456784"
+        carrier:
+          type: string
+          description: "Код перевозчика, как он лёг в NmCarrier. Поля нет — в колонке NULL."
+          example: "UPS"
+        carrierShipMethod:
+          type: string
+          description: "Способ доставки, как он лёг в NmCarrierShipMethod. Поля нет —
+                        в колонке NULL."
+          example: "UPS Ground"
+        alreadyExists:
+          type: boolean
+          description: "false — коробка заведена этим вызовом. true — коробка с этой парой
+                        (заказ, трек) уже была: повтор либо проигранная гонка с автоматом;
+                        не создано и не изменено ничего, включая статус заказа и журнал."
+          example: false
+
+    TrackingOrder:
+      type: object
+      description: "Заказ поставщику, к которому привязана коробка, — со статусом ПОСЛЕ
+                    команды."
+      required:
+        - id
+        - status
+        - statusName
+      properties:
+        id:
+          type: string
+          example: "731042"
+        status:
+          type: integer
+          description: "1002 On way, если первая коробка подняла заказ из 1001
+                        Tracknumbers expecting. Из 1002, 1003, 1004 и 1005 заказ
+                        не двигается вовсе (FR-18)."
+          example: 1002
+        statusName:
+          type: string
+          example: "On way"
