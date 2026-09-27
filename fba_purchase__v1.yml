@@ -220,9 +220,9 @@ paths:
     post:
       tags:
         - FbaPurchaseOrders
-      # operationId задан явно — как у /fbaSrOrders/{id}/trackings: имя метода
-      # Rest-объекта не должно зависеть от того, как генератор выведет его из пути,
-      # иначе правка пути молча дала бы «Not implemented method» (AD-17).
+      # operationId is explicit, as for /fbaSrOrders/{id}/trackings: the name of the
+      # Rest method must not depend on how the generator derives it from the path,
+      # or a path change would silently give «Not implemented method» (AD-17).
       operationId: fbaSrOrdersIdPurchasePost
       description: "The Purchase button in the order card (CRMDeals/FbaSrOrder, FR-7). Starts
                     the automatic purchase of the order from the supplier and answers at once:
@@ -253,7 +253,7 @@ paths:
           required: true
           schema:
             type: string
-          description: "Id заказа поставщику (сделка FbaSrOrder)"
+          description: "Id of the supplier order (the FbaSrOrder deal)"
           example: "731042"
       responses:
         "200":
