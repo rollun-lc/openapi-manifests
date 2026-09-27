@@ -216,6 +216,91 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  "/fbaSrOrders/{id}/purchase":
+    post:
+      tags:
+        - FbaPurchaseOrders
+      # operationId задан явно — как у /fbaSrOrders/{id}/trackings: имя метода
+      # Rest-объекта не должно зависеть от того, как генератор выведет его из пути,
+      # иначе правка пути молча дала бы «Not implemented method» (AD-17).
+      operationId: fbaSrOrdersIdPurchasePost
+      description: "The Purchase button in the order card (CRMDeals/FbaSrOrder, FR-7). Starts
+                    the automatic purchase of the order from the supplier and answers at once:
+                    the purchase itself runs as a task in service-suppliers, the button never
+                    waits for the supplier (NFR-1, AD-5).
+                    No request body: everything is read from the order itself.
+                    CHECKS, in this order: the employee is resolved; Status = 1000 Purchase
+                    expecting; NmrSrOrder is empty; the order has positions; SrName is a
+                    supplier connected to the automatic purchase (PartsUnlimited only in the
+                    first version); Receiver = pickup_cn; quantity limits (per order and per
+                    line, from configuration). Then every rid of the order is translated to
+                    the supplier part number (GET /csnWithRid of SupplierItemIdsMapper v1) and
+                    a task is enqueued (POST /orderCreationTasks of SuppliersOrdersCreation v1)
+                    with the idempotency key <Id>nm, which is also the PO number (AD-6).
+                    THE BUTTON WRITES NOTHING TO THE ORDER. The purchase state lives only
+                    in the task (AD-19); the result is recorded into the order by the purchase
+                    tasks cron of service-crm.
+                    IDEMPOTENT (NFR-3). One live task per key: pressing again returns the same
+                    task instead of creating a second one. A timeout, 5xx or an unreadable
+                    answer of service-suppliers is not a refusal: the endpoint reads the tasks
+                    of the key and answers by what it finds, or taskState = unknown.
+                    ORDER ALREADY LEFT 1000: a fulfilled task of the key is a success with
+                    taskState = fulfilled; otherwise order_not_in_purchase_status with the
+                    current status in data."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id заказа поставщику (сделка FbaSrOrder)"
+          example: "731042"
+      responses:
+        "200":
+          description: "The task of the order: enqueued now, or the live task found by the key.
+                        Success is data without messages[].level = error; taskState tells what
+                        to show: queued (the task waits in the queue), running (the order is
+                        being placed), fulfilled (already purchased), unknown (the outcome
+                        is not known: press again in a minute, do not buy by hand before
+                        expiresAt). For queued and running do not buy by hand before
+                        expiresAt: the composition of the first press is being purchased.
+                        A business stop comes with this same code — its code is in
+                        messages[0].text with level: error, and none of them writes anything.
+                        The closed list of refusal codes (AD-19):
+                        order_not_in_purchase_status (the order is not in 1000 Purchase
+                        expecting and the key has no fulfilled task; data.currentStatus
+                        carries the current status),
+                        order_has_no_positions (the order has no positions — nothing to buy),
+                        supplier_not_connected (SrName is not a supplier connected to the
+                        automatic purchase — buy by hand),
+                        receiver_not_supported (Receiver is not pickup_cn — only purchases
+                        to our warehouse are automated),
+                        order_already_has_supplier_number (NmrSrOrder is already filled — the
+                        order was purchased by hand or by an earlier task),
+                        quantity_limit_exceeded (more units per order or per line than the
+                        configured limit allows — buy by hand),
+                        employee_not_resolved (no X-User-Acl-Id header, or no employee with
+                        this AclUserId),
+                        rid_without_supplier_part_number (at least one rid of the order has no
+                        supplier part number; the task is not enqueued; data.rids lists such
+                        rid),
+                        supplier_mapping_unavailable (the rid to part number service did not
+                        answer or reported the catalog unavailable — try again later),
+                        task_not_created (service-suppliers explicitly refused to enqueue the
+                        task)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseResponse'
+        "500":
+          description: "Processing failure: an unexpected exception, with free text in
+                        messages[].text. Not a business stop and not a refusal code — the
+                        frontend shows that the command is unavailable."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ## General — по образцу fba_pickup__v1.yml
@@ -244,7 +329,14 @@ components:
                         data.rejectedRows[].codes, см. RejectedRow.
                         Добавление трека — шесть стопов (level: error, HTTP 200, data нет):
                         tracking_empty, tracking_invalid, order_not_found,
-                        order_not_purchased, order_closed, unexpected_order_status."
+                        order_not_purchased, order_closed, unexpected_order_status.
+                        Purchase — ten refusals (level: error, HTTP 200; data only at
+                        order_not_in_purchase_status and rid_without_supplier_part_number):
+                        order_not_in_purchase_status, order_has_no_positions,
+                        supplier_not_connected, receiver_not_supported,
+                        order_already_has_supplier_number, quantity_limit_exceeded,
+                        employee_not_resolved, rid_without_supplier_part_number,
+                        supplier_mapping_unavailable, task_not_created."
     ErrorResponse:
       type: object
       properties:
@@ -619,3 +711,68 @@ components:
         statusName:
           type: string
           example: "On way"
+
+    ## Purchase — POST /fbaSrOrders/{id}/purchase
+    ## The response and the data of the Purchase button stay together; no request body.
+    PurchaseResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Success — data with the task of the order and no level: error. Among the
+                    refusals (messages[0].level = error) data comes only with
+                    order_not_in_purchase_status (currentStatus) and
+                    rid_without_supplier_part_number (rids); the other refusals come
+                    without data."
+      properties:
+        data:
+          $ref: '#/components/schemas/PurchaseResult'
+
+    PurchaseResult:
+      type: object
+      description: "The purchase task of the order as the button sees it. No field is required
+                    (AD-11): which fields come depends on taskState or on the refusal code."
+      properties:
+        orderId:
+          type: string
+          description: "Id of the order (the FbaSrOrder deal). The purchase key and PO number
+                        is this Id with the suffix nm; it is computed, not stored in CRM."
+          example: "731042"
+        taskId:
+          type: string
+          description: "Id of the purchase task in service-suppliers. Absent when taskState
+                        is unknown: the task could not be read."
+          example: "616982cb3030c"
+        taskState:
+          type: string
+          description: "State of the task: queued (pending in service-suppliers), running
+                        (in_progress), fulfilled (the order is placed at the supplier),
+                        unknown (the outcome is not known — press again in a minute).
+                        A rejected task is never shown here: pressing again enqueues a new
+                        one under the same key."
+          enum:
+            - queued
+            - running
+            - fulfilled
+            - unknown
+          example: "queued"
+        expiresAt:
+          type: string
+          format: date-time
+          description: "Until when the order must not be bought by hand, UTC, ISO-8601:
+                        createdAt of the task + 30 min; when taskState is unknown — the time
+                        of the press + 30 min. The frontend shows it in the browser time zone
+                        with the zone label."
+          example: "2026-09-27T14:35:00Z"
+        rids:
+          type: array
+          description: "Only with rid_without_supplier_part_number: the rid of the order that
+                        have no supplier part number."
+          items:
+            type: string
+          example:
+            - "3N2W2"
+        currentStatus:
+          type: integer
+          description: "Only with order_not_in_purchase_status: the current status of the order
+                        (fba_sr_orders.Status)."
+          example: 1001
