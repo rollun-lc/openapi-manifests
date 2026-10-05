@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: "1"
   title: "FbaPurchase"
-  description: "Автозакупка FBA, пилот на PartsUnlimited (7UxJOaje). Команды над заказом
+  description: "Автозакупка FBA (7UxJOaje): PartsUnlimited and Wps. Команды над заказом
                 поставщику FbaSrOrder, которые до сих пор делались руками: загрузка
                 согласованного списка закупки, дальше — закупка и треки.
                 Сервис пишущий и единственный владелец таблиц fba_sr_orders, fba_sr_boxes,
@@ -36,8 +36,10 @@ paths:
                     1000 Purchase expecting и позициями — одной транзакцией.
                     Файл (CSV, две колонки: rid и количество) разбирает браузер; сюда
                     приезжает уже разобранный массив строк одним запросом (FR-1).
-                    Поставщика и склада в файле нет — это константы пилота:
-                    SrName = PartsUnlimited, Receiver = pickup_cn. Тип отгрузки пилота —
+                    Поставщика и склада в файле нет. The supplier is chosen in the upload
+                    dialog and comes in srName (PartsUnlimited when absent); it must be
+                    a supplier connected to the automatic purchase, else supplier_not_connected.
+                    Receiver = pickup_cn. Тип отгрузки пилота —
                     Delivery, колонкой он не хранится.
                     ДВА ХОДА. Сначала dryRun: true — предпросмотр: та же валидация и та же
                     разбивка, что у боевого вызова, в CRM не пишется ничего (FR-3); ответ
@@ -48,7 +50,11 @@ paths:
                     ФАЙЛ ПРИНИМАЕТСЯ ЦЕЛИКОМ ЛИБО НИКАК (FR-2): хоть одна плохая строка —
                     не пишется ничего, а в ответе ВСЕ плохие строки сразу, каждая
                     со всеми своими причинами.
-                    ПОРЯДОК ОТВЕТОВ. У списка с плохими строками — rows_rejected, даже
+                    ПОРЯДОК ОТВЕТОВ. The supplier is checked first, before the rows and
+                    before the search by the upload key: a supplier that is not connected
+                    gives supplier_not_connected even for a list that was uploaded before
+                    it was disconnected.
+                    У списка с плохими строками — rows_rejected, даже
                     если прислан rowsHash: хэш сверяется только у списка без ошибок
                     формы. У списка без них сначала сверяется rowsHash, затем ищется
                     заказ по ключу загрузки — и повтор (заказ найден) отвечает ДО
@@ -104,7 +110,9 @@ paths:
                         в таймаут либо отдал ответ, которому нельзя верить: строк больше,
                         чем спрошено rid, строка не объект, без id, с id, которого
                         не спрашивали, или тот же id дважды; файл тут ни при чём —
-                        повторить позже, а не править файл).
+                        повторить позже, а не править файл),
+                        supplier_not_connected (srName is not a supplier connected to the
+                        automatic purchase; nothing is written, no data).
                         Предупреждение приходит с level: warning и data:
                         order_changed_since_upload (заказ по этому ключу уже есть, и его
                         состав с тех пор правили руками — order.compositionChanged = true;
@@ -231,8 +239,9 @@ paths:
                     No request body: everything is read from the order itself.
                     CHECKS, in this order: the employee is resolved; Status = 1000 Purchase
                     expecting; NmrSrOrder is empty; the order has positions; SrName is a
-                    supplier connected to the automatic purchase (PartsUnlimited only in the
-                    first version); Receiver = pickup_cn; quantity limits (per order and per
+                    supplier connected to the automatic purchase (the list of connected
+                    suppliers in the configuration of service-crm);
+                    Receiver = pickup_cn; quantity limits (per order and per
                     line, from configuration). Then every rid of the order is translated to
                     the supplier part number (GET /csnWithRid of SupplierItemIdsMapper v1) and
                     a task is enqueued (POST /orderCreationTasks of SuppliersOrdersCreation v1)
@@ -321,9 +330,11 @@ components:
           type: string
           description: "Машиночитаемый код стопа либо текст ошибки. Словарь у каждой
                         ручки свой и закрытый.
-                        Загрузка списка — пять стопов всей команды (level: error,
+                        Загрузка списка — шесть стопов всей команды (level: error,
                         HTTP 200): empty_rows, too_many_rows, rows_rejected,
-                        rows_hash_mismatch, catalog_unavailable; и одно предупреждение
+                        rows_hash_mismatch, catalog_unavailable, supplier_not_connected
+                        (srName is not a supplier connected to the automatic purchase;
+                        nothing is written); и одно предупреждение
                         (level: warning, HTTP 200, data есть): order_changed_since_upload.
                         Построчные коды в messages не едут: их место —
                         data.rejectedRows[].codes, см. RejectedRow.
@@ -354,8 +365,8 @@ components:
       description: "Успех — data с разбивкой списка и, после создания либо при повторе,
                     с заказом. Среди бизнес-стопов (messages[0].level = error) data есть
                     ТОЛЬКО у rows_rejected — rowsTotal и rejectedRows, иначе человеку
-                    нечего исправлять; у empty_rows, too_many_rows, rows_hash_mismatch
-                    и catalog_unavailable data нет. Предупреждение
+                    нечего исправлять; у empty_rows, too_many_rows, rows_hash_mismatch,
+                    catalog_unavailable и supplier_not_connected data нет. Предупреждение
                     order_changed_since_upload приходит вместе с полной data."
       properties:
         data:
@@ -395,6 +406,19 @@ components:
                         ключ загрузки не расходуется. false либо поле отсутствует —
                         создание заказа."
           example: true
+        srName:
+          type: string
+          description: "Supplier of the order (SrName), chosen in the upload dialog, exactly
+                        as SrName is written (PartsUnlimited, Wps; case matters, the edges are
+                        trimmed). Absent or empty — PartsUnlimited. Not a supplier connected
+                        to the automatic purchase — supplier_not_connected, nothing is written.
+                        The supplier is part of the upload key: the same rows for another
+                        supplier are another order. It is NOT part of rowsHash: send the same
+                        value at preview and at creation, and compare data.srName of both
+                        answers with the chosen supplier. The upload does not check that
+                        every rid has a part number of this supplier: such rid is refused
+                        later by the Purchase button (rid_without_supplier_part_number)."
+          example: "Wps"
 
     PurchaseListRow:
       type: object
@@ -443,6 +467,14 @@ components:
           type: integer
           description: "Сколько строк прислано."
           example: 18
+        srName:
+          type: string
+          description: "Supplier the list is for, as the server understood the request
+                        (PartsUnlimited when srName was not sent). Present whenever data has
+                        lines: at preview, at creation and at a repeat (alreadyCreated = true);
+                        absent at the rows_rejected stop. The frontend does not create the order
+                        when it is absent or differs from the supplier chosen in the dialog."
+          example: "PartsUnlimited"
         unitsTotal:
           type: integer
           description: "Сумма количеств по всем строкам. Только у принятого списка."
