@@ -288,6 +288,8 @@ components:
             Id of the supplier order: '<Supplier> | <order number of the supplier>', not the PO.
             Wps - the common 8-digit WPS order number without the warehouse suffix (-000, -050, -100);
             when several orders are found under the PO - the smallest one, with an ORIGINAL_ORDER_KNOWN_PROBLEM message.
+            Turn14 - the order number of turn14.com (one for all parts of the order from the quote);
+            when several orders are found under the PO - the smallest one, with an ORIGINAL_ORDER_KNOWN_PROBLEM message.
           example: 'Autodist | AU431'
           
     CreationTaskResultMessage:
@@ -336,7 +338,8 @@ components:
             INVALID_ADDRESS - Shipping address isn't valid
             UNSUPPORTED_REQUEST - The request is correct but currently not supported
             SERVICE_UNAVAILABLE - The supplier or its service did not answer; it is unknown whether the order was created
-            ITEMS_NOT_AVAILABLE - The supplier has no single warehouse with the full quantity for at least one item; the order was not created
+            ITEMS_NOT_AVAILABLE - The supplier cannot ship the full quantity of at least one item (no single warehouse has it;
+            Turn14 - all its warehouses together have less, or a part of the quote is out of stock); the order was not created
             ALREADY_EXIST - The supplier already has an order or an unfinished cart with this idempotency key (PO); no new order was created
             TASK_EXPIRED - The task waited in the queue longer than allowed and was closed without creating an order
             RECEIVER_MISMATCH - The order was created, but its receiver differs from the requested one (expected for 'Dealer Address' orders)
@@ -352,10 +355,12 @@ components:
             ORDER_NOT_SUBMITTED - This task placed no order: before the call that buys (Wps - POST /orders, Turn14 -
             POST /v1/order/from_quote) the supplier refused, failed or did not answer (including the search by PO
             that did not answer "no such PO", an unavailable rid to part number mapping and the checks of the Turn14
-            quote - warehouse, shipping method, shipping limit), or after that call: Wps returned no order number and
-            no order was found by the PO; Turn14 refused explicitly (HTTP 4xx with errors, 429 included) and the
-            search by the PO found no order. Anything else unclear after the call of Turn14 is SERVICE_UNAVAILABLE:
-            its search by the PO shows a new order late. The task is rejected, the message has level error and comes
+            quote - warehouse, shipping method, shipping limit; a receiver refused by the quote is INVALID_ADDRESS),
+            or after that call: Wps returned no order number and no order was found by the PO; Turn14 refused
+            explicitly (HTTP 400, 401, 403, 404 or 422 with errors or error) and the search by the PO found no order.
+            Anything else after the call of Turn14 - HTTP 429, 5xx, any other status, no answer, no order number -
+            is SERVICE_UNAVAILABLE: Turn14 may have taken the order, and its search by the PO shows a new order
+            late. The task is rejected, the message has level error and comes
             first. A retry (a new task with the same key) is safe: every task of a supplier that allows a repeated PO
             first searches the order by the PO. Unlike SERVICE_UNAVAILABLE, which leaves the task in_progress because
             the order may have been bought.
@@ -387,6 +392,7 @@ components:
             Required for pickup orders.
             TuckerRocky - ['TX']
             Wps - not sent: WPS chooses the warehouse and may split the order between warehouses.
+            Turn14 - not sent: the quote splits the order between Turn14 warehouses; a task with a warehouse is UNSUPPORTED_REQUEST.
             PartsUnlimited - ['NC']
     Customer:
       type: object
