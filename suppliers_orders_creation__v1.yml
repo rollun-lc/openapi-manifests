@@ -236,7 +236,7 @@ components:
         supplierCode:
           type: string
           description: >
-            Supplier code, exactly as the supplier is named in service-suppliers (e.g. 'PartsUnlimited', 'Wps').
+            Supplier code, exactly as the supplier is named in service-suppliers (e.g. 'PartsUnlimited', 'Wps', 'Turn14').
             A supplier that is not connected to the purchase tasks (the list ORDER_CREATION_TASK_SUPPLIERS of
             service-suppliers) is refused with UNSUPPORTED_REQUEST.
         shippingMethodName:
@@ -249,14 +249,18 @@ components:
             gives an order to the address of our dealer account instead of a dropship one, for any supplier
             connected to the purchase tasks (PartsUnlimited - a REGULAR order in pu-orders; Wps - a cart
             without ship_* and ship_via, so the supplier takes the address and the shipping method from the
-            account); neither the address nor the shipping method is sent to the supplier. See receiver.
+            account; Turn14 - a quote from the location default and an order from it, POST /v1/order/from_quote,
+            to the full address of the account from the config of service-suppliers with is_shop_address true,
+            the cheapest allowed ground method of every warehouse part); neither the address nor the shipping
+            method of the task is sent to the supplier. See receiver.
         receiver:
           allOf:
             - $ref: '#/components/schemas/Customer'
           description: >
             Order recipient.
             Order to our own warehouse: address1 = 'Dealer Address' together with shippingMethodName 'UPS Ground'
-            (see shippingMethodName); the address is not sent to the supplier.
+            (see shippingMethodName); this address is not sent to the supplier (Turn14 gets the address and
+            the name of our account from the config of service-suppliers).
         items:
           type: array
           description: List of items to order
@@ -345,13 +349,16 @@ components:
             or the order exists but is unclear (several supplier orders under one PO, or the order number is known
             but the order could not be read); the task is fulfilled with orderId, the text says what to check on the
             supplier site
-            ORDER_NOT_SUBMITTED - This task placed no order: before the call that buys (Wps - POST /orders) the
-            supplier refused, failed or did not answer (including the search by PO that did not answer "no such PO"
-            and an unavailable rid to part number mapping), or after that call it returned no order number and no
-            order was found by the PO. The task is rejected, the message has level error and comes first. A retry
-            (a new task with the same key) is safe: every task of a supplier that allows a repeated PO first searches
-            the order by the PO. Unlike SERVICE_UNAVAILABLE, which leaves the task in_progress because the order may
-            have been bought.
+            ORDER_NOT_SUBMITTED - This task placed no order: before the call that buys (Wps - POST /orders, Turn14 -
+            POST /v1/order/from_quote) the supplier refused, failed or did not answer (including the search by PO
+            that did not answer "no such PO", an unavailable rid to part number mapping and the checks of the Turn14
+            quote - warehouse, shipping method, shipping limit), or after that call: Wps returned no order number and
+            no order was found by the PO; Turn14 refused explicitly (HTTP 4xx with errors, 429 included) and the
+            search by the PO found no order. Anything else unclear after the call of Turn14 is SERVICE_UNAVAILABLE:
+            its search by the PO shows a new order late. The task is rejected, the message has level error and comes
+            first. A retry (a new task with the same key) is safe: every task of a supplier that allows a repeated PO
+            first searches the order by the PO. Unlike SERVICE_UNAVAILABLE, which leaves the task in_progress because
+            the order may have been bought.
         text:
           type: string
           description: Message, that describes what went wrong
