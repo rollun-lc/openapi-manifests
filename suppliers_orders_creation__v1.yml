@@ -369,7 +369,8 @@ components:
             or after that call: Wps returned no order number and no order was found by the PO; Turn14 refused
             explicitly (HTTP 400, 401, 403, 404 or 422 with errors or error) and the search by the PO found no order;
             Autodist refused explicitly (HTTP 400, 401, 403, 404 or 422 with code, not E003) and the search by the
-            PO found no order.
+            PO found no order - an explicit refusal E100 of the address followed by a search without an order is
+            INVALID_ADDRESS.
             Anything else after the call of Turn14 or Autodist - HTTP 429, E003, 5xx, any other status, no answer,
             no order number - is SERVICE_UNAVAILABLE: the supplier may have taken the order, and its search by the
             PO may show a new order late. The task is rejected, the message has level error and comes
