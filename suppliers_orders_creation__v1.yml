@@ -236,7 +236,7 @@ components:
         supplierCode:
           type: string
           description: >
-            Supplier code, exactly as the supplier is named in service-suppliers (e.g. 'PartsUnlimited', 'Wps', 'Turn14').
+            Supplier code, exactly as the supplier is named in service-suppliers (e.g. 'PartsUnlimited', 'Wps', 'Turn14', 'Autodist').
             A supplier that is not connected to the purchase tasks (the list ORDER_CREATION_TASK_SUPPLIERS of
             service-suppliers) is refused with UNSUPPORTED_REQUEST.
         shippingMethodName:
@@ -251,16 +251,18 @@ components:
             without ship_* and ship_via, so the supplier takes the address and the shipping method from the
             account; Turn14 - a quote from the location default and an order from it, POST /v1/order/from_quote,
             to the full address of the account from the config of service-suppliers with is_shop_address true,
-            the cheapest allowed ground method of every warehouse part); neither the address nor the shipping
-            method of the task is sent to the supplier. See receiver.
+            the cheapest allowed ground method of every warehouse part; Autodist - a calculation and an order,
+            POST /order/calculate and POST /order/create, to the full saved address 3 of the account from the
+            config of service-suppliers by FedEx Ground (FEDEX), without a back order); neither the address nor
+            the shipping method of the task is sent to the supplier. See receiver.
         receiver:
           allOf:
             - $ref: '#/components/schemas/Customer'
           description: >
             Order recipient.
             Order to our own warehouse: address1 = 'Dealer Address' together with shippingMethodName 'UPS Ground'
-            (see shippingMethodName); this address is not sent to the supplier (Turn14 gets the address and
-            the name of our account from the config of service-suppliers).
+            (see shippingMethodName); this address is not sent to the supplier (Turn14 and Autodist get the
+            address and the name of our account from the config of service-suppliers).
         items:
           type: array
           description: List of items to order
@@ -290,7 +292,11 @@ components:
             when several orders are found under the PO - the smallest one, with an ORIGINAL_ORDER_KNOWN_PROBLEM message.
             Turn14 - the order number of turn14.com (one for all parts of the order from the quote);
             when several orders are found under the PO - the smallest one, with an ORIGINAL_ORDER_KNOWN_PROBLEM message.
-          example: 'Autodist | AU431'
+            Autodist - the order numbers of all parts of the order (Autodist splits an order by its warehouses),
+            one space apart in ascending order, without the year: 'Autodist | D6547 D6548'; when several orders
+            (parentOrderNumber) are found under the PO - the parts of the smallest one, with an
+            ORIGINAL_ORDER_KNOWN_PROBLEM message.
+          example: 'Autodist | D6547 D6548'
           
     CreationTaskResultMessage:
       type: object
@@ -339,7 +345,8 @@ components:
             UNSUPPORTED_REQUEST - The request is correct but currently not supported
             SERVICE_UNAVAILABLE - The supplier or its service did not answer; it is unknown whether the order was created
             ITEMS_NOT_AVAILABLE - The supplier cannot ship the full quantity of at least one item (no single warehouse has it;
-            Turn14 - all its warehouses together have less, or a part of the quote is out of stock); the order was not created
+            Turn14 - all its warehouses together have less, or a part of the quote is out of stock; Autodist - the
+            calculation can ship less than the whole order now); the order was not created
             ALREADY_EXIST - The supplier already has an order or an unfinished cart with this idempotency key (PO); no new order was created
             TASK_EXPIRED - The task waited in the queue longer than allowed and was closed without creating an order
             RECEIVER_MISMATCH - The order was created, but its receiver differs from the requested one (expected for 'Dealer Address' orders)
@@ -353,14 +360,20 @@ components:
             but the order could not be read); the task is fulfilled with orderId, the text says what to check on the
             supplier site
             ORDER_NOT_SUBMITTED - This task placed no order: before the call that buys (Wps - POST /orders, Turn14 -
-            POST /v1/order/from_quote) the supplier refused, failed or did not answer (including the search by PO
-            that did not answer "no such PO", an unavailable rid to part number mapping and the checks of the Turn14
-            quote - warehouse, shipping method, shipping limit; a receiver refused by the quote is INVALID_ADDRESS),
+            POST /v1/order/from_quote, Autodist - POST /order/create) the supplier refused, failed or did not answer
+            (including the search by PO that did not answer "no such PO", an unavailable rid to part number mapping,
+            the checks of the Turn14 quote - warehouse, shipping method, shipping limit - and of the Autodist
+            calculation - totals that differ with the stock full, FedEx Ground missing or above the shipping limit -,
+            and an order of Autodist under the PO in an unknown state; a receiver refused by the quote or the
+            calculation is INVALID_ADDRESS),
             or after that call: Wps returned no order number and no order was found by the PO; Turn14 refused
-            explicitly (HTTP 400, 401, 403, 404 or 422 with errors or error) and the search by the PO found no order.
-            Anything else after the call of Turn14 - HTTP 429, 5xx, any other status, no answer, no order number -
-            is SERVICE_UNAVAILABLE: Turn14 may have taken the order, and its search by the PO shows a new order
-            late. The task is rejected, the message has level error and comes
+            explicitly (HTTP 400, 401, 403, 404 or 422 with errors or error) and the search by the PO found no order;
+            Autodist refused explicitly (HTTP 400, 401, 403, 404 or 422 with code, not E003) and the search by the
+            PO found no order - an explicit refusal E100 of the address followed by a search without an order is
+            INVALID_ADDRESS.
+            Anything else after the call of Turn14 or Autodist - HTTP 429, E003, 5xx, any other status, no answer,
+            no order number - is SERVICE_UNAVAILABLE: the supplier may have taken the order, and its search by the
+            PO may show a new order late. The task is rejected, the message has level error and comes
             first. A retry (a new task with the same key) is safe: every task of a supplier that allows a repeated PO
             first searches the order by the PO. Unlike SERVICE_UNAVAILABLE, which leaves the task in_progress because
             the order may have been bought.
@@ -393,6 +406,7 @@ components:
             TuckerRocky - ['TX']
             Wps - not sent: WPS chooses the warehouse and may split the order between warehouses.
             Turn14 - not sent: the quote splits the order between Turn14 warehouses; a task with a warehouse is UNSUPPORTED_REQUEST.
+            Autodist - not sent: Autodist splits the order between its warehouses; a task with a warehouse is UNSUPPORTED_REQUEST.
             PartsUnlimited - ['NC']
     Customer:
       type: object
