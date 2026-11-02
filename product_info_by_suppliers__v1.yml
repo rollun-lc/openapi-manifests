@@ -5,6 +5,7 @@ info:
   description: Openapi to retrieve product info by supplier from catalog
 servers:
   - url: http://catalog/openapi/ProductInfoBySuppliers/v1
+  - url: https://rollun.net/api/openapi/ProductInfoBySuppliers/v1
 tags:
   - name: SupplierPrices
 paths:
