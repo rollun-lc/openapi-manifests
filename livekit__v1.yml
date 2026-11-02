@@ -1,0 +1,2238 @@
+openapi: 3.0.0
+info:
+  title: LiveKit
+  version: '1'
+  description: |
+    The part of the LiveKit server API that manages rooms, the people in them and the
+    agents sent into them: `RoomService` and `AgentDispatchService` of LiveKit server
+    v1.13.9.
+
+    LiveKit publishes this API only as Protobuf. This file is generated from
+    `livekit_room.proto` and `livekit_agent_dispatch.proto` at https://github.com/livekit/protocol/blob/a935cd67c29a361744f7c965baaf8f904c0652fd/protobufs
+    with protoc-gen-connect-openapi, converted to OpenAPI 3.0 and described by hand.
+    Every example is a real request and answer of a local LiveKit server v1.13.9
+    (the TURN password in them is redacted).
+
+    ## How a call looks
+
+    Every method is `POST /twirp/livekit.<Service>/<Method>`, reads included, with a JSON
+    body and `Content-Type: application/json` (the protocol is called Twirp).
+
+    ```
+    POST /twirp/livekit.RoomService/CreateRoom
+    Authorization: Bearer <JWT>
+    Content-Type: application/json
+
+    {"name": "visit-1042", "empty_timeout": 600}
+    ```
+
+    - **Field names.** Answers use the snake_case names of this file. Requests accept
+      snake_case or camelCase.
+    - **64-bit numbers** (`creation_time`, `joined_at`, ...) come as JSON strings: `"1793623051"`.
+    - **Enums** come as names: `"ACTIVE"`, `"AGENT"`.
+    - **Bytes** (`SendDataRequest.data`) go as base64.
+    - **Empty fields are sent too**: `""`, `0`, `[]`, `false`, and `null` for an unset object.
+
+    ## Authorization
+
+    See the `livekitToken` security scheme: one JWT that your service signs itself.
+
+    ## Errors
+
+    Any error is `{"code": "...", "msg": "..."}` (`TwirpError`) with the HTTP status of its code:
+
+    | code | HTTP |
+    |---|---|
+    | `malformed`, `invalid_argument`, `out_of_range` | 400 |
+    | `unauthenticated` | 401 |
+    | `permission_denied` | 403 |
+    | `not_found`, `bad_route` | 404 |
+    | `already_exists`, `aborted` | 409 |
+    | `failed_precondition` | 412 |
+    | `resource_exhausted` | 429 |
+    | `unknown`, `internal`, `dataloss` | 500 |
+    | `unimplemented` | 501 |
+    | `unavailable` | 503 |
+
+    ## What is not here
+
+    1. **A person's token.** Letting a person into a room needs no call to the server:
+       your service signs a JWT (`sub` = identity, `name`, `attributes`, `video.roomJoin`,
+       `video.room`), see `AccessTokenClaims`. The browser connects with it through
+       livekit-client. By default the server creates the room on the first join
+       (`room.auto_create`, on by default in the server config).
+    2. **Being in the room.** Joining a room, sending chat text, audio and video go over
+       WebSocket and WebRTC through LiveKit's client SDKs, not through this API.
+    3. **Webhooks.** LiveKit sends events (`room_started`, `room_finished`,
+       `participant_joined`, `participant_left`, `agent_job_started`, ...) to your URL as
+       `POST`, `Content-Type: application/webhook+json`. The `Authorization` header holds
+       a JWT without the `Bearer ` prefix, signed with the same API secret; its `sha256`
+       claim is the base64 SHA-256 of the body. The body uses camelCase names, unlike the
+       answers of this API. Schema: `WebhookEvent` in https://github.com/livekit/protocol/blob/a935cd67c29a361744f7c965baaf8f904c0652fd/protobufs/livekit_webhook.proto
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+servers:
+- url: https://{host}
+  description: 'A LiveKit server: the same address clients connect to'
+  variables:
+    host:
+      default: livekit.example.com
+- url: http://localhost:7880
+  description: A local LiveKit server on its default port
+security:
+- livekitToken: []
+tags:
+- name: Rooms
+  description: Open, find, change and close rooms.
+- name: Agents
+  description: Send an agent into a room by its registered name (agent dispatch).
+- name: Participants
+  description: 'Who is in a room: see them, change their data and rights, remove them.'
+- name: Messages
+  description: Send something to the participants from the server.
+paths:
+  /twirp/livekit.RoomService/CreateRoom:
+    post:
+      tags:
+      - Rooms
+      summary: Open a room
+      description: |-
+        Creates a room with its settings and returns it.
+
+        You do not have to call it: by default the server creates a room on the first join
+        with a token. Call it to set the timeouts, the participant limit, the metadata or the
+        agents to send in at once (`agents`).
+
+        - `empty_timeout`: seconds the room waits for the first participant (default 300);
+        - `departure_timeout`: seconds the room stays after the last one leaves (default 20);
+        - `metadata`: any string, often JSON; everyone in the room sees it;
+        - `agents`: agents to send in, as `CreateDispatch` does.
+
+        Without `agents` the server still adds a dispatch with an empty `agent_name`; only
+        agents registered without a name take it (see the `ListDispatch` example).
+        The server does not check `name`: an empty name opens a room called `""`.
+
+        Needs `video.roomCreate`.
+      operationId: createRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+            example:
+              name: visit-1042
+              empty_timeout: 600
+              departure_timeout: 20
+              max_participants: 10
+              metadata: '{"topic":"car loan"}'
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+              example:
+                sid: RM_YNxGy8Cdt9Gc
+                name: visit-1042
+                empty_timeout: 600
+                departure_timeout: 20
+                max_participants: 10
+                creation_time: '1793623051'
+                creation_time_ms: '1793623051267'
+                turn_password: <redacted>
+                enabled_codecs:
+                - mime: audio/PCMU
+                  fmtp_line: ''
+                - mime: audio/PCMA
+                  fmtp_line: ''
+                - mime: audio/opus
+                  fmtp_line: ''
+                - mime: audio/red
+                  fmtp_line: ''
+                - mime: video/VP8
+                  fmtp_line: ''
+                - mime: video/H264
+                  fmtp_line: ''
+                - mime: video/VP9
+                  fmtp_line: ''
+                - mime: video/AV1
+                  fmtp_line: ''
+                - mime: video/H265
+                  fmtp_line: ''
+                - mime: video/rtx
+                  fmtp_line: ''
+                metadata: '{"topic":"car loan"}'
+                num_participants: 0
+                num_publishers: 0
+                active_recording: false
+                version: null
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/ListRooms:
+    post:
+      tags:
+      - Rooms
+      summary: List open rooms
+      description: |-
+        Returns the rooms open now. `names` keeps only the rooms with these names; without it,
+        all rooms.
+
+        Needs `video.roomList`.
+      operationId: listRooms
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListRoomsRequest'
+            example:
+              names:
+              - visit-1042
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListRoomsResponse'
+              example:
+                rooms:
+                - sid: RM_YNxGy8Cdt9Gc
+                  name: visit-1042
+                  empty_timeout: 600
+                  departure_timeout: 20
+                  max_participants: 10
+                  creation_time: '1793623051'
+                  creation_time_ms: '1793623051267'
+                  turn_password: <redacted>
+                  enabled_codecs:
+                  - mime: audio/PCMU
+                    fmtp_line: ''
+                  - mime: audio/PCMA
+                    fmtp_line: ''
+                  - mime: audio/opus
+                    fmtp_line: ''
+                  - mime: audio/red
+                    fmtp_line: ''
+                  - mime: video/VP8
+                    fmtp_line: ''
+                  - mime: video/H264
+                    fmtp_line: ''
+                  - mime: video/VP9
+                    fmtp_line: ''
+                  - mime: video/AV1
+                    fmtp_line: ''
+                  - mime: video/H265
+                    fmtp_line: ''
+                  - mime: video/rtx
+                    fmtp_line: ''
+                  metadata: '{"topic":"car loan"}'
+                  num_participants: 0
+                  num_publishers: 0
+                  active_recording: false
+                  version: null
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/UpdateRoomMetadata:
+    post:
+      tags:
+      - Rooms
+      summary: Change a room's metadata
+      description: |-
+        Replaces the room's `metadata` and sends the change to everyone in the room.
+        An empty `metadata` changes nothing.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: updateRoomMetadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoomMetadataRequest'
+            example:
+              room: visit-1042
+              metadata: '{"topic":"car loan","stage":"offer"}'
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+              example:
+                sid: RM_YNxGy8Cdt9Gc
+                name: visit-1042
+                empty_timeout: 600
+                departure_timeout: 20
+                max_participants: 10
+                creation_time: '1793623051'
+                creation_time_ms: '1793623051267'
+                turn_password: <redacted>
+                enabled_codecs:
+                - mime: audio/PCMU
+                  fmtp_line: ''
+                - mime: audio/PCMA
+                  fmtp_line: ''
+                - mime: audio/opus
+                  fmtp_line: ''
+                - mime: audio/red
+                  fmtp_line: ''
+                - mime: video/VP8
+                  fmtp_line: ''
+                - mime: video/H264
+                  fmtp_line: ''
+                - mime: video/VP9
+                  fmtp_line: ''
+                - mime: video/AV1
+                  fmtp_line: ''
+                - mime: video/H265
+                  fmtp_line: ''
+                - mime: video/rtx
+                  fmtp_line: ''
+                metadata: '{"topic":"car loan","stage":"offer"}'
+                num_participants: 0
+                num_publishers: 0
+                active_recording: false
+                version: null
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/DeleteRoom:
+    post:
+      tags:
+      - Rooms
+      summary: Close a room
+      description: |-
+        Closes the room and disconnects everyone in it. A room that does not exist:
+        `404 not_found`.
+
+        Needs `video.roomCreate`.
+      operationId: deleteRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRoomRequest'
+            example:
+              room: visit-1042
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteRoomResponse'
+              example: {}
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          description: No such room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwirpError'
+              example:
+                code: not_found
+                msg: requested room does not exist
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.AgentDispatchService/CreateDispatch:
+    post:
+      tags:
+      - Agents
+      summary: Send an agent into a room
+      description: |-
+        Sends the agent registered under `agent_name` into `room`. The agent gets `metadata`
+        with its job: this is how a task or settings reach it.
+
+        The answer comes at once; the agent joins a moment later (1-4 s in our tests): wait
+        for it with `ListParticipants` or the `participant_joined` webhook. If the room does not
+        exist and room auto-creation is on, the server creates it.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: createDispatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAgentDispatchRequest'
+            example:
+              agent_name: agent-1
+              room: visit-1042
+              metadata: '{"participant_identity":"client-42"}'
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentDispatch'
+              example:
+                id: AD_Sx94wpzQ5fbV
+                agent_name: agent-1
+                room: visit-1042
+                metadata: '{"participant_identity":"client-42"}'
+                state:
+                  jobs: []
+                  created_at: '1793623051275592200'
+                  deleted_at: '0'
+                restart_policy: JRP_ON_FAILURE
+                deployment: ''
+                attributes: {}
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.AgentDispatchService/ListDispatch:
+    post:
+      tags:
+      - Agents
+      summary: List a room's agent dispatches
+      description: |-
+        Returns the room's dispatches. `dispatch_id` keeps only that one.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: listDispatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListAgentDispatchRequest'
+            example:
+              room: visit-1042
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAgentDispatchResponse'
+              example:
+                agent_dispatches:
+                - id: AD_uCV3kXzW7Jj2
+                  agent_name: ''
+                  room: visit-1042
+                  metadata: ''
+                  state:
+                    jobs: []
+                    created_at: '1793623051267587202'
+                    deleted_at: '0'
+                  restart_policy: JRP_ON_FAILURE
+                  deployment: ''
+                  attributes: {}
+                - id: AD_Sx94wpzQ5fbV
+                  agent_name: agent-1
+                  room: visit-1042
+                  metadata: '{"participant_identity":"client-42"}'
+                  state:
+                    jobs: []
+                    created_at: '1793623051275592200'
+                    deleted_at: '0'
+                  restart_policy: JRP_ON_FAILURE
+                  deployment: ''
+                  attributes: {}
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.AgentDispatchService/DeleteDispatch:
+    post:
+      tags:
+      - Agents
+      summary: Delete an agent dispatch
+      description: |-
+        Deletes the dispatch `dispatch_id` of `room` and returns it.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: deleteDispatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteAgentDispatchRequest'
+            example:
+              dispatch_id: AD_Sx94wpzQ5fbV
+              room: visit-1042
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentDispatch'
+              example:
+                id: AD_Sx94wpzQ5fbV
+                agent_name: agent-1
+                room: visit-1042
+                metadata: '{"participant_identity":"client-42"}'
+                state:
+                  jobs:
+                  - id: AJ_GMthaRmRymH8
+                    dispatch_id: AD_Sx94wpzQ5fbV
+                    type: JT_ROOM
+                    room:
+                      sid: RM_YNxGy8Cdt9Gc
+                      name: visit-1042
+                      empty_timeout: 600
+                      departure_timeout: 20
+                      max_participants: 10
+                      creation_time: '1793623051'
+                      creation_time_ms: '1793623051267'
+                      turn_password: <redacted>
+                      enabled_codecs:
+                      - mime: audio/PCMU
+                        fmtp_line: ''
+                      - mime: audio/PCMA
+                        fmtp_line: ''
+                      - mime: audio/opus
+                        fmtp_line: ''
+                      - mime: audio/red
+                        fmtp_line: ''
+                      - mime: video/VP8
+                        fmtp_line: ''
+                      - mime: video/H264
+                        fmtp_line: ''
+                      - mime: video/VP9
+                        fmtp_line: ''
+                      - mime: video/AV1
+                        fmtp_line: ''
+                      - mime: video/H265
+                        fmtp_line: ''
+                      - mime: video/rtx
+                        fmtp_line: ''
+                      metadata: '{"topic":"car loan","stage":"offer"}'
+                      num_participants: 0
+                      num_publishers: 0
+                      active_recording: false
+                      version: null
+                    namespace: ''
+                    metadata: '{"participant_identity":"client-42"}'
+                    agent_name: agent-1
+                    state:
+                      status: JS_RUNNING
+                      error: ''
+                      started_at: '1793623051476732437'
+                      ended_at: '0'
+                      updated_at: '1793623051476732437'
+                      participant_identity: agent-AJ_GMthaRmRymH8
+                      worker_id: AW_PE3BHXJbWvER
+                      agent_id: ''
+                    enable_recording: false
+                    deployment: ''
+                    attributes: {}
+                    enable_redaction: false
+                  created_at: '1793623051275592200'
+                  deleted_at: '0'
+                restart_policy: JRP_ON_FAILURE
+                deployment: ''
+                attributes: {}
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/ListParticipants:
+    post:
+      tags:
+      - Participants
+      summary: List who is in a room
+      description: |-
+        Returns everyone in the room: people, agents, phone callers. For each one: `identity`,
+        `name`, `kind` (`STANDARD`, `AGENT`, `SIP`, ...), `state`, `attributes`, `metadata`,
+        `permission` and the published `tracks`.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: listParticipants
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListParticipantsRequest'
+            example:
+              room: visit-1042
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListParticipantsResponse'
+              example:
+                participants:
+                - sid: PA_SnndjFtUojfd
+                  identity: agent-AJ_GMthaRmRymH8
+                  state: ACTIVE
+                  tracks: []
+                  metadata: ''
+                  joined_at: '1793623051'
+                  joined_at_ms: '1793623051527'
+                  name: Агент 1
+                  version: 2
+                  permission:
+                    can_subscribe: true
+                    can_publish: true
+                    can_publish_data: true
+                    can_publish_sources: []
+                    hidden: false
+                    recorder: false
+                    can_update_metadata: true
+                    agent: true
+                    can_subscribe_metrics: false
+                    can_manage_agent_session: false
+                  region: ''
+                  is_publisher: false
+                  kind: AGENT
+                  attributes:
+                    lk.agent.name: agent-1
+                    lk.agent_name: agent-1
+                  disconnect_reason: UNKNOWN_REASON
+                  kind_details: []
+                  data_tracks: []
+                  client_protocol: 2
+                  capabilities:
+                  - CAP_PACKET_TRAILER
+                  - CAP_COMPRESSION_DEFLATE_RAW
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/GetParticipant:
+    post:
+      tags:
+      - Participants
+      summary: Get one participant
+      description: |-
+        Returns the participant `identity` of `room`. No such participant: `404 not_found`.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: getParticipant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomParticipantIdentity'
+            example:
+              room: visit-1042
+              identity: agent-AJ_GMthaRmRymH8
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantInfo'
+              example:
+                sid: PA_SnndjFtUojfd
+                identity: agent-AJ_GMthaRmRymH8
+                state: ACTIVE
+                tracks: []
+                metadata: ''
+                joined_at: '1793623051'
+                joined_at_ms: '1793623051527'
+                name: Агент 1
+                version: 2
+                permission:
+                  can_subscribe: true
+                  can_publish: true
+                  can_publish_data: true
+                  can_publish_sources: []
+                  hidden: false
+                  recorder: false
+                  can_update_metadata: true
+                  agent: true
+                  can_subscribe_metrics: false
+                  can_manage_agent_session: false
+                region: ''
+                is_publisher: false
+                kind: AGENT
+                attributes:
+                  lk.agent.name: agent-1
+                  lk.agent_name: agent-1
+                disconnect_reason: UNKNOWN_REASON
+                kind_details: []
+                data_tracks: []
+                client_protocol: 2
+                capabilities:
+                - CAP_PACKET_TRAILER
+                - CAP_COMPRESSION_DEFLATE_RAW
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          description: No such participant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwirpError'
+              example:
+                code: not_found
+                msg: participant does not exist
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/UpdateParticipant:
+    post:
+      tags:
+      - Participants
+      summary: Change a participant's data or rights
+      description: |-
+        Changes what is set and sends the change to everyone in the room:
+
+        - `attributes`: only the given keys change; an empty value deletes the key;
+        - `metadata`: replaced; empty changes nothing;
+        - `name`: the display name;
+        - `permission`: the participant's rights in the room (publish, subscribe, send data, ...).
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: updateParticipant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateParticipantRequest'
+            example:
+              room: visit-1042
+              identity: agent-AJ_GMthaRmRymH8
+              attributes:
+                stage: offer
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantInfo'
+              example:
+                sid: PA_SnndjFtUojfd
+                identity: agent-AJ_GMthaRmRymH8
+                state: ACTIVE
+                tracks: []
+                metadata: ''
+                joined_at: '1793623051'
+                joined_at_ms: '1793623051527'
+                name: Агент 1
+                version: 3
+                permission:
+                  can_subscribe: true
+                  can_publish: true
+                  can_publish_data: true
+                  can_publish_sources: []
+                  hidden: false
+                  recorder: false
+                  can_update_metadata: true
+                  agent: true
+                  can_subscribe_metrics: false
+                  can_manage_agent_session: false
+                region: ''
+                is_publisher: false
+                kind: AGENT
+                attributes:
+                  lk.agent.name: agent-1
+                  lk.agent_name: agent-1
+                  stage: offer
+                disconnect_reason: UNKNOWN_REASON
+                kind_details: []
+                data_tracks: []
+                client_protocol: 2
+                capabilities:
+                - CAP_PACKET_TRAILER
+                - CAP_COMPRESSION_DEFLATE_RAW
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/RemoveParticipant:
+    post:
+      tags:
+      - Participants
+      summary: Remove a participant
+      description: |-
+        Disconnects the participant. Their token stops working too: tokens whose `nbf` is
+        before `revoke_token_ts` are refused (default: now + 1 minute).
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: removeParticipant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomParticipantIdentity'
+            example:
+              room: visit-1042
+              identity: agent-AJ_GMthaRmRymH8
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemoveParticipantResponse'
+              example: {}
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/MutePublishedTrack:
+    post:
+      tags:
+      - Participants
+      summary: Mute or unmute a track
+      description: |-
+        Mutes (`muted: true`) or unmutes the participant's published track `track_sid` and
+        returns it. An unknown `track_sid` gives `200` with `"track": null`.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: mutePublishedTrack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MuteRoomTrackRequest'
+            example:
+              room: visit-1042
+              identity: agent-AJ_GMthaRmRymH8
+              track_sid: TR_unknown
+              muted: true
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MuteRoomTrackResponse'
+              example:
+                track: null
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/UpdateSubscriptions:
+    post:
+      tags:
+      - Participants
+      summary: Subscribe a participant to tracks
+      description: |-
+        Subscribes (`subscribe: true`) or unsubscribes the participant to the tracks
+        `track_sids` or `participant_tracks`.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: updateSubscriptions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSubscriptionsRequest'
+            example:
+              room: visit-1042
+              identity: agent-AJ_GMthaRmRymH8
+              track_sids: []
+              subscribe: false
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateSubscriptionsResponse'
+              example: {}
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/ForwardParticipant:
+    post:
+      tags:
+      - Participants
+      summary: Forward a participant's tracks to another room
+      description: |-
+        Forwards the participant's tracks to `destination_room` while they stay in `room`.
+
+        **LiveKit Cloud only.** Our self-hosted server answers `500` with
+        `{"code": "unknown", "msg": "not implemented"}`.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room` and `video.destinationRoom` equal to `destination_room`.
+      operationId: forwardParticipant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForwardParticipantRequest'
+            example:
+              room: visit-1042
+              identity: agent-AJ_GMthaRmRymH8
+              destination_room: visit-1043
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForwardParticipantResponse'
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '500':
+          description: Not on a self-hosted server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwirpError'
+              example:
+                code: unknown
+                msg: not implemented
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/MoveParticipant:
+    post:
+      tags:
+      - Participants
+      summary: Move a participant to another room
+      description: |-
+        Moves the participant from `room` to `destination_room`; to the others it looks like
+        leaving one room and joining the other.
+
+        **LiveKit Cloud only.** Our self-hosted server answers `500` with
+        `{"code": "unknown", "msg": "not implemented"}`.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room` and `video.destinationRoom` equal to `destination_room`.
+      operationId: moveParticipant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveParticipantRequest'
+            example:
+              room: visit-1042
+              identity: agent-AJ_GMthaRmRymH8
+              destination_room: visit-1043
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveParticipantResponse'
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '500':
+          description: Not on a self-hosted server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwirpError'
+              example:
+                code: unknown
+                msg: not implemented
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/SendData:
+    post:
+      tags:
+      - Messages
+      summary: Send a data packet
+      description: |-
+        Sends `data` (bytes, base64 in JSON) to everyone in the room, or only to
+        `destination_identities`, under `topic`. `kind`: `RELIABLE` (in order, resent) or
+        `LOSSY` (fast, may be lost).
+
+        Clients get it as a data packet. An agent built on LiveKit Agents does not see it as
+        chat: the agent reads chat from text streams on the `lk.chat` topic. To ask an agent
+        something, use `PerformRpc`.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: sendData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendDataRequest'
+            example:
+              room: visit-1042
+              data: eyJldmVudCI6Im9mZmVyX3JlYWR5In0=
+              kind: RELIABLE
+              topic: events
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendDataResponse'
+              example: {}
+        '400':
+          $ref: '#/components/responses/Malformed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+  /twirp/livekit.RoomService/PerformRpc:
+    post:
+      tags:
+      - Messages
+      summary: Call a participant's RPC method
+      description: |-
+        Calls the method `method` that the participant `destination_identity` (for example an
+        agent) has registered, with `payload`, waits for its answer up to
+        `response_timeout_ms` and returns its `payload`.
+
+        The participant has no such method: `400 invalid_argument`,
+        `RpcError 1400: Method not supported at destination`. `destination_identity` is required.
+
+        Needs `video.roomAdmin` with `video.room` equal to `room`.
+      operationId: performRpc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PerformRpcRequest'
+            example:
+              room: visit-1042
+              destination_identity: agent-AJ_GMthaRmRymH8
+              method: ping
+              payload: '{}'
+              response_timeout_ms: 3000
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformRpcResponse'
+        '400':
+          description: The participant has no such RPC method.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwirpError'
+              example:
+                code: invalid_argument
+                msg: 'RpcError 1400: Method not supported at destination'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    livekitToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        `Authorization: Bearer <JWT>` on every request. Your service makes the JWT itself, with
+        no call to LiveKit: HS256, signed with the API secret, with these claims:
+
+        - `iss`: the API key;
+        - `nbf`, `exp`: when the token starts and stops working (a few minutes is enough);
+        - `video`: the grants, see `VideoGrant`.
+
+        | Grant in `video` | Methods |
+        |---|---|
+        | `roomCreate` | CreateRoom, DeleteRoom |
+        | `roomList` | ListRooms |
+        | `roomAdmin` + `room` | every other method, for that room only |
+        | `roomAdmin` + `room` + `destinationRoom` | ForwardParticipant, MoveParticipant |
+
+        `roomAdmin` works for one room: `video.room` must equal the `room` of the request.
+        A missing or wrong token, or a missing grant: `401 unauthenticated`, `"permissions denied"`.
+
+        Claims used for the examples of this file:
+
+        ```json
+        {
+          "iss": "devkey",
+          "nbf": 1793623046,
+          "exp": 1793623651,
+          "video": {"roomCreate": true, "roomList": true, "roomAdmin": true,
+                    "room": "visit-1042", "destinationRoom": "visit-1043"}
+        }
+        ```
+  responses:
+    Malformed:
+      description: The body is not valid JSON or a field has a wrong type.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TwirpError'
+          example:
+            code: malformed
+            msg: the json request could not be decoded
+    Unauthenticated:
+      description: No token, a wrong token, or the token lacks the grant.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TwirpError'
+          example:
+            code: unauthenticated
+            msg: permissions denied
+    Error:
+      description: Any other error; the HTTP status follows `code`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TwirpError'
+  schemas:
+    AccessTokenClaims:
+      type: object
+      description: |-
+        The payload of a LiveKit JWT (HS256, signed with the API secret). Not sent in a body:
+        a server token goes in `Authorization: Bearer`, a person's token is given to the browser.
+        Field names are camelCase.
+      required:
+      - iss
+      - exp
+      properties:
+        iss:
+          type: string
+          description: The API key.
+        sub:
+          type: string
+          description: 'A person''s token: their identity in the room.'
+        nbf:
+          type: integer
+          description: Unix time the token starts to work.
+        exp:
+          type: integer
+          description: Unix time the token stops working.
+        name:
+          type: string
+          description: 'A person''s token: the display name.'
+        metadata:
+          type: string
+          description: 'A person''s token: their metadata.'
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+          description: 'A person''s token: their attributes.'
+        video:
+          $ref: '#/components/schemas/VideoGrant'
+      example:
+        iss: devkey
+        sub: client-42
+        nbf: 1793623046
+        exp: 1793626646
+        name: Ivan
+        attributes:
+          city: Kyiv
+        video:
+          roomJoin: true
+          room: visit-1042
+          canUpdateOwnMetadata: false
+    AgentDispatch:
+      type: object
+      properties:
+        id:
+          type: string
+        agent_name:
+          type: string
+        room:
+          type: string
+        metadata:
+          type: string
+        state:
+          allOf:
+          - $ref: '#/components/schemas/AgentDispatchState'
+          type: object
+          nullable: true
+        restart_policy:
+          type: string
+          enum:
+          - JRP_ON_FAILURE
+          - JRP_NEVER
+          description: cloud only
+        deployment:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+    AgentDispatchState:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Job'
+          description: |-
+            For dispatches of tyoe JT_ROOM, there will be at most 1 job.
+             For dispatches of type JT_PUBLISHER, there will be 1 per publisher.
+        created_at:
+          type: string
+          pattern: ^-?[0-9]+$
+          description: 64-bit integer, sent as a JSON string.
+        deleted_at:
+          type: string
+          pattern: ^-?[0-9]+$
+          description: 64-bit integer, sent as a JSON string.
+    Codec:
+      type: object
+      properties:
+        mime:
+          type: string
+        fmtp_line:
+          type: string
+    CreateAgentDispatchRequest:
+      type: object
+      properties:
+        agent_name:
+          type: string
+        room:
+          type: string
+        metadata:
+          type: string
+        restart_policy:
+          type: string
+          enum:
+          - JRP_ON_FAILURE
+          - JRP_NEVER
+          description: cloud only
+        deployment:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - agent_name
+      - room
+    CreateRoomRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: name of the room
+        room_preset:
+          type: string
+          description: configuration to use for this room parameters. Setting parameters below override
+            the config defaults.
+        empty_timeout:
+          type: integer
+          description: number of seconds to keep the room open if no one joins
+        departure_timeout:
+          type: integer
+          description: number of seconds to keep the room open after everyone leaves
+        max_participants:
+          type: integer
+          description: limit number of participants that can be in a room
+        node_id:
+          type: string
+          description: override the node room is allocated to, for debugging
+        metadata:
+          type: string
+          description: metadata of room
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+          description: search tags
+        egress:
+          type: object
+          additionalProperties: true
+          description: 'Automatic recording (Egress). Not described here: `RoomEgress` in https://github.com/livekit/protocol/blob/a935cd67c29a361744f7c965baaf8f904c0652fd/protobufs/livekit_room.proto'
+        min_playout_delay:
+          type: integer
+          description: playout delay of subscriber
+        max_playout_delay:
+          type: integer
+        sync_streams:
+          type: boolean
+          description: |-
+            improves A/V sync when playout_delay set to a value larger than 200ms. It will disables transceiver re-use
+             so not recommended for rooms with frequent subscription changes
+        replay_enabled:
+          type: boolean
+          description: replay
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomAgentDispatch'
+          description: Define agents that should be dispatched to this room
+      required:
+      - name
+    DataTrackFrameEncoding:
+      type: object
+      description: |-
+        Encoding for frame payloads.
+
+        Set only one of `custom`, `well_known`.
+      properties:
+        custom:
+          type: string
+          description: |-
+            Identifier of a custom encoding not covered by the well-known cases.
+             This must be non-empty and no longer than 32 characters.
+        well_known:
+          type: string
+          enum:
+          - WELL_KNOWN_FRAME_ENCODING_UNSPECIFIED
+          - WELL_KNOWN_FRAME_ENCODING_ROS1
+          - WELL_KNOWN_FRAME_ENCODING_CDR
+          - WELL_KNOWN_FRAME_ENCODING_PROTOBUF
+          - WELL_KNOWN_FRAME_ENCODING_FLATBUFFER
+          - WELL_KNOWN_FRAME_ENCODING_CBOR
+          - WELL_KNOWN_FRAME_ENCODING_MSGPACK
+          - WELL_KNOWN_FRAME_ENCODING_JSON
+          description: |-
+            Well-known encoding for frame payloads.
+
+             Mirrors the well-known message encodings from the MCAP spec:
+             https://mcap.dev/spec/registry#message-encodings
+    DataTrackInfo:
+      type: object
+      properties:
+        pub_handle:
+          type: integer
+          description: Client-assigned, 16-bit identifier that will be attached to packets sent by the
+            publisher.
+        sid:
+          type: string
+          description: Server-assigned track identifier.
+        name:
+          type: string
+          description: Human-readable identifier (e.g., `geoLocation`, `servoPosition.x`, etc.), unique
+            per publisher.
+        encryption:
+          type: string
+          enum:
+          - NONE
+          - GCM
+          - CUSTOM
+          description: Method used for end-to-end encryption (E2EE) on packet payloads.
+        frame_encoding:
+          description: Encoding for frame payloads on this track. If unspecified, the track is untyped.
+          allOf:
+          - $ref: '#/components/schemas/DataTrackFrameEncoding'
+          type: object
+          nullable: true
+        schema:
+          description: ID of the schema used by frames on this track if the track is typed.
+          allOf:
+          - $ref: '#/components/schemas/DataTrackSchemaId'
+          type: object
+          nullable: true
+    DataTrackSchemaEncoding:
+      type: object
+      description: |-
+        Encoding for schema definition.
+
+        Set only one of `custom`, `well_known`.
+      properties:
+        custom:
+          type: string
+          description: |-
+            Identifier of a custom encoding not covered by the well-known cases.
+             This must be non-empty and no longer than 32 characters.
+        well_known:
+          type: string
+          enum:
+          - WELL_KNOWN_SCHEMA_ENCODING_UNSPECIFIED
+          - WELL_KNOWN_SCHEMA_ENCODING_PROTOBUF
+          - WELL_KNOWN_SCHEMA_ENCODING_FLATBUFFER
+          - WELL_KNOWN_SCHEMA_ENCODING_ROS1_MSG
+          - WELL_KNOWN_SCHEMA_ENCODING_ROS2_MSG
+          - WELL_KNOWN_SCHEMA_ENCODING_ROS2_IDL
+          - WELL_KNOWN_SCHEMA_ENCODING_OMG_IDL
+          - WELL_KNOWN_SCHEMA_ENCODING_JSON_SCHEMA
+          description: |-
+            Well-known encoding for schema definition.
+
+             Mirrors the well-known schema encodings from the MCAP spec:
+             https://mcap.dev/spec/registry#schema-encodings
+    DataTrackSchemaId:
+      type: object
+      properties:
+        name:
+          type: string
+          description: This must be non-empty and no longer than 256 characters.
+        encoding:
+          allOf:
+          - $ref: '#/components/schemas/DataTrackSchemaEncoding'
+          type: object
+          nullable: true
+      description: |-
+        Identifier for a data track schema.
+
+         Schemas with the same name but different encodings are distinct.
+    DeleteAgentDispatchRequest:
+      type: object
+      properties:
+        dispatch_id:
+          type: string
+        room:
+          type: string
+      required:
+      - dispatch_id
+      - room
+    DeleteRoomRequest:
+      type: object
+      properties:
+        room:
+          type: string
+          description: name of the room
+      required:
+      - room
+    DeleteRoomResponse:
+      type: object
+    ForwardParticipantRequest:
+      type: object
+      properties:
+        room:
+          type: string
+          description: room to forward participant from
+        identity:
+          type: string
+          description: identity of the participant to forward
+        destination_room:
+          type: string
+          description: room to forward participant to
+      required:
+      - room
+      - identity
+      - destination_room
+    ForwardParticipantResponse:
+      type: object
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+        dispatch_id:
+          type: string
+        type:
+          type: string
+          enum:
+          - JT_ROOM
+          - JT_PUBLISHER
+          - JT_PARTICIPANT
+        room:
+          allOf:
+          - $ref: '#/components/schemas/Room'
+          type: object
+          nullable: true
+        participant:
+          allOf:
+          - $ref: '#/components/schemas/ParticipantInfo'
+          type: object
+          nullable: true
+        namespace:
+          type: string
+          deprecated: true
+        metadata:
+          type: string
+        agent_name:
+          type: string
+        state:
+          allOf:
+          - $ref: '#/components/schemas/JobState'
+          type: object
+          nullable: true
+        enable_recording:
+          type: boolean
+        deployment:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+        enable_redaction:
+          type: boolean
+    JobState:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - JS_PENDING
+          - JS_RUNNING
+          - JS_SUCCESS
+          - JS_FAILED
+        error:
+          type: string
+        started_at:
+          type: string
+          pattern: ^-?[0-9]+$
+          description: 64-bit integer, sent as a JSON string.
+        ended_at:
+          type: string
+          pattern: ^-?[0-9]+$
+          description: 64-bit integer, sent as a JSON string.
+        updated_at:
+          type: string
+          pattern: ^-?[0-9]+$
+          description: 64-bit integer, sent as a JSON string.
+        participant_identity:
+          type: string
+        worker_id:
+          type: string
+        agent_id:
+          type: string
+    ListAgentDispatchRequest:
+      type: object
+      properties:
+        dispatch_id:
+          type: string
+          description: if set, only the dispatch whose id is given will be returned
+        room:
+          type: string
+          description: name of the room to list agents for. Must be set.
+      required:
+      - room
+    ListAgentDispatchResponse:
+      type: object
+      properties:
+        agent_dispatches:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentDispatch'
+    ListParticipantsRequest:
+      type: object
+      properties:
+        room:
+          type: string
+          description: name of the room
+      required:
+      - room
+    ListParticipantsResponse:
+      type: object
+      properties:
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantInfo'
+    ListRoomsRequest:
+      type: object
+      properties:
+        names:
+          type: array
+          items:
+            type: string
+          description: when set, will only return rooms with name match
+    ListRoomsResponse:
+      type: object
+      properties:
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
+    MoveParticipantRequest:
+      type: object
+      properties:
+        room:
+          type: string
+          description: room to move participant from
+        identity:
+          type: string
+          description: identity of the participant to move to
+        destination_room:
+          type: string
+          description: room to move participant to
+      required:
+      - room
+      - identity
+      - destination_room
+    MoveParticipantResponse:
+      type: object
+    MuteRoomTrackRequest:
+      type: object
+      properties:
+        room:
+          type: string
+          description: name of the room
+        identity:
+          type: string
+        track_sid:
+          type: string
+          description: sid of the track to mute
+        muted:
+          type: boolean
+          description: set to true to mute, false to unmute
+      required:
+      - room
+      - identity
+      - track_sid
+      - muted
+    MuteRoomTrackResponse:
+      type: object
+      properties:
+        track:
+          allOf:
+          - $ref: '#/components/schemas/TrackInfo'
+          type: object
+          nullable: true
+    ParticipantInfo:
+      type: object
+      properties:
+        sid:
+          type: string
+        identity:
+          type: string
+        state:
+          type: string
+          enum:
+          - JOINING
+          - JOINED
+          - ACTIVE
+          - DISCONNECTED
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrackInfo'
+        metadata:
+          type: string
+        joined_at:
+          type: string
+          description: |-
+            timestamp when participant joined room, in seconds
+
+            64-bit integer, sent as a JSON string.
+          pattern: ^-?[0-9]+$
+        joined_at_ms:
+          type: string
+          description: |-
+            timestamp when participant joined room, in milliseconds
+
+            64-bit integer, sent as a JSON string.
+          pattern: ^-?[0-9]+$
+        name:
+          type: string
+        version:
+          type: integer
+        permission:
+          allOf:
+          - $ref: '#/components/schemas/ParticipantPermission'
+          type: object
+          nullable: true
+        region:
+          type: string
+        is_publisher:
+          type: boolean
+          description: |-
+            indicates the participant has an active publisher connection
+             and can publish to the server
+        kind:
+          type: string
+          enum:
+          - STANDARD
+          - INGRESS
+          - EGRESS
+          - SIP
+          - AGENT
+          - CONNECTOR
+          - BRIDGE
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+        disconnect_reason:
+          type: string
+          enum:
+          - UNKNOWN_REASON
+          - CLIENT_INITIATED
+          - DUPLICATE_IDENTITY
+          - SERVER_SHUTDOWN
+          - PARTICIPANT_REMOVED
+          - ROOM_DELETED
+          - STATE_MISMATCH
+          - JOIN_FAILURE
+          - MIGRATION
+          - SIGNAL_CLOSE
+          - ROOM_CLOSED
+          - USER_UNAVAILABLE
+          - USER_REJECTED
+          - SIP_TRUNK_FAILURE
+          - CONNECTION_TIMEOUT
+          - MEDIA_FAILURE
+          - AGENT_ERROR
+        kind_details:
+          type: array
+          items:
+            type: string
+            enum:
+            - CLOUD_AGENT
+            - FORWARDED
+            - CONNECTOR_WHATSAPP
+            - CONNECTOR_TWILIO
+            - BRIDGE_RTSP
+            - SIMULATION
+        data_tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataTrackInfo'
+        client_protocol:
+          type: integer
+          format: int32
+          description: protocol version used for client feature compatibility
+        capabilities:
+          type: array
+          items:
+            type: string
+            enum:
+            - CAP_UNUSED
+            - CAP_PACKET_TRAILER
+            - CAP_COMPRESSION_DEFLATE_RAW
+          description: |-
+            capabilities the participant's client advertises, mirrored from ClientInfo.
+             Lets other participants perform client-side feature detection.
+    ParticipantPermission:
+      type: object
+      properties:
+        can_subscribe:
+          type: boolean
+          description: allow participant to subscribe to other tracks in the room
+        can_publish:
+          type: boolean
+          description: allow participant to publish new tracks to room
+        can_publish_data:
+          type: boolean
+          description: allow participant to publish data
+        can_publish_sources:
+          type: array
+          items:
+            type: string
+            enum:
+            - UNKNOWN
+            - CAMERA
+            - MICROPHONE
+            - SCREEN_SHARE
+            - SCREEN_SHARE_AUDIO
+          description: sources that are allowed to be published
+        hidden:
+          type: boolean
+          description: indicates that it's hidden to others
+        recorder:
+          type: boolean
+          description: |-
+            indicates it's a recorder instance
+             deprecated: use ParticipantInfo.kind instead
+          deprecated: true
+        can_update_metadata:
+          type: boolean
+          description: indicates that participant can update own metadata and attributes
+        agent:
+          type: boolean
+          description: |-
+            indicates that participant is an agent
+             deprecated: use ParticipantInfo.kind instead
+          deprecated: true
+        can_subscribe_metrics:
+          type: boolean
+          description: if a participant can subscribe to metrics
+        can_manage_agent_session:
+          type: boolean
+          description: if a participant can manage an agent session via RemoteSession (control and access
+            state)
+    ParticipantTracks:
+      type: object
+      properties:
+        participant_sid:
+          type: string
+          description: participant ID of participant to whom the tracks belong
+        track_sids:
+          type: array
+          items:
+            type: string
+    PerformRpcRequest:
+      type: object
+      properties:
+        room:
+          type: string
+        destination_identity:
+          type: string
+        method:
+          type: string
+        payload:
+          type: string
+        response_timeout_ms:
+          type: integer
+      required:
+      - room
+      - destination_identity
+      - method
+    PerformRpcResponse:
+      type: object
+      properties:
+        payload:
+          type: string
+    RemoveParticipantResponse:
+      type: object
+    Room:
+      type: object
+      properties:
+        sid:
+          type: string
+        name:
+          type: string
+        empty_timeout:
+          type: integer
+        departure_timeout:
+          type: integer
+        max_participants:
+          type: integer
+        creation_time:
+          type: string
+          pattern: ^-?[0-9]+$
+          description: 64-bit integer, sent as a JSON string.
+        creation_time_ms:
+          type: string
+          pattern: ^-?[0-9]+$
+          description: 64-bit integer, sent as a JSON string.
+        turn_password:
+          type: string
+        enabled_codecs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Codec'
+        metadata:
+          type: string
+        num_participants:
+          type: integer
+        num_publishers:
+          type: integer
+        active_recording:
+          type: boolean
+        version:
+          allOf:
+          - $ref: '#/components/schemas/TimedVersion'
+          type: object
+          nullable: true
+    RoomAgentDispatch:
+      type: object
+      properties:
+        agent_name:
+          type: string
+        metadata:
+          type: string
+        restart_policy:
+          type: string
+          enum:
+          - JRP_ON_FAILURE
+          - JRP_NEVER
+          description: cloud only
+        deployment:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+    RoomParticipantIdentity:
+      type: object
+      properties:
+        room:
+          type: string
+          description: name of the room
+        identity:
+          type: string
+          description: identity of the participant
+        revoke_token_ts:
+          type: string
+          description: |-
+            Unix timestamp used to invalidate token whose nbf is before this value.
+             Used only by RemoveParticipant; defaults to now(server)+leeway(1min) if left empty.
+
+            64-bit integer, sent as a JSON string.
+          pattern: ^-?[0-9]+$
+      required:
+      - room
+      - identity
+    SendDataRequest:
+      type: object
+      properties:
+        room:
+          type: string
+        data:
+          type: string
+          format: byte
+        kind:
+          type: string
+          enum:
+          - RELIABLE
+          - LOSSY
+        destination_sids:
+          type: array
+          items:
+            type: string
+            deprecated: true
+          description: mark deprecated
+          deprecated: true
+        destination_identities:
+          type: array
+          items:
+            type: string
+          description: when set, only forward to these identities
+        topic:
+          type: string
+          nullable: true
+        nonce:
+          type: string
+          format: byte
+          description: added by SDK to enable de-duping of messages, for INTERNAL USE ONLY
+      required:
+      - room
+      - data
+    SendDataResponse:
+      type: object
+    SimulcastCodecInfo:
+      type: object
+      properties:
+        mime_type:
+          type: string
+        mid:
+          type: string
+        cid:
+          type: string
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoLayer'
+        video_layer_mode:
+          type: string
+          enum:
+          - MODE_UNUSED
+          - ONE_SPATIAL_LAYER_PER_STREAM
+          - MULTIPLE_SPATIAL_LAYERS_PER_STREAM
+          - ONE_SPATIAL_LAYER_PER_STREAM_INCOMPLETE_RTCP_SR
+        sdp_cid:
+          type: string
+          description: |-
+            cid (client side id for track) could be different between
+             signalling (AddTrackRequest) and SDP offer. This field
+             will be populated only if it is different to avoid
+             duplication and keep the representation concise.
+    TimedVersion:
+      type: object
+      properties:
+        unix_micro:
+          type: string
+          pattern: ^-?[0-9]+$
+          description: 64-bit integer, sent as a JSON string.
+        ticks:
+          type: integer
+          format: int32
+    TrackInfo:
+      type: object
+      properties:
+        sid:
+          type: string
+        type:
+          type: string
+          enum:
+          - AUDIO
+          - VIDEO
+          - DATA
+        name:
+          type: string
+        muted:
+          type: boolean
+        width:
+          type: integer
+          description: |-
+            original width of video (unset for audio)
+             clients may receive a lower resolution version with simulcast
+        height:
+          type: integer
+          description: original height of video (unset for audio)
+        simulcast:
+          type: boolean
+          description: true if track is simulcasted see `video_layer_mode` in `codecs`
+          deprecated: true
+        disable_dtx:
+          type: boolean
+          description: true if DTX (Discontinuous Transmission) is disabled for audio deprecated in favor
+            of `audio_features`
+          deprecated: true
+        source:
+          type: string
+          enum:
+          - UNKNOWN
+          - CAMERA
+          - MICROPHONE
+          - SCREEN_SHARE
+          - SCREEN_SHARE_AUDIO
+          description: source of media
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoLayer'
+          description: see `codecs` for layers of individual codec
+          deprecated: true
+        mime_type:
+          type: string
+          description: mime type of codec
+        mid:
+          type: string
+        codecs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimulcastCodecInfo'
+        stereo:
+          type: boolean
+          description: deprecated in favor of `audio_features`
+          deprecated: true
+        disable_red:
+          type: boolean
+          description: true if RED (Redundant Encoding) is disabled for audio
+        encryption:
+          type: string
+          enum:
+          - NONE
+          - GCM
+          - CUSTOM
+        stream:
+          type: string
+        version:
+          allOf:
+          - $ref: '#/components/schemas/TimedVersion'
+          type: object
+          nullable: true
+        audio_features:
+          type: array
+          items:
+            type: string
+            enum:
+            - TF_STEREO
+            - TF_NO_DTX
+            - TF_AUTO_GAIN_CONTROL
+            - TF_ECHO_CANCELLATION
+            - TF_NOISE_SUPPRESSION
+            - TF_ENHANCED_NOISE_CANCELLATION
+            - TF_PRECONNECT_BUFFER
+        backup_codec_policy:
+          type: string
+          enum:
+          - PREFER_REGRESSION
+          - SIMULCAST
+          - REGRESSION
+          description: Policy for publisher to handle subscribers that are unable to support the primary
+            codec of a track
+        packet_trailer_features:
+          type: array
+          items:
+            type: string
+            enum:
+            - PTF_USER_TIMESTAMP
+            - PTF_FRAME_ID
+            - PTF_USER_DATA
+    TwirpError:
+      type: object
+      properties:
+        code:
+          type: string
+          enum:
+          - canceled
+          - unknown
+          - invalid_argument
+          - malformed
+          - deadline_exceeded
+          - not_found
+          - bad_route
+          - already_exists
+          - permission_denied
+          - unauthenticated
+          - resource_exhausted
+          - failed_precondition
+          - aborted
+          - out_of_range
+          - unimplemented
+          - internal
+          - unavailable
+          - dataloss
+        msg:
+          type: string
+      description: Every error of this API. The HTTP status follows `code`, see the table at the top.
+    UpdateParticipantRequest:
+      type: object
+      properties:
+        room:
+          type: string
+        identity:
+          type: string
+        metadata:
+          type: string
+          description: metadata to update. skipping updates if left empty
+        permission:
+          allOf:
+          - $ref: '#/components/schemas/ParticipantPermission'
+          description: set to update the participant's permissions
+          type: object
+          nullable: true
+        name:
+          type: string
+          description: display name to update
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+          description: |-
+            attributes to update. it only updates attributes that have been set
+             to delete attributes, set the value to an empty string
+      required:
+      - room
+      - identity
+    UpdateRoomMetadataRequest:
+      type: object
+      properties:
+        room:
+          type: string
+        metadata:
+          type: string
+          description: metadata to update. skipping updates if left empty
+      required:
+      - room
+      - metadata
+    UpdateSubscriptionsRequest:
+      type: object
+      properties:
+        room:
+          type: string
+        identity:
+          type: string
+        track_sids:
+          type: array
+          items:
+            type: string
+          description: list of sids of tracks
+        subscribe:
+          type: boolean
+          description: set to true to subscribe, false to unsubscribe from tracks
+        participant_tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantTracks'
+          description: list of participants and their tracks
+      required:
+      - room
+      - identity
+      - subscribe
+    UpdateSubscriptionsResponse:
+      type: object
+      description: empty for now
+    VideoGrant:
+      type: object
+      description: Grants of a token (the `video` claim). Field names are camelCase.
+      properties:
+        roomCreate:
+          type: boolean
+          description: May open and close rooms.
+        roomList:
+          type: boolean
+          description: May list rooms.
+        roomAdmin:
+          type: boolean
+          description: 'May manage the room `room`: participants, agents, messages.'
+        roomJoin:
+          type: boolean
+          description: May join the room `room` (a person's or an agent's token).
+        room:
+          type: string
+          description: The room `roomAdmin` and `roomJoin` apply to.
+        destinationRoom:
+          type: string
+          description: The room `ForwardParticipant` and `MoveParticipant` may send to.
+        canPublish:
+          type: boolean
+          description: May publish audio and video. If none of `canPublish`, `canSubscribe`, `canPublishData`
+            is set, all are allowed.
+        canSubscribe:
+          type: boolean
+          description: May receive the others' audio and video.
+        canPublishData:
+          type: boolean
+          description: May send data and chat.
+        canPublishSources:
+          type: array
+          items:
+            type: string
+            enum:
+            - UNKNOWN
+            - CAMERA
+            - MICROPHONE
+            - SCREEN_SHARE
+            - SCREEN_SHARE_AUDIO
+          description: Only these sources may be published; overrides `canPublish`.
+        canUpdateOwnMetadata:
+          type: boolean
+          description: May change its own name, metadata and attributes. Off by default.
+        hidden:
+          type: boolean
+          description: The others do not see this participant.
+        agent:
+          type: boolean
+          description: May register as an agent worker.
+    VideoLayer:
+      type: object
+      properties:
+        quality:
+          type: string
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - 'OFF'
+          description: for tracks with a single layer, this should be HIGH
+        width:
+          type: integer
+        height:
+          type: integer
+        bitrate:
+          type: integer
+          description: target bitrate in bit per second (bps), server will measure actual
+        ssrc:
+          type: integer
+        spatial_layer:
+          type: integer
+          format: int32
+        rid:
+          type: string
+        repair_ssrc:
+          type: integer
+      description: provide information about available spatial layers
