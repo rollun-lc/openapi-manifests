@@ -58,6 +58,9 @@ paths:
           `breakdowns` is Amazon's summary: it has no buyer tax and no withheld tax, and its
           `Expenses` include promotion rebates. Use the item level for calculations, except
           `RemovalShipment`, whose fee names are only in the transaction level summary.
+        - A money tree has at most four levels (`Breakdown` to `BreakdownLevel4`), the most
+          Amazon has been seen to send: `Expenses` / `AmazonFees` / `FBAPerUnitFulfillmentFee` /
+          `Base`. A deeper node would be cut off and logged as a warning.
         - Arrays are never null: where Amazon sends null, the endpoint returns an empty array.
         - Amazon may need up to 48 hours to publish a transaction.
 
@@ -283,20 +286,66 @@ components:
 
     Breakdown:
       type: object
-      description: "A node of Amazon's money tree. The amount of a node is the sum of its children."
+      description: "Level 1 node of Amazon's money tree, for example `AmazonFees` or `Expenses`. The amount of a node is the sum of its children. The tree is limited to four levels because the generated server cannot transfer a self-referencing schema."
       properties:
         breakdownType:
           type: string
           nullable: true
-          description: "Amazon's charge type, for example `AmazonFees`, `Commission`, `MarketplaceFacilitatorTax-Principal`, `OurPricePrincipal`, `Base`."
+          description: "Amazon's charge type, for example `AmazonFees`, `Tax`, `ProductCharges`, `Expenses`."
+          example: "AmazonFees"
+        breakdownAmount:
+          $ref: "#/components/schemas/Currency"
+        breakdowns:
+          type: array
+          description: "Level 2 children; empty for a leaf."
+          items:
+            $ref: "#/components/schemas/BreakdownLevel2"
+
+    BreakdownLevel2:
+      type: object
+      description: "Level 2 node of the money tree, for example `Commission` under `AmazonFees`."
+      properties:
+        breakdownType:
+          type: string
+          nullable: true
+          description: "Amazon's charge type, for example `Commission`, `FBAPerUnitFulfillmentFee`, `MarketplaceFacilitatorTax-Principal`, `OurPricePrincipal`."
           example: "Commission"
         breakdownAmount:
           $ref: "#/components/schemas/Currency"
         breakdowns:
           type: array
-          description: "Child nodes; empty for a leaf."
+          description: "Level 3 children; empty for a leaf."
           items:
-            $ref: "#/components/schemas/Breakdown"
+            $ref: "#/components/schemas/BreakdownLevel3"
+
+    BreakdownLevel3:
+      type: object
+      description: "Level 3 node of the money tree, for example `Base` under `Commission`."
+      properties:
+        breakdownType:
+          type: string
+          nullable: true
+          description: "Amazon's charge type, for example `Base`, or a fee type under a summary category."
+          example: "Base"
+        breakdownAmount:
+          $ref: "#/components/schemas/Currency"
+        breakdowns:
+          type: array
+          description: "Level 4 children; empty for a leaf."
+          items:
+            $ref: "#/components/schemas/BreakdownLevel4"
+
+    BreakdownLevel4:
+      type: object
+      description: "Level 4 node of the money tree, always a leaf, for example `Base` under `Expenses` / `AmazonFees` / `FBAPerUnitFulfillmentFee`. Amazon has not sent deeper nodes; if it ever does, they are cut off and logged."
+      properties:
+        breakdownType:
+          type: string
+          nullable: true
+          description: "Amazon's charge type, usually `Base`."
+          example: "Base"
+        breakdownAmount:
+          $ref: "#/components/schemas/Currency"
 
     Currency:
       type: object
