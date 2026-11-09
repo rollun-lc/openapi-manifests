@@ -1,0 +1,482 @@
+openapi: 3.0.0
+info:
+  version: "1"
+  title: "Finances"
+  description: "Financial transactions of the seller account. Proxies the SP-API Finances 2024-06-19 operation listTransactions and passes every transaction as Amazon returns it, with its full money breakdown."
+
+servers:
+  - url: http://amz-orders-ngx/openapi/Finances/v1
+  - url: http://host.docker.internal:8280/openapi/Finances/v1
+  - url: http://localhost:8280/openapi/Finances/v1
+
+tags:
+  - name: Transactions
+    description: "Endpoints for reading financial transactions"
+
+paths:
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: "List financial transactions by order, by financial event group or by posting date"
+      description: |
+        Proxies SP-API `GET /finances/2024-06-19/transactions` (`listTransactions`). One call is one
+        Amazon page; nothing is cached, nothing is changed in the Amazon account.
+
+        ### How to select transactions
+
+        1. **By a related identifier** - `relatedIdentifierName` and `relatedIdentifierValue`
+           together. `ORDER_ID` returns every transaction of one order: the deferred and the
+           released shipment payment, refunds, service fees charged for the order (disposal),
+           removal and liquidation of the returned unit, retrocharges, reimbursements.
+           `FINANCIAL_EVENT_GROUP_ID` returns the transactions of one financial event group
+           (one payout). Dates are optional in this mode and narrow the result.
+        2. **By posting date** - `postedAfter` (required in this mode) and `postedBefore`
+           (optional, Amazon defaults it to two minutes before the request). Returns every
+           transaction of the seller posted in the window, including those that belong to no
+           order (storage, subscription and other account level fees).
+
+        Amazon returns an empty list for a window longer than 180 days; this endpoint refuses
+        such a window instead of returning a misleading empty page. Both dates must be more
+        than two minutes before the request, otherwise Amazon refuses the call.
+
+        ### Paging
+
+        Amazon decides the page size. When `data.nextToken` is not null, call again with the
+        same filters plus `nextToken`; stop when it is null. Amazon may return an empty page
+        that still carries a `nextToken`.
+
+        ### What the data means
+
+        - Amounts keep Amazon's sign: negative is money taken from the seller, positive is
+          money credited to the seller. `totalAmount` of a transaction is its net amount.
+        - `transactionStatus` is `DEFERRED`, `RELEASED` or `DEFERRED_RELEASED`. A deferred
+          transaction and the transaction that releases it carry each other's ids in
+          `relatedIdentifiers` (`RELEASE_TRANSACTION_ID` / `DEFERRED_TRANSACTION_ID`) and the
+          same money: count one of them. Refunds come in such pairs too.
+        - `items[].breakdowns` is the complete money tree of an item. The transaction level
+          `breakdowns` is Amazon's summary: it has no buyer tax and no withheld tax, and its
+          `Expenses` include promotion rebates. Use the item level for calculations, except
+          `RemovalShipment`, whose fee names are only in the transaction level summary.
+        - Arrays are never null: where Amazon sends null, the endpoint returns an empty array.
+        - Amazon may need up to 48 hours to publish a transaction.
+
+        ### Rate limit
+
+        Amazon allows 0.5 requests per second with a burst of 10 for this operation. The
+        endpoint neither queues nor retries; the caller paces its calls, for example two
+        seconds apart.
+
+        ### Errors
+
+        Every failure is HTTP 500 with `messages[0].level = error`, and there are two shapes
+        of `messages[0].text`:
+
+        1. **Type level violation** - a parameter of the wrong type or outside the enums
+           declared below is rejected by the gateway before the use case runs. That text
+           carries **no machine code**, it reads `Request validation failed. Details: ...`.
+        2. **Business stop** - the text starts with a machine code, then a human readable part:
+           - `missing_filter` - neither a related identifier nor `postedAfter` is given
+           - `incomplete_related_identifier` - only one of `relatedIdentifierName` and
+             `relatedIdentifierValue` is given
+           - `invalid_date` - `postedAfter` or `postedBefore` is not an ISO-8601 date-time
+           - `invalid_window` - `postedBefore` is not later than `postedAfter`, or the window
+             is longer than 180 days
+           - `amazon_error` - SP-API refused, followed by Amazon's own message (a stale
+             `nextToken`, a date too close to now, and so on)
+           - `amazon_throttled` - SP-API answered 429; the endpoint never retries by itself
+
+        ### Live examples
+
+        ```bash
+        # every transaction of one order
+        curl 'http://localhost:8280/openapi/Finances/v1/transactions?relatedIdentifierName=ORDER_ID&relatedIdentifierValue=114-2317731-6576226&marketplaceId=ATVPDKIKX0DER'
+
+        # everything posted in one hour, first page
+        curl 'http://localhost:8280/openapi/Finances/v1/transactions?postedAfter=2026-11-02T00%3A00%3A00Z&postedBefore=2026-11-02T01%3A00%3A00Z&marketplaceId=ATVPDKIKX0DER'
+        ```
+
+        The first call returns two `Shipment` transactions of 12.98 USD each: the payment
+        deferred on 2026-09-02 (`DEFERRED_RELEASED`) and its release on 2026-09-11 (`RELEASED`).
+      parameters:
+        - in: query
+          name: relatedIdentifierName
+          description: "Which identifier `relatedIdentifierValue` holds. Amazon filters only by these two. Requires `relatedIdentifierValue`."
+          required: false
+          schema:
+            type: string
+            enum:
+              - ORDER_ID
+              - FINANCIAL_EVENT_GROUP_ID
+            example: "ORDER_ID"
+        - in: query
+          name: relatedIdentifierValue
+          description: "The identifier value: an Amazon order id for `ORDER_ID`, a financial event group id for `FINANCIAL_EVENT_GROUP_ID`. Requires `relatedIdentifierName`."
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+            example: "114-2317731-6576226"
+        - in: query
+          name: postedAfter
+          description: "Transactions posted on or after this moment. ISO-8601 date-time. Required unless a related identifier is given."
+          required: false
+          schema:
+            type: string
+            example: "2026-11-02T00:00:00Z"
+        - in: query
+          name: postedBefore
+          description: "Transactions posted before this moment, not on it. ISO-8601 date-time, later than `postedAfter`, at most 180 days after it. Amazon defaults it to two minutes before the request."
+          required: false
+          schema:
+            type: string
+            example: "2026-11-02T01:00:00Z"
+        - in: query
+          name: marketplaceId
+          description: "Only transactions of this marketplace. Without it Amazon returns every marketplace of the account."
+          required: false
+          schema:
+            type: string
+            example: "ATVPDKIKX0DER"
+        - in: query
+          name: transactionStatus
+          description: "Only transactions in this status."
+          required: false
+          schema:
+            type: string
+            enum:
+              - DEFERRED
+              - RELEASED
+              - DEFERRED_RELEASED
+            example: "RELEASED"
+        - in: query
+          name: nextToken
+          description: "Token of the next page from the previous response. Send it with the same filters as the call that produced it."
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "One page of transactions."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionsResult"
+        "500":
+          description: "An internal server error occurred."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+
+components:
+  schemas:
+    TransactionsResult:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResult"
+      type: object
+      description: "Result of the transactions request."
+      properties:
+        data:
+          $ref: "#/components/schemas/TransactionsPage"
+
+    TransactionsPage:
+      type: object
+      description: "One Amazon page of transactions."
+      required:
+        - transactions
+      properties:
+        transactions:
+          type: array
+          description: "Transactions of this page in Amazon's order. May be empty even when `nextToken` is set."
+          items:
+            $ref: "#/components/schemas/Transaction"
+        nextToken:
+          type: string
+          nullable: true
+          description: "Token for the next page; null on the last page."
+
+    Transaction:
+      type: object
+      description: "A financial transaction as Amazon returns it."
+      required:
+        - transactionId
+      properties:
+        transactionId:
+          type: string
+          description: "Unique id of the transaction."
+          example: "tvNdh5nLGnfgIqNVPwNCC_TYHdXE9tsr7IMwbPfCZjU"
+        transactionType:
+          type: string
+          nullable: true
+          description: "Amazon's transaction type, for example `Shipment`, `Refund`, `ServiceFee`, `RemovalShipment`, `Retrocharge`, `FBAInventoryReimbursement`. Not an enum: Amazon adds types."
+          example: "Shipment"
+        transactionStatus:
+          type: string
+          nullable: true
+          description: "`DEFERRED`, `RELEASED` or `DEFERRED_RELEASED`, as Amazon returns it."
+          example: "RELEASED"
+        description:
+          type: string
+          nullable: true
+          description: "Amazon's description, for example `Order Payment`, `Refund`, `FBADisposal`."
+          example: "Order Payment"
+        postedDate:
+          type: string
+          nullable: true
+          description: "When Amazon posted the transaction, ISO-8601."
+          example: "2026-09-11T15:42:20Z"
+        totalAmount:
+          $ref: "#/components/schemas/Currency"
+        marketplaceDetails:
+          $ref: "#/components/schemas/MarketplaceDetails"
+        sellingPartnerMetadata:
+          $ref: "#/components/schemas/SellingPartnerMetadata"
+        relatedIdentifiers:
+          type: array
+          description: "Business identifiers of the transaction: ORDER_ID, SHIPMENT_ID, REFUND_ID, FINANCIAL_EVENT_GROUP_ID, SETTLEMENT_ID, DEFERRED_TRANSACTION_ID, RELEASE_TRANSACTION_ID and others."
+          items:
+            $ref: "#/components/schemas/RelatedIdentifier"
+        items:
+          type: array
+          description: "Items of the transaction with their complete money breakdown."
+          items:
+            $ref: "#/components/schemas/TransactionItem"
+        breakdowns:
+          type: array
+          description: "Amazon's transaction level summary (Sales, Expenses, Refunded Sales, Refunded Expenses). Incomplete: see the endpoint description."
+          items:
+            $ref: "#/components/schemas/Breakdown"
+        contexts:
+          type: array
+          description: "Additional information about the transaction, for example the deferral reason and maturity date."
+          items:
+            $ref: "#/components/schemas/TransactionContext"
+
+    TransactionItem:
+      type: object
+      description: "An item of a transaction."
+      properties:
+        description:
+          type: string
+          nullable: true
+          description: "Item title or Amazon's description of the charge."
+          example: "IRC TR-4 Tube - 130/90-15/Black"
+        totalAmount:
+          $ref: "#/components/schemas/Currency"
+        relatedIdentifiers:
+          type: array
+          description: "Item identifiers: ORDER_ADJUSTMENT_ITEM_ID, COUPON_ID, REMOVAL_SHIPMENT_ITEM_ID, TRANSACTION_ID."
+          items:
+            $ref: "#/components/schemas/ItemRelatedIdentifier"
+        breakdowns:
+          type: array
+          description: "Money tree of the item: ProductCharges, Shipping, Tax, AmazonFees, FBAFees, PromoRebates, MPFRegulatoryFee and so on, each with its own nested breakdowns."
+          items:
+            $ref: "#/components/schemas/Breakdown"
+        contexts:
+          type: array
+          description: "Product information of the item: ASIN, SKU, quantity, fulfillment network."
+          items:
+            $ref: "#/components/schemas/TransactionContext"
+
+    Breakdown:
+      type: object
+      description: "A node of Amazon's money tree. The amount of a node is the sum of its children."
+      properties:
+        breakdownType:
+          type: string
+          nullable: true
+          description: "Amazon's charge type, for example `AmazonFees`, `Commission`, `MarketplaceFacilitatorTax-Principal`, `OurPricePrincipal`, `Base`."
+          example: "Commission"
+        breakdownAmount:
+          $ref: "#/components/schemas/Currency"
+        breakdowns:
+          type: array
+          description: "Child nodes; empty for a leaf."
+          items:
+            $ref: "#/components/schemas/Breakdown"
+
+    Currency:
+      type: object
+      description: "An amount of money."
+      properties:
+        currencyAmount:
+          type: number
+          nullable: true
+          description: "Signed amount: negative is taken from the seller, positive is credited to the seller."
+          example: -2.11
+        currencyCode:
+          type: string
+          nullable: true
+          description: "ISO 4217 currency code."
+          example: "USD"
+
+    RelatedIdentifier:
+      type: object
+      description: "A business identifier of a transaction."
+      properties:
+        relatedIdentifierName:
+          type: string
+          nullable: true
+          example: "DEFERRED_TRANSACTION_ID"
+        relatedIdentifierValue:
+          type: string
+          nullable: true
+          example: "2P90huBVEuXPhQvmGJYEjveW5MD1fNiZY-5pH-RjXJI"
+
+    ItemRelatedIdentifier:
+      type: object
+      description: "A business identifier of a transaction item."
+      properties:
+        itemRelatedIdentifierName:
+          type: string
+          nullable: true
+          example: "ORDER_ADJUSTMENT_ITEM_ID"
+        itemRelatedIdentifierValue:
+          type: string
+          nullable: true
+          example: "168670566700481"
+
+    MarketplaceDetails:
+      type: object
+      description: "The marketplace of a transaction."
+      properties:
+        marketplaceId:
+          type: string
+          nullable: true
+          example: "ATVPDKIKX0DER"
+        marketplaceName:
+          type: string
+          nullable: true
+          example: "Amazon.com"
+
+    SellingPartnerMetadata:
+      type: object
+      description: "The seller account a transaction belongs to."
+      properties:
+        sellingPartnerId:
+          type: string
+          nullable: true
+        accountType:
+          type: string
+          nullable: true
+          example: "Standard Orders"
+        marketplaceId:
+          type: string
+          nullable: true
+          example: "ATVPDKIKX0DER"
+
+    TransactionContext:
+      type: object
+      description: "Additional information of a transaction or an item. Amazon sends one of several context kinds; `contextType` names it and only the fields of that kind are filled."
+      properties:
+        contextType:
+          type: string
+          nullable: true
+          description: "`ProductContext`, `DeferredContext`, `AmazonPayContext`, `PaymentsContext`, `BusinessContext`, `TimeRangeContext`, `AddressContext` and others."
+          example: "ProductContext"
+        asin:
+          type: string
+          nullable: true
+          description: "ProductContext: ASIN of the item."
+          example: "B00CQKDYEQ"
+        sku:
+          type: string
+          nullable: true
+          description: "ProductContext: seller SKU of the item."
+          example: "ISYKRfba"
+        quantityShipped:
+          type: integer
+          nullable: true
+          description: "ProductContext: quantity shipped."
+          example: 1
+        fulfillmentNetwork:
+          type: string
+          nullable: true
+          description: "ProductContext: `AFN` or `MFN`."
+          example: "AFN"
+        deferralReason:
+          type: string
+          nullable: true
+          description: "DeferredContext: the deferral policy, for example `DD7` (delivery date policy) or `B2B` (invoiced orders)."
+          example: "DD7"
+        maturityDate:
+          type: string
+          nullable: true
+          description: "DeferredContext: when the deferred transaction is released, ISO-8601."
+          example: "2026-09-10T19:45:43Z"
+        storeName:
+          type: string
+          nullable: true
+          description: "AmazonPayContext or BusinessContext: store name."
+        orderType:
+          type: string
+          nullable: true
+          description: "AmazonPayContext: order type."
+        channel:
+          type: string
+          nullable: true
+          description: "AmazonPayContext: channel."
+        paymentType:
+          type: string
+          nullable: true
+          description: "PaymentsContext: type of payment."
+        paymentMethod:
+          type: string
+          nullable: true
+          description: "PaymentsContext: method of payment."
+        paymentReference:
+          type: string
+          nullable: true
+          description: "PaymentsContext: payment reference."
+        paymentDate:
+          type: string
+          nullable: true
+          description: "PaymentsContext: payment date, ISO-8601."
+        startTime:
+          type: string
+          nullable: true
+          description: "TimeRangeContext: start of the period, ISO-8601."
+        endTime:
+          type: string
+          nullable: true
+          description: "TimeRangeContext: end of the period, ISO-8601."
+
+    ErrorResult:
+      type: object
+      description: "Represents an error response, including detailed error messages."
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+
+    Message:
+      type: object
+      description: "Details about an error or informational message."
+      properties:
+        level:
+          type: string
+          description: "The severity level of the message."
+          enum: [emergency, alert, critical, error, warning, notice, info, debug]
+        type:
+          type: string
+          description: "The type of message. Defaults to LOGGER_MESSAGE if not specified."
+          enum: [UNDEFINED, LOGGER_MESSAGE]
+        text:
+          type: string
+          description: "A detailed description of the message."
+
+    SuccessResult:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResult"
+      type: object
+      description: "Represents a successful response, optionally including additional data."
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          description: "Response-specific data."
