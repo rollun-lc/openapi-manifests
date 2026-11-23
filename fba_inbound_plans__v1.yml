@@ -1426,7 +1426,9 @@ components:
         readyToShipWindow:
           $ref: "#/components/schemas/WindowInput"
         contactInformation:
-          $ref: "#/components/schemas/ContactInformationInput"
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/ContactInformationInput"
 
     WindowInput:
       type: object
@@ -1491,7 +1493,9 @@ components:
           maxLength: 38
           example: "tof61cf5c4-75c7-4670-88f6-3c6d0a9f5c7a"
         contactInformation:
-          $ref: "#/components/schemas/ContactInformationInput"
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/ContactInformationInput"
 
     # ---------------------------------------------------------------- results
 
@@ -2413,7 +2417,13 @@ components:
         availabilityType:
           type: string
           nullable: true
+          description: "`AVAILABLE`, `BLOCKED`, `CONGESTED` or `DISCOUNTED`."
           example: "AVAILABLE"
+        discounts:
+          type: array
+          description: "Discounts of the option, for example of a `DISCOUNTED` window."
+          items:
+            $ref: "#/components/schemas/Incentive"
         startDate:
           type: string
           nullable: true
