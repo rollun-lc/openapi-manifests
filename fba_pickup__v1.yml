@@ -21,6 +21,8 @@ tags:
   - name: FbaSrOrders
   - name: FbaShipments
   - name: FbaParcels
+  - name: ItemLabels
+  - name: CurrentEmployee
 paths:
   "/fbaSrBoxes/{id}/open":
     post:
@@ -203,6 +205,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  "/currentEmployee":
+    get:
+      tags:
+        - CurrentEmployee
+      # operationId is required here for the same reason as at /fbaShipments:
+      # without it the generator derives the bare «Get» and the Rest object
+      # answers with the generic get() instead of this read.
+      operationId: currentEmployeeGet
+      description: "Who is signed in and which warehouse the app works on for them
+                    (FR-37 of the packing PRD: the warehouse follows the signed-in
+                    employee, there is no choice on the screen). The app reads the
+                    receiving queue, the shelf and the open shipment for this
+                    warehouse. It is the same employee -> warehouse map the packing
+                    commands use, so what the app shows and where a shipment is
+                    written cannot disagree. Before this read the app took the
+                    warehouse from front_config, which holds one value for everybody,
+                    and the Utah picker saw the Conroe shelf
+                    (https://trello.com/c/y2SeuUr2)."
+      responses:
+        "200":
+          description: "The employee and their warehouse."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentEmployeeResponse'
+        "500":
+          description: "Refusal, text in messages[].text:
+                        employee_not_resolved (no X-User-Acl-Id, or no employees row
+                        with that AclUserId),
+                        warehouse_not_resolved (the employee exists but is not mapped
+                        to any warehouse). There is no fallback warehouse."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   "/fbaShipments":
     post:
       tags:
@@ -226,8 +264,9 @@ paths:
                     в 1061 — ответ 200 с кодом shipment_already_open, data несёт
                     СУЩЕСТВУЮЩУЮ Отправку и alreadyOpen = true. Для приложения это
                     успех, экран исключения не показывается.
-                    Отправку по лестнице приложение не ведёт и не закрывает —
-                    этим занят помощник менеджера."
+                    Отправку по лестнице приложение не ведёт — этим занят помощник
+                    менеджера. The one exception is «FINISH PACKING»,
+                    POST /fbaShipments/{id}/close, 1061 -> 1062."
       responses:
         "200":
           description: "Отправка создана либо уже была открыта.
@@ -310,6 +349,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  "/fbaShipments/{id}/close":
+    post:
+      tags:
+        - FbaShipments
+      description: "The «FINISH PACKING» button. Moves the shipment 1061 Shipment filling ->
+                    1062 Shipment creation on mp: the pickuper says the shipment is packed,
+                    and the warehouse may open the next one with «+ SHIPMENT».
+                    Without this command a full shipment stayed in 1061 until a manager
+                    moved it by hand, and the warehouse could neither add a box nor
+                    start a new shipment (https://trello.com/c/xF8ikwih).
+                    No request body: the shipment id in the path and the identity
+                    in the header are all the command needs.
+                    The status is checked and written under the lock of the shipment row,
+                    the same lock «+ NEW BOX» and «BOX READY» take: a box cannot appear
+                    or close in the middle of the check.
+                    Only 1061 is moved. The app still does not drive the rest of the
+                    ladder: Amazon Shipment ID, STA and the next statuses stay with
+                    the manager.
+                    A repeat is a success: a shipment that is no longer in 1061 comes
+                    back as it is, with alreadyClosed = true and nothing written."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Shipment Id, which is also the CRM deal Id"
+          example: "719257"
+      responses:
+        "200":
+          description: "The shipment is closed, or was closed before (alreadyClosed = true).
+                        A business stop comes with the same code, in messages[].text
+                        with level: error, and without data:
+                        shipment_not_found (no shipment with this Id in CRM, or the Id
+                        is not numeric),
+                        shipment_empty (the shipment has no boxes; there is nothing
+                        to send, and the empty shipment is reused by the next
+                        «+ SHIPMENT»),
+                        shipment_has_open_boxes (a box is still in 1041 Parcel filling;
+                        it is somebody's unfinished work and may hold a draft on a phone).
+                        Nothing is written on a stop."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentResponse'
+        "500":
+          description: "Processing error. employee_not_resolved (no X-User-Acl-Id, or no
+                        employee with this AclUserId in employees) and unexpected
+                        exceptions with free text."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   "/fbaParcels/{id}/close":
     post:
       tags:
@@ -343,8 +436,10 @@ paths:
                          parcel_locked (200), повтор по своей закрытой — успех
                          с alreadyClosed;
                       5. измерения: measurements_required (200);
-                      6. остаток по Полке: not_enough_on_shelf (200);
-                      7. запись состава: origin_offer_not_found (500) —
+                      6. склад Отправки: shipment_not_found (200), если связь,
+                         NmSender или warehouse code непригодны;
+                      7. остаток по Полке: not_enough_on_shelf (200);
+                      8. запись состава: origin_offer_not_found (500) —
                          он всплывает при разрешении офферов, то есть последним,
                          ровно как в complete v1.
                     Отсюда однозначный ответ на пустое тело {} по существующей
@@ -362,9 +457,10 @@ paths:
                     коробка. Схема minimum на измерениях не ставит намеренно —
                     иначе ответом станет тот самый 500 «Request validation failed»
                     без кода словаря, а пикаперу нужен разбираемый стоп.
-                    Остаток сверяется по view_fba_shelf внутри той же транзакции;
-                    отдельного обновления Полка не требует — она вьюха над этими же
-                    позициями и меняется в тот же момент.
+                    После захвата коробки команда блокирует строку её Отправки,
+                    и только затем читает warehouse/view_fba_shelf. Поэтому close
+                    одной Отправки сериализованы и ожидавший видит уже вычтенный
+                    предыдущим close остаток. Отдельного обновления Полка не требует.
                     Статус меняется условием внутри запроса (queriedUpdate по Status),
                     а не проверкой перед записью."
       parameters:
@@ -391,8 +487,10 @@ paths:
                         с level: error: parcel_not_found (Коробки отправки с таким Id
                         в CRM нет), parcel_locked (коробка не в 1041 — после Measured
                         состав и измерения заперты, вернуть в работу может только
-                        reopen), not_enough_on_shelf (по view_fba_shelf столько
-                        не набирается), measurements_required (нет веса либо любого
+                        reopen), shipment_not_found (нет пригодной связи с Отправкой
+                        либо её NmSender после trim не pickup_cn/pickup_ut),
+                        not_enough_on_shelf (по view_fba_shelf столько не набирается),
+                        measurements_required (нет веса либо любого
                         из трёх габаритов — а также если любое из четырёх чисел
                         пришло нулём или отрицательным: коробка нулевой ширины
                         это незаполненное поле, а не измерение).
@@ -446,8 +544,8 @@ paths:
                     закрылась бы повторно никогда: close ответил бы
                     not_enough_on_shelf на её же собственное содержимое.
                     Товар возвращается на Полку сам и в тот же бакет — Полка считает
-                    по позициям и группирует по паре «RID + сотрудник», а бакет
-                    определял IdScannedBy этого же парсела.
+                    по позициям и группирует по паре «RID + Warehouse», а расход
+                    наследует Warehouse Отправки этого парсела.
                     Прежние состав, вес и габариты остаются в actions_history.
                     Тело метода — вторая очередь (часть D2); контракт, маршрут и DI
                     стоят с A2."
@@ -493,6 +591,800 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  "/fbaSrOrders/{id}/itemLabels":
+    post:
+      tags:
+        - ItemLabels
+      description: "Кнопка «Print FNSKU labels» по заказу приёмки. Читает фактически
+                    принятое по заказу, сопоставляет каждый RID с MLN и печатает
+                    этикетки Amazon на всё, что сопоставилось, — одним PDF.
+                    Ссылка на PDF живёт около 29 секунд: ручка синхронная, ничего
+                    не кэширует и не откладывает, а приложение обязано уйти
+                    на ссылку сразу, а не показывать её «на потом».
+                    Количество — БОЛЬШЕЕ из QtyOrdered и QtyReceived. Наклейки
+                    нужны пикеру заранее, ДО вскрытия коробки: иначе он вскрывает
+                    её и клеить нечего. Максимум, а не просто заказанное, — потому
+                    что поставщик иногда кладёт больше заказанного, и тогда
+                    наклеек не хватило бы. Лишняя наклейка стоит ноль и летит
+                    в мусор, нехватка останавливает работу.
+                    Ручка READ-ONLY — ни одной записи ни в CRM, ни в Amazon: ни
+                    inbound plan, ни shipment, ни STA workflow там не создаётся,
+                    в actions_history ничего не ложится. Отсюда повтор безопасен
+                    по построению, и журнала напечатанного нет: повторное нажатие
+                    напечатает этикетки заново на полное количество.
+                    Резолв RID -> MLN неоднозначен принципиально: у одного RID
+                    бывает несколько активных листингов, у каждого свой MSIN, —
+                    выбор MLN это выбор, какой ASIN мы пополняем, и машина его
+                    не делает. Такая строка возвращается с mln_ambiguous и списком
+                    кандидатов, а печатается всё остальное.
+                    Ни одна строка не пропадает молча: data.lines несёт РАСКЛАДКУ
+                    ПО ВСЕМ строкам заказа с количеством > 0 — и напечатанным,
+                    и нет, с кодом причины по каждой непечатанной. Молчаливый
+                    пропуск здесь это железка, приехавшая на Amazon без этикетки."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id заказа поставщику (сделка FbaSrOrder)"
+          example: "719944"
+      responses:
+        "200":
+          description: "Ссылка на PDF и полная раскладка по строкам заказа.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: order_not_found (заказа с таким Id в CRM
+                        нет вовсе либо Id нечисловой — MySQL привёл бы '719944abc'
+                        к 719944 и напечатал бы чужой заказ),
+                        order_has_no_received_items (заказ ЕСТЬ, но печатать
+                        по нему нечего: ни одной строки, у которой хоть одно
+                        из QtyOrdered и QtyReceived больше нуля. После того как
+                        печать перестала ждать приёмку, это означает заказ
+                        без позиций, а не непроведённую приёмку — код словаря
+                        оставлен прежним, чтобы не ломать приложение),
+                        order_source_unavailable (не ответила НАША база: вьюха
+                        заказа либо чтение самого заказа),
+                        inventory_unavailable (fba-inventory не ответил либо отдал
+                        столько строк, что список кандидатов мог быть усечён: без
+                        полных кандидатов печатать нечего, и Amazon мы не зовём),
+                        amazon_labels_unavailable (amz-orders не ответил либо
+                        ответил не 200; вторым сообщением едет текст от него),
+                        nothing_to_print (ни одна строка заказа не резолвилась
+                        в MLN — печатать физически нечего, Amazon требует минимум
+                        одну строку в mskuQuantities),
+                        too_many_items (заказ разошёлся больше чем на 100 листингов;
+                        потолок mskuQuantities считается по СХЛОПНУТЫМ строкам,
+                        и разбивать заказ будет человек).
+                        Различать order_not_found и order_has_no_received_items
+                        обязательно: «такого заказа нет» отправляет менеджера
+                        перебирать цифры номера, который может лежать перед ним
+                        верным. Поэтому при пустой вьюхе заказ дочитывается
+                        отдельно, и только отдельным чтением решается, какой
+                        из двух кодов отдать.
+                        При стопе data, как правило, отсутствует. ИСКЛЮЧЕНИЯ —
+                        nothing_to_print и too_many_items: там data ЕСТЬ и несёт
+                        lines с причиной по каждой строке, labelsTotal и без url.
+                        Прецедент в модуле — box_already_closed, отдающий
+                        фактическое состояние коробки: это ровно те стопы, при
+                        которых человеку нужнее всего именно раскладка —
+                        «ничего не напечаталось» и «строк слишком много» без
+                        разбора по строкам не дают ему ни одного следующего шага."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Ошибка обработки. Кодов словаря у этой ручки здесь нет:
+                        она read-only, личность ей не нужна (EmployeeResolver
+                        не зовётся вовсе), а всё, что может пойти не так снаружи,
+                        уже разобрано кодами 200. Сюда приходит только
+                        непредвиденное исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/itemLabels":
+    post:
+      tags:
+        - ItemLabels
+      # operationId обязателен здесь по той же причине, что и у /fbaShipments.
+      # Без него генератор выводит имя действия из пути и метода — itemLabelsPost, —
+      # а оно после отсечения имени тега (ItemLabels) схлопывается
+      # в зарезервированное «Post», и Rest-объект получает generic post($bodyData)
+      # вместо своего именованного метода. Тело у команды есть, поэтому generic post
+      # не упал бы, — но метод контроллера пришлось бы назвать просто post(),
+      # рядом с fbaSrOrdersIdItemLabelsPost() в том же классе. operationId уводит
+      # команду в custom action и оставляет ей собственное имя.
+      operationId: itemLabelsPrintPost
+      description: "Печать по готовому списку: FNSKU (либо сразу MLN) с количествами,
+                    без всякого заказа. Тот же вход добивает строки, не резолвнувшиеся
+                    по заказу: менеджер выбрал листинг глазами — и печатает его FNSKU.
+                    FNSKU -> MLN однозначен: FNSKU физически не бывает больше одного
+                    на MLN, и на данных это подтверждено — все 951 непустых FNSKU
+                    в fba_inventory дают ровно один mln. Поэтому список по FNSKU
+                    неоднозначности не знает вовсе, и ambiguous в его ответе не бывает.
+                    Строка, несущая mln, в инвентарь не ходит и уезжает в Amazon
+                    как есть: это уже конечный ответ на вопрос «какой листинг».
+                    Неизвестный FNSKU останавливает ВЕСЬ запрос: не печатаем ничего.
+                    Напечатать девять строк из десяти и промолчать про десятую хуже,
+                    чем не печатать: это опечатка, и человек должен её увидеть.
+                    Ручка READ-ONLY ровно так же, как и печать по заказу."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemLabelsRequest'
+      responses:
+        "200":
+          description: "Ссылка на PDF и раскладка по присланным строкам.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: empty_items (items пуст либо поля нет),
+                        too_many_items (СХЛОПНУТЫХ строк вышло больше 100 — потолок
+                        mskuQuantities у Amazon. Считается именно по схлопнутым:
+                        список на 101 строку, сходящийся к сорока листингам,
+                        печатается, отказывать ему не за что. Тихо разбить
+                        на два PDF нельзя — два PDF на один заход это изменение
+                        процесса склада, а не техническое удобство),
+                        invalid_quantity (quantity отсутствует либо <= 0;
+                        нецелое значение отсекает валидация схемы раньше — это
+                        ошибка клиента, а не бизнес-случай),
+                        invalid_line (в строке пусто и fnsku, и mln — либо, наоборот,
+                        заполнены обе: непонятно, что из них печатать. Сюда же
+                        попадает непригодный идентификатор — длиннее 40 символов
+                        либо с символом вне [A-Za-z0-9._-]: такая строка уезжает
+                        в RQL-выражение in(fnsku,(...)) к чужому сервису, где
+                        запятая или скобка ломают разбор и дают либо чужой набор
+                        строк, либо inventory_unavailable вместо внятного отказа),
+                        mln_quantity_over_limit: <fnsku|mln> (на этот листинг вышло
+                        больше 10000 этикеток — потолок quantity у Amazon,
+                        достижимый суммой одинаковых листингов),
+                        fnsku_not_found: <fnsku> (такого FNSKU в инвентаре нет;
+                        код несёт сам FNSKU после двоеточия, иначе в списке
+                        из десяти строк человеку нечего искать),
+                        mln_ambiguous: <fnsku> (в норме недостижим: FNSKU не бывает
+                        больше одного на MLN, и на данных это подтверждено на всех
+                        951 непустых FNSKU. Если он всё же пришёл — это дефект
+                        данных инвентаря, и печатать по нему наугад нельзя тем более),
+                        inventory_unavailable, amazon_labels_unavailable.
+                        nothing_to_print (в норме недостижим: каждая строка списка
+                        уже проверена на положительное количество и на резолв, —
+                        ветка держит инвариант «Amazon не зовём с пустым
+                        mskuQuantities»),
+                        order_source_unavailable у этой ручки не бывает: своей базы
+                        она не читает вовсе.
+                        Не печатается НИЧЕГО ни при одном из них: в отличие
+                        от печати по заказу, здесь частичный результат недопустим —
+                        список составлял человек.
+                        При этом data ЕСТЬ у стопов, разбирающих строки, —
+                        fnsku_not_found, mln_ambiguous, mln_quantity_over_limit,
+                        too_many_items и nothing_to_print: код в messages[0] назовёт
+                        ПЕРВУЮ сломанную строку, а раскладка пометит ВСЕ. Человек,
+                        опечатавшийся в трёх штрихкодах из десяти, обязан увидеть
+                        все три сразу, а не узнавать о них за три захода.
+                        У остальных стопов (empty_items, invalid_quantity,
+                        invalid_line, inventory_unavailable,
+                        amazon_labels_unavailable) разбирать нечего и data нет.
+                        Строка, несущая mln, в инвентарь не ходит: список целиком
+                        из mln не обращается к fba-inventory вовсе."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Ошибка обработки. Кодов словаря здесь нет по той же причине,
+                        что и у печати по заказу: ручка read-only и личности
+                        не требует. Сюда приходит только непредвиденное исключение
+                        со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/itemLabels/candidates":
+    post:
+      tags:
+        - ItemLabels
+      # operationId is required here for the same reason as at /itemLabels.
+      operationId: itemLabelsCandidatesPost
+      description: "Every Amazon listing an item can be labelled with, for a list of RIDs.
+                    The shelf of the PACK screen asks it, so that an item with two
+                    listings shows both barcodes instead of the one that was stuck
+                    last (https://trello.com/c/xF8ikwih: RID 7BNCW has X005028CKT
+                    and X00502FYJ1, the shelf showed only the first).
+                    The candidates are the same the label print resolves from:
+                    the fba-inventory binding plus the warehouse label history
+                    (fromHistory = true), one request for the whole list.
+                    Nothing is chosen here and nothing is printed: the listing is
+                    still picked at the LABELS step. READ-ONLY, no identity needed."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemLabelsCandidatesRequest'
+      responses:
+        "200":
+          description: "data.items holds one entry per known RID with its candidates;
+                        a RID unknown to the inventory and to the history comes with
+                        an empty candidates list. A RID that is not a valid identifier
+                        is skipped, so one odd row does not take the barcodes off
+                        the whole shelf.
+                        A business stop comes with the same code, in messages[].text
+                        with level: error, and without data:
+                        too_many_items (more than 500 RIDs, the size of the shelf
+                        the app is ready to draw),
+                        inventory_unavailable (fba-inventory did not answer; the
+                        shelf then falls back to the single FNSKU of the FbaShelf view)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsCandidatesResponse'
+        "500":
+          description: "Processing error. Only an unexpected exception with free text."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaSrOrders/{id}/itemLabels/plan":
+    post:
+      tags:
+        - ItemLabels
+      operationId: fbaSrOrdersIdItemLabelsPlanPost
+      description: "Раскладка по заказу БЕЗ артефакта: что напечаталось бы, если
+                    нажать печать прямо сейчас, и по каким строкам человеку
+                    придётся выбирать самому.
+                    Нужна потому, что выбор делается ДО печати, а не после.
+                    У одного RID бывает несколько листингов, и приехавшую партию
+                    менеджер делит между ними — 7 штук на один ASIN, 6 на другой.
+                    Узнать, что делить вообще есть что, можно только из раскладки,
+                    поэтому она отделена от печати в собственную ручку: показать
+                    попап раскладки после того, как PDF уже сгенерирован, поздно.
+                    Читает и резолвит РОВНО ТО ЖЕ и ТЕМ ЖЕ кодом, что печать
+                    по заказу: те же строки, то же количество (большее
+                    из QtyOrdered и QtyReceived), тот же резолв RID -> MLN,
+                    те же кандидаты у неоднозначных строк.
+                    ОФФЛАЙН и READ-ONLY: ни Amazon, ни amz-orders не зовутся
+                    вовсе, в CRM ничего не пишется. Отсюда повтор бесплатен,
+                    и трёх стопов печати у неё не бывает по построению:
+                    amazon_labels_unavailable, too_many_items
+                    и mln_quantity_over_limit.
+                    Границы применяются ФОРМАТНЫЕ, как у выгрузки файла, а не
+                    как у SP-API: раскладка обслуживает оба артефакта сразу,
+                    и показать листинг, который файл принимает, а печать
+                    выбрасывает, честнее, чем спрятать его от обоих. Печать
+                    отсеет его сама и скажет об этом своим кодом."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id заказа поставщику (сделка FbaSrOrder)"
+          example: "719944"
+      responses:
+        "200":
+          description: "Раскладка по всем строкам заказа. Артефакта нет вовсе:
+                        ни url, ни fileName, ни fileContent — их отсутствие здесь
+                        норма, а не признак отказа.
+                        Достижимые стопы: order_not_found,
+                        order_has_no_received_items, order_source_unavailable,
+                        inventory_unavailable. nothing_to_print НЕ достижим
+                        и не проверяется: раскладка, в которой не резолвилось
+                        ничего, — это законный ответ, и он-то человеку и нужен."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Непредвиденное исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaSrOrders/{id}/itemLabels/allocated":
+    post:
+      tags:
+        - ItemLabels
+      operationId: fbaSrOrdersIdItemLabelsAllocatedPost
+      description: "Печать по заказу С РАСКЛАДКОЙ: количество строки делится между
+                    несколькими листингами одного и того же RID.
+                    Зачем: одна физическая железка продаётся на Amazon под
+                    несколькими карточками, у каждой свой остаток, и приехавшую
+                    партию склад делит между ними. [посчитано по проду за год]
+                    так клеились 15 товаров из 412 — 13 двумя FNSKU, один тремя,
+                    один четырьмя.
+                    Почему ОТДЕЛЬНЫЙ путь, а не тело у существующей печати:
+                    ручка без requestBody не объявляет консьюмера, и добавить
+                    его значит начать отвечать 415 на POST без Content-Type —
+                    то есть сломать уже выкаченное приложение на всё время,
+                    пока фронт не догонит бэкенд. Разводить это по релизам
+                    дороже, чем развести по путям.
+                    Всё остальное — чтение заказа, количество, резолв, границы,
+                    артефакт, стопы — РОВНО как у печати по заказу, тем же кодом.
+                    RID, которого нет в allocations, резолвится сам, как и раньше:
+                    раскладка задаётся только там, где человек её задал.
+                    Ручка READ-ONLY: раскладка НЕ сохраняется. Второе нажатие
+                    на тот же заказ снова спросит человека — журнала напечатанного
+                    у модуля нет и по этому тикету не появляется."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id заказа поставщику (сделка FbaSrOrder)"
+          example: "719944"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemLabelsAllocationRequest'
+      responses:
+        "200":
+          description: "Ссылка на PDF и полная раскладка — как у печати по заказу.
+                        Сверх её стопов достижимы ещё три, все про раскладку:
+                        allocation_unknown_rid (в allocations пришёл RID, которого
+                        в заказе нет), allocation_unknown_mln (листинг не из числа
+                        кандидатов этого RID), allocation_mismatch (сумма
+                        по RID не сошлась с количеством строки).
+                        Все три ОСТАНАВЛИВАЮТ запрос целиком и печатают ничего.
+                        Раскладка — прямой ввод человека, и разошедшаяся сумма
+                        означает, что экран разъехался с сервером: напечатать
+                        «сколько получилось» значило бы наклеить не то число
+                        наклеек и узнать об этом уже на Amazon.
+                        Значение, на котором споткнулись, едет через двоеточие
+                        первым сообщением: 'allocation_unknown_mln: 56-RG9W-ZN5N'."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Непредвиденное исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ЧЕТЫРЕ сегмента после версии, не пять — и это не вкус, а потолок шлюза.
+  # rollun-net пропускает проксированные API одним маршрутом
+  # /api/openapi/{resourceName}/{version}/{endpoint}[/{o1}[/{o2}[/{o3}]]],
+  # то есть максимум четыре сегмента. Путь длиннее не находит маршрута вовсе
+  # и получает 403 ещё на входе — до CRM запрос не доходит.
+  # [найдено 11.09.2026] первая версия этой ручки была
+  # .../itemLabels/allocated/workflowFile, пять сегментов, и кнопка файла
+  # отвечала 403. Все остальные ручки манифеста в потолок укладываются.
+  "/fbaSrOrders/{id}/itemLabels/allocatedWorkflowFile":
+    post:
+      tags:
+        - ItemLabels
+      operationId: fbaSrOrdersIdItemLabelsAllocatedWorkflowFilePost
+      description: "Выгрузка Create workflow по заказу С РАСКЛАДКОЙ: то же деление
+                    количества между листингами, но артефакт файл, а не PDF.
+                    Существует потому, что раскладка нужна ОБОИМ путям к наклейкам,
+                    а не одному: человек, выбравший 7 и 6, получает то же деление
+                    и в файле, который грузит в Send to Amazon. Оставить раскладку
+                    только печати значило бы, что второй путь тихо клеит всё
+                    на один листинг.
+                    Границы ФОРМАТНЫЕ, Amazon не зовётся, потолков количества
+                    и строк нет — как у обычной выгрузки по заказу."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id заказа поставщику (сделка FbaSrOrder)"
+          example: "719944"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemLabelsAllocationRequest'
+      responses:
+        "200":
+          description: "Файл текстом и полная раскладка. Стопы — как у выгрузки
+                        по заказу плюс три стопа раскладки: allocation_unknown_rid,
+                        allocation_unknown_mln, allocation_mismatch."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Непредвиденное исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaSrOrders/{id}/itemLabels/workflowFile":
+    post:
+      tags:
+        - ItemLabels
+      # operationId обязателен здесь по той же причине, что и у /itemLabels:
+      # без него имя действия выводится из пути и метода, а после отсечения
+      # имени тега (ItemLabels) от выведенного имени остаётся кусок, который
+      # генератор волен схлопнуть и увести в generic-метод Rest-объекта.
+      # Заданное явно имя доезжает до контроллера как есть.
+      operationId: fbaSrOrdersIdItemLabelsWorkflowFilePost
+      description: "ВТОРОЙ путь к тем же наклейкам по заказу приёмки — не замена
+                    печати через SP-API, а её сосед. Отдаёт заготовку Amazon
+                    Create workflow template: человек грузит файл в Send to Amazon,
+                    там создаётся технический STA workflow, и FNSKU-этикетки он
+                    скачивает уже оттуда. Нужен, когда Amazon не отдал PDF,
+                    когда ссылка на 29 секунд не успевает дожить до принтера,
+                    либо когда наклейки надо получить вместе с самим workflow.
+                    Читает и резолвит РОВНО ТО ЖЕ, что и печать: те же строки
+                    заказа с количеством > 0, тот же резолв RID -> MLN, та же
+                    раскладка по всем строкам с кодами причин. Различается
+                    только артефакт: там url на PDF, здесь fileName плюс
+                    fileContent — сам файл текстом.
+                    Ручка READ-ONLY и ОФФЛАЙН: Amazon не зовётся вовсе — ни SP-API,
+                    ни amz-orders. Отсюда у неё физически не бывает трёх стопов
+                    печати: amazon_labels_unavailable (звать некого),
+                    too_many_items и mln_quantity_over_limit (у формата файла
+                    нет ни потолка строк, ни потолка количества — они чужие,
+                    из операции SP-API, и к файлу отношения не имеют).
+                    Лимиты у файла ДРУГИЕ, и это главная ловушка соседства:
+                    Merchant SKU в шаблоне до 80 символов против 40 у msku
+                    в SP-API. Листинг с длинным MLN, который печать выбрасывает,
+                    файл принимает.
+                    Формат файла — tab-delimited .txt: это второй из ровно двух
+                    форматов, которые Amazon называет в инструкции к шаблону
+                    (лист Instructions, шаг 4). CSV в том списке НЕТ."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id заказа поставщику (сделка FbaSrOrder)"
+          example: "719944"
+      responses:
+        "200":
+          description: "Файл текстом и полная раскладка по строкам заказа.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: order_not_found (заказа с таким Id в CRM
+                        нет вовсе либо Id нечисловой),
+                        order_has_no_received_items (заказ ЕСТЬ, но ни одной
+                        строки с количеством больше нуля),
+                        order_source_unavailable (не ответила НАША база),
+                        inventory_unavailable (fba-inventory не ответил либо мог
+                        усечь список кандидатов),
+                        nothing_to_print (ни одна строка заказа не резолвилась
+                        в MLN — файл из нуля строк собрать нельзя).
+                        amazon_labels_unavailable, too_many_items
+                        и mln_quantity_over_limit здесь НЕ БЫВАЮТ: Amazon
+                        не зовётся, а потолки строк и количества принадлежат
+                        операции SP-API, а не формату файла.
+                        При стопе data, как правило, отсутствует. ИСКЛЮЧЕНИЕ —
+                        nothing_to_print: там data ЕСТЬ и несёт lines с причиной
+                        по каждой строке, но fileName и fileContent
+                        отсутствуют — собирать файл не из чего."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Ошибка обработки. Кодов словаря у этой ручки здесь нет:
+                        она read-only, личность ей не нужна, а всё, что может
+                        пойти не так снаружи, уже разобрано кодами 200. Сюда
+                        приходит только непредвиденное исключение
+                        со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/itemLabels/workflowFile":
+    post:
+      tags:
+        - ItemLabels
+      # operationId обязателен здесь по той же причине, что и у /itemLabels.
+      operationId: itemLabelsWorkflowFilePost
+      description: "Выгрузка Create workflow template по готовому списку: FNSKU
+                    (либо сразу MLN) с количествами, без всякого заказа. Сосед
+                    печати по списку, ровно как ручка по заказу — сосед печати
+                    по заказу: тот же вход, та же раскладка, тот же резолв,
+                    другой артефакт.
+                    Тот же вход добивает строки, не резолвнувшиеся по заказу:
+                    менеджер выбрал листинг глазами — и кладёт его в файл.
+                    Неизвестный FNSKU останавливает ВЕСЬ запрос: файла не будет
+                    вовсе. Отдать девять строк из десяти и промолчать про
+                    десятую хуже, чем не отдать ничего, — это опечатка, и человек
+                    должен её увидеть до того, как загрузит файл в Amazon.
+                    Ручка READ-ONLY и ОФФЛАЙН: Amazon не зовётся вовсе.
+                    Формат файла — tab-delimited .txt, лимиты формата, а не
+                    SP-API: Merchant SKU до 80 символов, количество без потолка,
+                    строк без потолка.
+                    Каждый листинг обязан встретиться в файле РОВНО ОДИН РАЗ,
+                    и это требование шаблона, а не удобство: без case pack Amazon
+                    допускает единственную строку на Merchant SKU. Строки,
+                    сошедшиеся к одному MLN, схлопываются с суммой количеств —
+                    так же, как перед запросом к SP-API."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemLabelsRequest'
+      responses:
+        "200":
+          description: "Файл текстом и раскладка по присланным строкам.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: empty_items (items пуст либо поля нет),
+                        invalid_quantity (quantity отсутствует либо <= 0),
+                        invalid_line (в строке пусто и fnsku, и mln — либо,
+                        наоборот, заполнены обе; сюда же попадает непригодный
+                        идентификатор — длиннее 40 символов либо с символом вне
+                        [A-Za-z0-9._-]: такая строка уезжает в RQL-выражение
+                        in(fnsku,(...)) к чужому сервису),
+                        fnsku_not_found: <fnsku> (такого FNSKU в инвентаре нет;
+                        код несёт сам FNSKU после двоеточия),
+                        mln_ambiguous: <fnsku> (в норме недостижим — FNSKU
+                        не бывает больше одного на MLN),
+                        inventory_unavailable,
+                        nothing_to_print (в норме недостижим: каждая строка
+                        списка уже проверена — ветка держит инвариант
+                        «файла из нуля строк не бывает»).
+                        Потолок длины идентификатора на ВХОДЕ остаётся 40
+                        символов и у этой ручки, хотя формат допускает 80:
+                        поле руками заполняет человек, а 40 — потолок msku,
+                        по которому в проде не набралось и трети (реальный
+                        максимум 12 у mln, 10 у fnsku). Восемьдесят символов
+                        достижимы только со стороны инвентаря, где строку
+                        пишет не человек.
+                        too_many_items, mln_quantity_over_limit
+                        и amazon_labels_unavailable здесь НЕ БЫВАЮТ: потолки
+                        принадлежат операции SP-API, а Amazon не зовётся.
+                        При этом data ЕСТЬ у стопов, разбирающих строки, —
+                        fnsku_not_found, mln_ambiguous и nothing_to_print: код
+                        в messages[0] назовёт ПЕРВУЮ сломанную строку, а раскладка
+                        пометит ВСЕ. У остальных (empty_items, invalid_quantity,
+                        invalid_line, inventory_unavailable) разбирать нечего
+                        и data нет."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Ошибка обработки. Кодов словаря здесь нет по той же
+                        причине, что и у выгрузки по заказу: ручка read-only
+                        и личности не требует. Сюда приходит только непредвиденное
+                        исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaShipments/{id}/itemLabels":
+    post:
+      tags:
+        - ItemLabels
+      # operationId обязателен здесь по той же причине, что и у /itemLabels.
+      operationId: fbaShipmentsIdItemLabelsPost
+      description: "Печать наклеек FNSKU по Отправке: всё, что лежит по её
+                    коробкам, — одним PDF. Третья лестница входа из четырёх;
+                    требование карточки — «додати можливість створення лейбл
+                    воркфлоу для товарів з айді угоди будь-якої з цих схем».
+                    Тип сделки задан ПУТЁМ, а не угадывается по номеру. Номера
+                    трёх схем берутся из одной сквозной последовательности CRM
+                    и не пересекаются ни разу, так что угадать было бы можно, —
+                    но ошибка в цифре тогда напечатала бы наклейки чужой сделки
+                    вместо отказа.
+                    Наклейки клеят ДО упаковки, поэтому печать по Отправке —
+                    заведомо ПОВТОР: этикетка отклеилась, коробку вскрыли
+                    и переупаковали, приёмка была месяц назад и её номера никто
+                    не помнит, а номер Отправки лежит перед человеком. Повтор
+                    безопасен по построению: ручка read-only, журнала
+                    напечатанного нет.
+                    Состав читается вьюхой, свёрнутой по паре (Отправка, FNSKU):
+                    десять коробок с одним товаром дают ОДНУ строку с суммой.
+                    Сворачивать по RID при этом нельзя — один RID уезжает
+                    в одной Отправке под двумя разными FNSKU, это две наклейки.
+                    Позиция С FNSKU (так её пишет карточка коробки в CRM)
+                    резолвится однозначно: FNSKU не бывает больше одного на MLN.
+                    Позиция БЕЗ FNSKU (так её пишет закрытие коробки в PACK)
+                    резолвится по RID и печатается сама, только если листинг
+                    у RID единственный — с учётом ВСЕЙ истории FNSKU товара
+                    в CRM и при любом его статусе. FNSKU истории, которому
+                    листинга в инвентаре нет, тоже считается возможной
+                    наклейкой: напечатать его нельзя, но и сам свой листинг
+                    рядом с ним не берётся. Несколько листингов — строка mln_ambiguous
+                    со всеми кандидатами, включая неактивные, и в PDF она
+                    не идёт. Статусные правила заказа здесь не действуют: они
+                    выбирают листинг по сегодняшнему статусу, а наклейка
+                    на упакованном товаре выбрана раньше."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id Отправки (сделка FbaShipment)"
+          example: "718435"
+      responses:
+        "200":
+          description: "Ссылка на PDF и полная раскладка по строкам Отправки.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: shipment_not_found (Отправки с таким Id
+                        в CRM нет вовсе либо Id нечисловой),
+                        shipment_has_no_packed_items (Отправка ЕСТЬ, но
+                        упакованного по ней нет — коробки ещё не закрыты либо
+                        их нет вовсе; состав пишется при закрытии коробки),
+                        deal_source_unavailable (не ответила НАША база: вьюха
+                        упаковки, чтение самой сделки либо история FNSKU товара
+                        для позиций без FNSKU — без неё листинг не выбирается
+                        сам, а запрос останавливается),
+                        inventory_unavailable (fba-inventory не ответил: шаблон
+                        и SP-API принимают Merchant SKU, а не FNSKU, поэтому
+                        за листингом идём туда обе ручки),
+                        amazon_labels_unavailable, nothing_to_print,
+                        too_many_items.
+                        order_not_found и order_has_no_received_items у этой
+                        ручки не бывают: заказа приёмки она не читает вовсе.
+                        При стопе data, как правило, отсутствует. ИСКЛЮЧЕНИЯ —
+                        nothing_to_print и too_many_items: там data ЕСТЬ
+                        и несёт lines с причиной по каждой строке."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Ошибка обработки. Кодов словаря здесь нет: ручка
+                        read-only, личность ей не нужна. Сюда приходит только
+                        непредвиденное исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaShipments/{id}/itemLabels/workflowFile":
+    post:
+      tags:
+        - ItemLabels
+      operationId: fbaShipmentsIdItemLabelsWorkflowFilePost
+      description: "Выгрузка Create workflow по Отправке. Из всех входов этот
+                    ближе всего к смыслу самого файла: Create workflow описывает
+                    «вот это я шлю на Amazon», а Отправка ровно это и есть.
+                    Читает и резолвит РОВНО ТО ЖЕ, что и печать по Отправке,
+                    тем же кодом; различается артефакт и границы плана.
+                    Amazon не зовётся: ни SP-API, ни amz-orders. Отсюда
+                    amazon_labels_unavailable, too_many_items
+                    и mln_quantity_over_limit здесь НЕ БЫВАЮТ. В fba-inventory
+                    ручка всё же ходит — шаблон принимает Merchant SKU,
+                    а не FNSKU, и это записано в самой карточке.
+                    Любая строка, не попавшая в файл, останавливает его
+                    целиком: в messages[0] — причина по первой такой строке,
+                    'mln_ambiguous: <RID>' (у RID несколько листингов),
+                    'mln_not_found: <RID>' (листинга нет у позиции без FNSKU)
+                    либо 'fnsku_not_found: <FNSKU>' (FNSKU позиции не знает
+                    инвентарь), в data — раскладка, файла нет. Не годится
+                    ни одна строка — nothing_to_print, как и раньше. Файл
+                    описывает всю отправку, и строка, которой в нём нет,
+                    на Amazon не едет."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id Отправки (сделка FbaShipment)"
+          example: "718435"
+      responses:
+        "200":
+          description: "Файл текстом и полная раскладка по строкам Отправки.
+                        Стопы те же, что у печати по Отправке, минус три
+                        недостижимых: shipment_not_found,
+                        shipment_has_no_packed_items, deal_source_unavailable,
+                        inventory_unavailable, nothing_to_print.
+                        При nothing_to_print data ЕСТЬ, но fileName
+                        и fileContent отсутствуют — файл из нуля строк собрать
+                        нельзя, а шапка без данных создала бы в Send to Amazon
+                        пустой workflow."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Ошибка обработки. Кодов словаря здесь нет. Сюда приходит
+                        только непредвиденное исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaParcels/{id}/itemLabels":
+    post:
+      tags:
+        - ItemLabels
+      operationId: fbaParcelsIdItemLabelsPost
+      description: "Печать наклеек FNSKU по одной Коробке отправки: только её
+                    содержимое. Четвёртая лестница входа и самая узкая —
+                    печатают по ней тогда, когда переклеивают одну вскрытую
+                    коробку, а не всю Отправку.
+                    Устроена как печать по Отправке во всём, кроме объёма:
+                    тот же резолв (FNSKU -> MLN, а без FNSKU — по RID), та же раскладка,
+                    те же коды. Состав коробки пишется при её закрытии
+                    (1041 Parcel filling -> 1042 Measured), поэтому у коробки,
+                    которую ещё наполняют, позиций нет и печатать по ней нечего."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id Коробки отправки (сделка FbaParcel)"
+          example: "722881"
+      responses:
+        "200":
+          description: "Ссылка на PDF и раскладка по строкам Коробки.
+                        Бизнес-стоп приходит этим же кодом — в messages[].text
+                        с level: error: parcel_not_found (Коробки отправки
+                        с таким Id в CRM нет вовсе либо Id нечисловой),
+                        parcel_has_no_packed_items (Коробка ЕСТЬ, но состав
+                        по ней не записан — её ещё наполняют, состав ложится
+                        при закрытии),
+                        deal_source_unavailable, inventory_unavailable,
+                        amazon_labels_unavailable, nothing_to_print,
+                        too_many_items.
+                        При nothing_to_print и too_many_items data ЕСТЬ
+                        и несёт lines с причиной по каждой строке."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Ошибка обработки. Кодов словаря здесь нет. Сюда приходит
+                        только непредвиденное исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaParcels/{id}/itemLabels/workflowFile":
+    post:
+      tags:
+        - ItemLabels
+      operationId: fbaParcelsIdItemLabelsWorkflowFilePost
+      description: "Выгрузка Create workflow по одной Коробке отправки.
+                    Тот же вход, что и у печати по Коробке; различается
+                    артефакт и границы плана. Amazon не зовётся вовсе, отсюда
+                    amazon_labels_unavailable, too_many_items
+                    и mln_quantity_over_limit здесь НЕ БЫВАЮТ. Строка,
+                    не попавшая в файл, останавливает его так же, как
+                    у Отправки, теми же кодами: раскладка есть, файла нет."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id Коробки отправки (сделка FbaParcel)"
+          example: "722881"
+      responses:
+        "200":
+          description: "Файл текстом и раскладка по строкам Коробки.
+                        Стопы: parcel_not_found, parcel_has_no_packed_items,
+                        deal_source_unavailable, inventory_unavailable,
+                        nothing_to_print.
+                        При nothing_to_print data ЕСТЬ, но fileName
+                        и fileContent отсутствуют."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLabelsResponse'
+        "500":
+          description: "Ошибка обработки. Кодов словаря здесь нет. Сюда приходит
+                        только непредвиденное исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ## General — по образцу crm_event_handler__v1.yml
@@ -529,7 +1421,74 @@ components:
                         Из девяти кодов упаковки shipment_already_open на экран
                         исключения не выходит вовсе — для приложения это успех;
                         measurements_required и reason_required экран не допускает
-                        раньше, но сервер проверяет их всё равно."
+                        раньше, но сервер проверяет их всё равно.
+                        Closing a shipment (POST /fbaShipments/{id}/close) adds two
+                        packing stops: shipment_empty and shipment_has_open_boxes.
+                        Печать этикеток FNSKU добавляет ТРИНАДЦАТЬ кодов, и они
+                        делятся надвое по месту, где едут.
+                        Девять — стопы всей команды, в messages[].text при 200:
+                        order_has_no_received_items (заказ есть, но ни одной
+                        строки с количеством больше нуля — количеством считается
+                        большее из QtyOrdered и QtyReceived), order_source_unavailable
+                        (не ответила НАША база — вьюха заказа либо чтение заказа;
+                        собственная недоступная база это предвиденный отказ,
+                        и голым HTTP 500 он приходить не должен),
+                        nothing_to_print (ни одна строка заказа не резолвилась
+                        в MLN), inventory_unavailable (fba-inventory не ответил
+                        либо отдал столько строк, что список кандидатов мог быть
+                        усечён; Amazon при этом не зовём — без полных кандидатов
+                        печатать нечего), amazon_labels_unavailable (amz-orders
+                        не ответил либо ответил не 200), fnsku_not_found (FNSKU
+                        ручного списка нет в инвентаре; останавливает ВЕСЬ запрос —
+                        печатать девять строк из десяти и молчать про десятую хуже,
+                        чем не печатать), invalid_quantity (quantity отсутствует
+                        либо <= 0), invalid_line (в строке списка пусто и fnsku,
+                        и mln, либо заполнены обе, либо идентификатор непригоден),
+                        too_many_items (СХЛОПНУТЫХ строк больше 100 — потолок
+                        mskuQuantities у Amazon).
+                        order_not_found и empty_items у печати НЕ новые: коды взяты
+                        из словаря выше и означают ровно то же самое.
+                        Ещё четыре — ПОСТРОЧНЫЕ: их место в data.lines[].code,
+                        и запрос они не останавливают: mln_ambiguous (у RID
+                        несколько кандидатов MLN, выбирает человек — строка
+                        возвращается со списком кандидатов и в PDF не идёт),
+                        mln_not_found (RID вне инвентаря либо у найденной строки
+                        нет пригодного mln, в PDF не идёт), mln_inactive_used
+                        (активных MLN нет, но нашёлся ровно один любой — печатаем
+                        его, это предупреждение, а не отказ),
+                        mln_quantity_over_limit (на листинг вышло больше 10000
+                        этикеток — потолок quantity у Amazon, достижимый суммой).
+                        ИСКЛЮЧЕНИЕ по месту: у РУЧНОГО СПИСКА mln_ambiguous
+                        и mln_quantity_over_limit приезжают ещё и в messages[0]
+                        и запрос останавливают. Причина в том, что частичная
+                        печать по списку недопустима вовсе: сломанная строка
+                        отменяет весь запрос, и код обязан быть там, где клиент
+                        ищет причину отказа. В data.lines[] они при этом остаются
+                        тоже — с пометкой на КАЖДОЙ сломанной строке.
+                        Так же отказывает выгрузка Create workflow по Отправке
+                        и по Коробке — при ЛЮБОЙ строке, не попавшей в файл:
+                        'mln_ambiguous: <RID>', 'mln_not_found: <RID>' либо
+                        'fnsku_not_found: <FNSKU>' по первой такой строке,
+                        раскладка в data, файла нет.
+                        ДВЕ ФОРМЫ ДЕТАЛИ, обе намеренные, и клиент обязан знать
+                        про обе.
+                        Первая — ЗНАЧЕНИЕ через двоеточие в первом же сообщении:
+                        'fnsku_not_found: X001LOD5KR', 'mln_ambiguous: X001LOD5KR',
+                        'mln_quantity_over_limit: 2N-BCI2-K3LK'. Так едет то, что
+                        разбирается машинально и указывает на конкретную строку
+                        запроса: код до двоеточия, значение после.
+                        Вторая — ЧУЖОЙ ТЕКСТ отдельным ВТОРЫМ сообщением:
+                        messages[0].text это amazon_labels_unavailable, а
+                        messages[1].text — то, что сказал amz-orders, свободной
+                        строкой на его языке (amazon_error, amazon_throttled,
+                        no_document_returned и прочее). Код нужен приложению,
+                        текст — дежурному, и склеивать их в одну строку нельзя:
+                        приложение лишилось бы машиночитаемой причины.
+                        Uq0J6Z1I adds one packing stop, shipment_of_other_warehouse: «+ NEW BOX»
+                        (POST /fbaShipments/{id}/parcels), «BOX READY» (POST /fbaParcels/{id}/close)
+                        and «FINISH PACKING» (POST /fbaShipments/{id}/close) on a shipment of another
+                        warehouse than the signed-in employee's. The same three commands now refuse an
+                        employee outside the warehouse map with the 500 warehouse_not_resolved."
     ErrorResponse:
       type: object
       properties:
@@ -572,6 +1531,39 @@ components:
         data:
           $ref: '#/components/schemas/OrderSummary'
 
+    CurrentEmployeeResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Success — data with the signed-in employee and their warehouse.
+                    On a refusal the read answers HTTP 500 with employee_not_resolved
+                    or warehouse_not_resolved and has no data."
+      properties:
+        data:
+          $ref: '#/components/schemas/CurrentEmployee'
+
+    CurrentEmployee:
+      type: object
+      description: "The signed-in employee and the warehouse the app works on for them."
+      required:
+        - id
+        - name
+        - warehouse
+      properties:
+        id:
+          type: string
+          description: "employees.Id of the signed-in person."
+        name:
+          type: string
+          description: "employees.Name; empty when the row has none."
+        warehouse:
+          type: string
+          enum:
+            - pickup_cn
+            - pickup_ut
+          description: "The warehouse of the employee: the receiving queue, the shelf
+                        and the open shipment are read for it."
+
     ShipmentResponse:
       allOf:
         - $ref: '#/components/schemas/ErrorResponse'
@@ -609,7 +1601,51 @@ components:
         shipment:
           $ref: '#/components/schemas/ShipmentState'
 
+    ItemLabelsResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Успех — data со ссылкой на PDF и полной раскладкой по строкам.
+                    При бизнес-стопе (messages[].level = error) data, как правило,
+                    отсутствует. Исключения — стопы, при которых человеку нужна
+                    именно раскладка, чтобы сделать следующий шаг: nothing_to_print
+                    (ни одна строка не резолвилась), too_many_items (схлопнутых
+                    строк больше сотни — разбивать будет человек, и без раскладки
+                    он не знает, по какой границе резать) и разбор сломанных строк
+                    ручного списка (fnsku_not_found, mln_ambiguous,
+                    mln_quantity_over_limit), и отказ выгрузки по Отправке
+                    и Коробке (mln_ambiguous, mln_not_found, fnsku_not_found).
+                    У всех у них url отсутствует:
+                    печатать было нечего, и выдуманной ссылки в ответе не бывает.
+                    Ровно те стопы, ради которых раскладка и заводилась: человеку
+                    нужно знать не «не напечаталось», а почему по каждой строке."
+      properties:
+        data:
+          $ref: '#/components/schemas/ItemLabelsResult'
+
+    ItemLabelsCandidatesResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      description: "Success — data with the candidates of every RID asked.
+                    On a business stop (messages[].level = error) data is absent."
+      properties:
+        data:
+          $ref: '#/components/schemas/ItemLabelsCandidates'
+
     ## Custom requests
+    ItemLabelsCandidatesRequest:
+      type: object
+      description: "Body of the candidates lookup. No required fields, for the same reason
+                    as ItemLabelsRequest: a missing list must answer inside the
+                    dictionary, not with «Request validation failed»."
+      properties:
+        rids:
+          type: array
+          description: "RIDs to look up, up to 500. Duplicates and case are ignored."
+          items:
+            type: string
+            example: "7BNCW"
     CompleteBoxRequest:
       type: object
       required:
@@ -686,6 +1722,126 @@ components:
                         из одних пробелов тоже: reason_required смотрит на причину
                         после trim — «   » это не причина"
           example: "Wrong item inside, repack"
+
+    ItemLabelsRequest:
+      type: object
+      description: "Тело печати по готовому списку. ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ НЕТ НИ ОДНОГО —
+                    ни items, ни чего-либо внутри строки, ровно как у CloseParcelRequest
+                    и ReopenParcelRequest второй версии.
+                    Пометь items required — и тело {} до команды не доедет: провал
+                    валидации схемы каркас превращает в HTTP 500 «Request validation
+                    failed» со свободным текстом (AbstractHandler::runAction), то есть
+                    в ответ ВНЕ словаря, из которого приложение не достанет ни кода,
+                    ни подсказки человеку. А отсутствующий items обязан давать
+                    200 + empty_items, то есть код словаря.
+                    По той же причине здесь нет ни minItems, ни maxItems: потолок
+                    в 100 строк проверяет сервер и отвечает too_many_items —
+                    причём по СХЛОПНУТЫМ строкам, а не по присланным."
+      properties:
+        items:
+          type: array
+          description: "Строки печати, от 1 до 100. Одна строка на MLN.
+                        Потолок — не наше правило: Amazon принимает
+                        не больше 100 элементов mskuQuantities за запрос."
+          items:
+            $ref: '#/components/schemas/ItemLabelsRequestItem'
+
+    ItemLabelsAllocationRequest:
+      type: object
+      description: "Тело печати с раскладкой. Обязательных полей нет ни одного —
+                    по той же причине, что и у ItemLabelsRequest: провал валидации
+                    схемы каркас превращает в HTTP 500 со свободным текстом,
+                    то есть в ответ ВНЕ словаря кодов.
+                    Пустой allocations — законное тело: оно означает «раскладки
+                    нет, резолви сам» и даёт ровно то же, что обычная печать
+                    по заказу. Приложение шлёт его, когда спорных строк
+                    в заказе не оказалось."
+      properties:
+        allocations:
+          type: array
+          description: "Раскладка: сколько штук какого RID на какой листинг.
+                        Одна запись на пару (RID, листинг), а не на RID: строка,
+                        делимая надвое, приезжает двумя записями.
+                        RID, которого здесь нет, резолвится сервером сам."
+          items:
+            $ref: '#/components/schemas/ItemLabelsAllocation'
+
+    ItemLabelsAllocation:
+      type: object
+      description: "Одна доля раскладки. Обязательных полей нет НИ ОДНОГО,
+                    и это намеренно: доля без RID обязана дать 200 с кодом
+                    словаря, а не HTTP 500 валидации схемы."
+      properties:
+        rid:
+          type: string
+          description: "Rollun ID товара, offers.Article. Обязан быть среди строк
+                        заказа — иначе allocation_unknown_rid: раскладка
+                        на товар, которого в заказе нет, означает разъехавшийся
+                        экран, а не опечатку в одной цифре"
+          example: "8A82V"
+        mln:
+          type: string
+          description: "Листинг, на который идёт эта доля. Обязан быть среди
+                        КАНДИДАТОВ этого RID — тех самых, что ручка раскладки
+                        вернула в candidates[]. Листинг со стороны — это выбор,
+                        который человеку никто не предлагал, и печать по нему
+                        отправила бы железку на карточку, о которой сервер
+                        не знает: allocation_unknown_mln.
+                        Регистр значим для Amazon и не нормализуется"
+          example: "2N-BCI2-K3LK"
+        quantity:
+          type: integer
+          description: "Сколько штук на этот листинг. Целое, строго больше нуля:
+                        доля на ноль штук это отсутствие доли, и слать её незачем.
+                        Ноль, минус и дробь дают invalid_quantity.
+                        Сумма долей одного RID обязана сойтись с количеством
+                        строки РОВНО — недобор означал бы железки без наклеек,
+                        перебор лишние наклейки, и обе цифры человек видел
+                        на экране сам"
+          example: 7
+
+    ItemLabelsRequestItem:
+      type: object
+      description: "Строка списка печати. Обязательных полей нет НИ ОДНОГО, и это
+                    намеренно: строка без товара обязана дать 200 + invalid_line,
+                    а не HTTP 500 валидации схемы. Из fnsku и mln заполняется
+                    РОВНО ОДНО. Обе пустые или обе заполненные — invalid_line:
+                    во втором случае непонятно, что печатать, и молча выбрать одно
+                    из двух значит напечатать не тот штрихкод."
+      properties:
+        fnsku:
+          type: string
+          description: "Штрихкод Amazon на единице FBA-товара. Резолвится в MLN
+                        походом в fba_inventory — однозначно, FNSKU физически
+                        не бывает больше одного на MLN.
+                        Неизвестный FNSKU останавливает весь запрос: fnsku_not_found.
+                        Поиск регистронезависим: 'x001lod5kr' найдёт ту же строку,
+                        что и 'X001LOD5KR' — MySQL сравнивает без учёта регистра,
+                        и группировка на нашей стороне приведена к тому же виду,
+                        иначе одна заглавная буква давала бы ложный fnsku_not_found.
+                        Ограничения: не длиннее 40 символов и только [A-Za-z0-9._-];
+                        всё прочее — invalid_line"
+          example: "X001LOD5KR"
+        mln:
+          type: string
+          description: "Листинг (у Amazon Seller SKU). Уезжает в Amazon КАК ЕСТЬ,
+                        в присланном написании, и без похода в инвентарь: это уже
+                        конечный ответ на вопрос «какой листинг пополняем».
+                        Регистр значим для Amazon (NBFCCfba), поэтому значение
+                        не нормализуется; регистронезависимо только СХЛОПЫВАНИЕ —
+                        два написания одного листинга в списке сложатся в одну
+                        строку запроса вместо двух, то есть вместо duplicate_msku.
+                        Ограничения те же: не длиннее 40 символов
+                        и только [A-Za-z0-9._-]"
+          example: "2N-BCI2-K3LK"
+        quantity:
+          type: integer
+          description: "Сколько этикеток печатать по этой строке. Целое, строго
+                        больше нуля: строка на ноль этикеток это отсутствие строки.
+                        Ноль, минус и дробь дают 200 + invalid_quantity.
+                        Потолок 10000 на ЛИСТИНГ (не на строку) проверяется после
+                        схлопывания и даёт mln_quantity_over_limit"
+          example: 1
 
     ## Resources
     ReceivedItem:
@@ -886,7 +2042,8 @@ components:
                         1065 Receiving by Amazon, 1066 Check discrepancy,
                         100 Archive, 101 Wrong.
                         Приложению нужен только 1061 — дальше Отправку ведёт
-                        помощник менеджера"
+                        помощник менеджера. The app writes one step itself:
+                        1061 -> 1062 on «FINISH PACKING»"
           example: 1061
         statusName:
           type: string
@@ -924,6 +2081,12 @@ components:
           description: "true — Отправка существовала до этого запроса, мы ничего
                         не создали. Для приложения это успех: оно открывает
                         существующую Отправку"
+        alreadyClosed:
+          type: boolean
+          description: "Only in the answer to POST /fbaShipments/{id}/close.
+                        false — this request moved the shipment out of 1061;
+                        true — it was not in 1061 already and nothing was written.
+                        Both are a success for the app: the shipment is no longer open"
 
     ParcelState:
       type: object
@@ -996,3 +2159,278 @@ components:
                         пуст — и это не ошибка, а нормальное состояние"
           items:
             $ref: '#/components/schemas/PackedItem'
+
+    ItemLabelsResult:
+      type: object
+      required:
+        - labelsTotal
+        - linesPrinted
+        - linesFailed
+        - lines
+      description: "Итог печати. Четыре обязательных поля есть ВСЕГДА, включая стоп
+                    nothing_to_print, — а url, expiresAt, fileName и fileContent
+                    необязательны ровно поэтому: у стопа их нет, печатать было нечего.
+                    Счётчики считаются по строкам раскладки, а не по строкам,
+                    уехавшим в Amazon: два RID, резолвнувшихся в один MLN,
+                    схлопываются в одну строку запроса к Amazon, но в раскладке
+                    остаются обе, и обе считаются напечатанными.
+                    Один объект обслуживает ДВА способа получить те же наклейки:
+                    печать через SP-API отдаёт url плюс expiresAt, выгрузка
+                    Create workflow — fileName плюс fileContent. Раскладка,
+                    счётчики и коды по строкам у них общие и считаются одинаково;
+                    различается ровно артефакт. Пары взаимоисключающие: url
+                    и fileContent в одном ответе не встречаются никогда."
+      properties:
+        url:
+          type: string
+          description: "Ссылка на PDF с этикетками, подписанная S3.
+                        ЖИВЁТ ОКОЛО 29 СЕКУНД (X-Amz-Expires=29 в подписи, хотя
+                        поле expiration в ответе Amazon обещает минуту).
+                        Приложение обязано перейти на неё немедленно, тем же жестом
+                        пользователя, а не показывать её экраном «нажмите, когда
+                        будете готовы». Наружу идёт ссылка, а не байты файла.
+                        Отсутствует при любом стопе"
+          example: "https://fba-api-marketplace-item-labels-na.s3.amazonaws.com/itemLabel-0000.pdf?X-Amz-Expires=29"
+        expiresAt:
+          type: string
+          description: "Когда ссылка протухнет, ISO-8601, как это сообщил Amazon.
+                        Отдаётся как есть, для отображения: полагаться на него как
+                        на реальное окно нельзя — в подписи стоит 29 секунд,
+                        а тут приходит минута. Отсутствует при любом стопе"
+          example: "2026-09-02T13:13:04+00:00"
+        fileName:
+          type: string
+          description: "Имя файла Create workflow template, который человек грузит
+                        в Send to Amazon. Есть ТОЛЬКО у ручек workflowFile и только
+                        когда файл собран; у печати через SP-API и при любом стопе
+                        отсутствует"
+          example: "amazon-create-workflow-order-719944.txt"
+        fileContent:
+          type: string
+          description: "САМ ФАЙЛ, текстом. Формат — tab-delimited, второй из двух,
+                        которые Amazon называет в инструкции к шаблону
+                        (лист Instructions, шаг 4: Option 2 — save the Create
+                        workflow template spreadsheet as a tab-delimited file
+                        (.txt) and upload it via Seller Central). CSV в том списке
+                        НЕТ, старого .xls тоже — только .xlsx и этот .txt.
+                        Байтами, а не ссылкой: файл крошечный — сотня строк
+                        по два заполненных поля, — живёт ровно один жест человека
+                        и нигде не сохраняется: ни в S3, ни на диск, ни в CRM.
+                        Разделитель полей табуляция, конец строки CRLF, кодировка
+                        ASCII — шаблон Amazon не допускает не-английских символов
+                        в Merchant SKU, и это его требование, не наше.
+                        Отсутствует у печати через SP-API и при любом стопе"
+          example: "Please review the Example tab before you complete this sheet\r\n\r\nDefault prep owner\tSeller\r\n"
+        labelsTotal:
+          type: integer
+          description: "Сколько этикеток в PDF: сумма quantity по строкам
+                        со status printed и printed_inactive.
+                        У nothing_to_print — 0.
+                        У ручек workflowFile считается так же — это число наклеек,
+                        которые человек получит, загрузив файл"
+          example: 225
+        linesPrinted:
+          type: integer
+          description: "Сколько строк раскладки уехало в печать (printed
+                        плюс printed_inactive)"
+          example: 16
+        linesFailed:
+          type: integer
+          description: "Сколько строк раскладки НЕ уехало в печать (ambiguous
+                        плюс not_found). Ноль означает, что заказ разобрался целиком"
+          example: 2
+        lines:
+          type: array
+          description: "Раскладка ПО ВСЕМ строкам: и напечатанным, и нет.
+                        Строки с нулевым количеством в неё не попадают вовсе —
+                        печатать по ним нечего, а Amazon требует quantity >= 1.
+                        Отдаётся целиком всегда: молчаливый пропуск здесь это
+                        железка, уехавшая на Amazon без этикетки, и разгребать
+                        её будут уже там"
+          items:
+            $ref: '#/components/schemas/ItemLabelsLine'
+
+    ItemLabelsLine:
+      type: object
+      required:
+        - quantity
+        - status
+      description: "Строка раскладки. rid заполнен у печати по заказу, fnsku —
+                    у ручного списка; mln появляется, только когда строка
+                    резолвилась, то есть у printed и printed_inactive."
+      properties:
+        rid:
+          type: string
+          description: "Rollun ID товара, offers.Article. Есть у печати по заказу;
+                        у ручного списка отсутствует — там товар опознан по FNSKU"
+          example: "8A82V"
+        fnsku:
+          type: string
+          description: "Штрихкод, который будет напечатан. Для резолвнувшейся строки
+                        приходит из инвентаря вместе с MLN"
+          example: "X001LOD5KR"
+        mln:
+          type: string
+          description: "Листинг, выбранный резолвером. Пусто у ambiguous и not_found:
+                        именно его выбрать и не удалось"
+          example: "2N-BCI2-K3LK"
+        name:
+          type: string
+          description: "Название товара из строки заказа — чтобы человек узнал
+                        железку глазами, не сверяя RID"
+          example: "TUSK Folding Shift Lever"
+        quantity:
+          type: integer
+          description: "Сколько этикеток по этой строке. Для заказа это БОЛЬШЕЕ
+                        из QtyOrdered и QtyReceived, а не одно только принятое:
+                        наклейки нужны пикеру заранее, до вскрытия коробки, —
+                        лишняя наклейка стоит ноль и летит в мусор, а нехватка
+                        останавливает работу. Для упаковки и ручного списка —
+                        присланное количество"
+          example: 12
+        quantityOrdered:
+          type: integer
+          description: "Сколько заказано по этой строке, QtyOrdered. Есть только
+                        у печати по заказу приёмки. Приходит ВСЕГДА, а не только
+                        при расхождении: приложение сравнивает две цифры само
+                        и показывает подсказку «заказано 13, принято 9 — печатаем
+                        по заказанному». Молча подставить другое число нельзя"
+          example: 13
+        quantityReceived:
+          type: integer
+          description: "Сколько фактически принято по этой строке, QtyReceived.
+                        Ноль означает, что коробку ещё не вскрывали, и это НЕ отказ:
+                        печатаем по заказанному. [посчитано по проду за год]
+                        заказано = принято в 2687 строках из 2909, принято меньше
+                        в 119, БОЛЬШЕ в 26 — из-за этих 26 и берётся максимум"
+          example: 9
+        status:
+          type: string
+          enum:
+            - printed
+            - printed_inactive
+            - ambiguous
+            - not_found
+            - over_limit
+          description: "printed — резолвилось в единственный активный MLN, уехало
+                        в PDF. printed_inactive — активных MLN у RID нет, но нашёлся
+                        ровно один любой: берём его и печатаем, строка едет
+                        с code mln_inactive_used. Правило вытаскивает 70 RID
+                        из 73 проблемных, без него ручной работы было бы 22% строк
+                        вместо 5%. ambiguous — выбрать MLN не смог: в PDF не идёт,
+                        кандидаты в candidates[]. not_found — товара нет
+                        в инвентаре вовсе либо у найденной строки нет пригодного
+                        mln, в PDF не идёт. over_limit — на этот листинг вышло
+                        больше 10000 этикеток, потолка Amazon: в PDF не идёт,
+                        остальное печатается.
+                        Строка, не попавшая в PDF, НИКОГДА не приходит с printed:
+                        соврать «напечатано» про этикетку, которой в файле нет,
+                        значит отправить железку на Amazon без штрихкода"
+          example: "printed"
+        code:
+          type: string
+          description: "Код причины по этой строке: mln_inactive_used (у status
+                        printed_inactive), mln_ambiguous (у ambiguous),
+                        mln_not_found (у not_found),
+                        mln_quantity_over_limit (у over_limit).
+                        У status printed кода нет — объяснять нечего"
+          example: "mln_ambiguous"
+        candidates:
+          type: array
+          description: "Кандидаты MLN у неоднозначной строки. Непуст ТОЛЬКО
+                        при status ambiguous.
+                        Автовыбор запрещён навсегда, а не «пока»: у всех девяти
+                        неоднозначных RID прода число MLN равно числу MSIN —
+                        это не дубли одного каталожного товара, а одна физическая
+                        деталь под разными ASIN. Наклеенный FNSKU и есть указание
+                        Amazon, к какому каталожному товару зачислить приехавшую
+                        железку, и в данных нет ничего, что подсказало бы верный
+                        выбор в конкретный день"
+          items:
+            $ref: '#/components/schemas/MlnCandidate'
+
+    MlnCandidate:
+      type: object
+      required:
+        - mln
+      description: "Кандидат на выбор человеком. Набор полей подобран так, чтобы
+                    выбор не был гаданием по названию: без MSIN менеджер не видит,
+                    какой ASIN он пополняет, а это и есть суть выбора."
+      properties:
+        mln:
+          type: string
+          description: "Листинг, у Amazon Seller SKU. Первичный ключ инвентаря,
+                        дублей по нему нет"
+          example: "2N-BCI2-K3LK"
+        msin:
+          type: string
+          description: "Товар в каталоге маркетплейса, у Amazon ASIN. САМОЕ ВАЖНОЕ
+                        поле выбора: разные MSIN у кандидатов означают, что это
+                        разные каталожные товары, и выбор MLN это выбор,
+                        какой из них мы пополняем"
+          example: "B011AO8RTU"
+        fnsku:
+          type: string
+          description: "Штрихкод, который напечатается, если выбрать этого кандидата.
+                        Им же человек и добивает строку через POST /itemLabels"
+          example: "X001LOD5KR"
+        mpStatus:
+          type: string
+          description: "Статус листинга на маркетплейсе. Принимает ровно два
+                        значения в нижнем регистре — active и inactive"
+          example: "active"
+        fbaAvailableQty:
+          type: integer
+          description: "Остаток этого листинга на складе Amazon. Подсказка, а не
+                        правило: склад сознательно пополняет то один ASIN,
+                        то другой — где кончился остаток, где выиграна Buy Box"
+          example: 15
+        mpTitle:
+          type: string
+          description: "Название листинга на маркетплейсе — по нему человек
+                        и опознаёт, под какую модель этот вариант"
+          example: "Tusk Folding Shift Lever Black/Red Tip - Fits: Honda"
+        fromHistory:
+          type: boolean
+          description: "Кандидат добыт ИСТОРИЕЙ наклеек склада, а не привязкой
+                        в инвентаре: fba-inventory числит этот листинг за другим
+                        RID, но клеили им именно этот товар.
+                        Приходит true у тех и только тех кандидатов, где два
+                        источника расходятся. Показать пометку человеку
+                        обязательно: иначе он видит кандидата, у которого ASIN
+                        из другой оперы, и не понимает почему.
+                        [найдено 10.09.2026] листинг 56-RG9W-ZN5N (FNSKU
+                        X0033IR1ZT) записан на rid 5FKWK, а склад клеил его
+                        на 8A82V — и продолжает клеить. Пока привязку
+                        не поправят руками, это единственный способ его увидеть.
+                        Автоматический выбор такой кандидат НЕ отменяет:
+                        он дополняет список там, где выбор и так за человеком"
+          example: false
+
+    ItemLabelsCandidates:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: "One entry per valid RID asked, in the order of the request"
+          items:
+            $ref: '#/components/schemas/RidCandidates'
+
+    RidCandidates:
+      type: object
+      required:
+        - rid
+        - candidates
+      properties:
+        rid:
+          type: string
+          description: "RID as it was asked"
+          example: "7BNCW"
+        candidates:
+          type: array
+          description: "Every listing of the RID, active and inactive; empty when neither
+                        the inventory nor the label history knows the RID"
+          items:
+            $ref: '#/components/schemas/MlnCandidate'
