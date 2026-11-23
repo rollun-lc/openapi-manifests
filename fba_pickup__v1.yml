@@ -441,11 +441,13 @@ paths:
                          с alreadyClosed;
                       5. измерения: measurements_required (200);
                       5а. FNSKU строк: fnsku_not_of_rid (200), если FNSKU
-                         не среди кандидатов RID; inventory_unavailable (200),
-                         если fba-inventory не ответил при сверке. Отвечается
-                         после захвата, как и измерения: запертая коробка
-                         отвечает parcel_locked, повтор по своей закрытой —
-                         alreadyClosed, даже когда инвентарь не отвечает;
+                         не FNSKU листинга из кандидатов RID; inventory_unavailable
+                         либо deal_source_unavailable (200), если при сверке
+                         не ответил fba-inventory либо не прочиталась история
+                         наклеек CRM. Отвечается после захвата, как и измерения:
+                         запертая коробка отвечает parcel_locked, повтор по своей
+                         закрытой — alreadyClosed, даже когда инвентарь
+                         не отвечает;
                       6. склад Отправки: shipment_not_found (200), если связь,
                          NmSender или warehouse code непригодны;
                       7. остаток по Полке: not_enough_on_shelf (200);
@@ -504,12 +506,13 @@ paths:
                         из трёх габаритов — а также если любое из четырёх чисел
                         пришло нулём или отрицательным: коробка нулевой ширины
                         это незаполненное поле, а не измерение),
-                        fnsku_not_of_rid (FNSKU строки не среди кандидатов её RID:
-                        привязка в инвентаре могла смениться после того, как экран
-                        показал выбор, — экран перечитывает Полку),
-                        inventory_unavailable (fba-inventory не ответил при сверке
-                        FNSKU — повторить; без FNSKU в строках инвентарь
-                        не спрашивается вовсе).
+                        fnsku_not_of_rid (FNSKU строки не FNSKU листинга из кандидатов
+                        её RID: привязка в инвентаре могла смениться после того,
+                        как экран показал выбор, — экран перечитывает Полку),
+                        inventory_unavailable либо deal_source_unavailable (при
+                        сверке FNSKU не ответил fba-inventory либо не прочиталась
+                        история наклеек CRM — повторить; без FNSKU в строках
+                        сверки нет вовсе).
                         При стопе не записывается ничего: ни состав, ни измерения,
                         и коробка остаётся в 1041."
           content:
@@ -809,11 +812,21 @@ paths:
                     listings shows both barcodes instead of the one that was stuck
                     last (https://trello.com/c/xF8ikwih: RID 7BNCW has X005028CKT
                     and X00502FYJ1, the shelf showed only the first).
-                    The candidates are the same the label print resolves from:
-                    the fba-inventory binding plus the warehouse label history
-                    (fromHistory = true), one request for the whole list.
-                    Nothing is chosen here and nothing is printed: the listing is
-                    still picked at the LABELS step. READ-ONLY, no identity needed."
+                    The candidates are the same the label print by shipment and
+                    by box resolves from: the fba-inventory binding plus EVERY
+                    FNSKU the warehouse ever stuck on the item (fromHistory = true),
+                    one request for the whole list. A sticker of the history
+                    without a listing comes with an empty mln: it cannot be
+                    chosen, but it is a possible sticker.
+                    The list is complete on purpose: PACK takes the only possible
+                    sticker of a RID by itself and asks the person when there are
+                    more (hmdHHP69, D22). The last sticker alone, which the
+                    FbaShelf view keeps, is not enough: BOX READY writes the FNSKU
+                    of its lines, so the last sticker is the last box packed,
+                    and units of an older one may still lie on the shelf.
+                    Nothing is chosen here and nothing is printed: a packed line
+                    gets its listing at BOX READY, a received one at the LABELS
+                    step. READ-ONLY, no identity needed."
       requestBody:
         required: true
         content:
@@ -831,8 +844,11 @@ paths:
                         with level: error, and without data:
                         too_many_items (more than 500 RIDs, the size of the shelf
                         the app is ready to draw),
-                        inventory_unavailable (fba-inventory did not answer; the
-                        shelf then falls back to the single FNSKU of the FbaShelf view)."
+                        inventory_unavailable (fba-inventory did not answer),
+                        deal_source_unavailable (the label history of CRM could
+                        not be read, or it came back too long to be trusted whole).
+                        On either the shelf falls back to the single FNSKU
+                        of the FbaShelf view, and PACK sends no FNSKU."
           content:
             application/json:
               schema:
@@ -2040,16 +2056,17 @@ components:
         fnsku:
           type: string
           description: "FNSKU листинга, чьи наклейки на этих штуках
-                        (hmdHHP69, D22). Обязан быть одним из кандидатов RID —
-                        тех, что отдаёт POST /itemLabels/candidates: привязка
-                        в fba-inventory и история наклеек склада; иначе 200
-                        fnsku_not_of_rid. Пишется в offers.Info.fnsku child-оффера
+                        (hmdHHP69, D22). Обязан быть FNSKU листинга из кандидатов
+                        RID — тех, что отдаёт POST /itemLabels/candidates,
+                        с непустым mln: привязка в fba-inventory и вся история
+                        наклеек склада; иначе 200 fnsku_not_of_rid. Пишется
+                        в offers.Info.fnsku child-оффера
                         позиции, и печать по коробке берёт его, не резолвя RID.
                         Регистр и пробелы по краям не значимы.
                         Поля нет или оно пустое — листинг не записан, как раньше,
                         и печать резолвит по RID. Приложение шлёт его, когда знает
-                        кандидатов RID: один кандидат подставляет само, из
-                        нескольких выбирает пикапер. В ответе — записанный FNSKU,
+                        кандидатов RID: возможная наклейка одна — подставляет само,
+                        несколько — выбирает пикапер. В ответе — записанный FNSKU,
                         у строки без него поля нет."
           example: "X00462G64D"
 
@@ -2391,7 +2408,10 @@ components:
         mln:
           type: string
           description: "Листинг, у Amazon Seller SKU. Первичный ключ инвентаря,
-                        дублей по нему нет"
+                        дублей по нему нет. Пустой бывает только в ответе
+                        POST /itemLabels/candidates — у наклейки из истории склада,
+                        которой листинга в fba-inventory нет: выбрать её нельзя,
+                        но возможной наклейкой она считается"
           example: "2N-BCI2-K3LK"
         msin:
           type: string
