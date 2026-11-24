@@ -2881,8 +2881,8 @@ components:
         createdAt:
           type: string
           format: date-time
-          description: "Когда задача заведена, UTC, YYYY-MM-DDTHH:MM:SS.uuuuuuZ"
-          example: "2026-11-24T14:05:00.123456Z"
+          description: "Когда задача заведена, UTC, YYYY-MM-DDTHH:MM:SSZ"
+          example: "2026-11-24T14:05:00Z"
         result:
           $ref: '#/components/schemas/InboundPlanTaskResult'
 
@@ -2994,7 +2994,7 @@ components:
           type: string
           format: date-time
           description: "Когда начался текущий шаг — блок показывает, сколько он идёт"
-          example: "2026-11-24T14:06:10.000000Z"
+          example: "2026-11-24T14:06:10Z"
         wish:
           type: string
           description: "Нажатая кнопка, которую крон ещё не исполнил; поля нет, если такой нет"
@@ -3029,11 +3029,11 @@ components:
           type: string
           format: date-time
           description: "Последняя сверка плана с Amazon (I32); поля нет, если сверки не было"
-          example: "2026-11-24T14:30:00.000000Z"
+          example: "2026-11-24T14:30:00Z"
         updatedAt:
           type: string
           format: date-time
-          example: "2026-11-24T14:31:02.000000Z"
+          example: "2026-11-24T14:31:02Z"
 
     InboundPlanBox:
       type: object
@@ -3132,7 +3132,7 @@ components:
           format: date-time
           description: "Когда истекает самое раннее из сроков варианта склада и котировок
                         перевозки (I31). После него нужно «Запросить заново»."
-          example: "2026-11-27T14:20:00.000000Z"
+          example: "2026-11-27T14:20:00Z"
         shipments:
           type: array
           items:
