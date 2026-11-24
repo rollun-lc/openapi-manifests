@@ -1581,12 +1581,14 @@ paths:
       tags:
         - FbaInboundPlanTasks
       operationId: fbaInboundPlanTasksIdCancelPost
-      description: "Кнопка «Отменить» у задачи в transferring, awaiting_confirmation
-                    или error. Только пожелание (I7): крон, дождавшись итога текущей
-                    операции Amazon, отменяет план целиком (cancelInboundPlan) —
-                    до подтверждения склада это бесплатно (I5). Плана в Amazon ещё
-                    нет — задача сразу cancelled. Отменённая задача освобождает
-                    Отправку для новой попытки. Тела у запроса нет."
+      description: "Кнопка «Отменить» у задачи в awaiting_confirmation или error —
+                    как в автомате PRD §4.4 и AD-12; пока задача идёт по шагам,
+                    отменять её нельзя. Только пожелание (I7): на ближайшем проходе
+                    крон отменяет план целиком (cancelInboundPlan) — до подтверждения
+                    склада это бесплатно (I5). Если плана в Amazon нет, задача
+                    закрывается в cancelled без вызова Amazon; при неясном исходе
+                    создания плана крон сперва ищет его по имени (I9). Отменённая
+                    задача освобождает Отправку для новой попытки. Тела у запроса нет."
       parameters:
         - in: path
           name: id
@@ -1599,8 +1601,8 @@ paths:
         "200":
           description: "Пожелание записано либо уже было. Стопы: inbound_plans_off,
                         inbound_plans_trial_only, inbound_plan_task_not_found,
-                        inbound_plan_wish_not_allowed (задача уже отменена,
-                        подтверждена либо отменяется)."
+                        inbound_plan_wish_not_allowed (задача не в awaiting_confirmation
+                        и не в error)."
           content:
             application/json:
               schema:
@@ -2890,7 +2892,9 @@ components:
         - value
         - all
       description: "Шаг цепочки Amazon (context §7). Шаги после choose — подтверждение
-                    и его итог; в этой версии их ещё никто не ставит."
+                    и его итог; в этой версии их ещё никто не ставит. windows — окна
+                    доставки между подтверждениями склада и перевозки: только если
+                    Amazon потребует их при UPS-партнёре (A3)."
       properties:
         value:
           type: string
@@ -2904,6 +2908,7 @@ components:
             - transport
             - choose
             - placementConfirm
+            - windows
             - transportConfirm
             - result
             - cancel
@@ -2913,7 +2918,7 @@ components:
           description: "Все шаги по порядку"
           items:
             type: string
-          example: [ "prep", "plan", "packing", "packingConfirm", "boxes", "placement", "transport", "choose", "placementConfirm", "transportConfirm", "result", "cancel" ]
+          example: [ "prep", "plan", "packing", "packingConfirm", "boxes", "placement", "transport", "choose", "placementConfirm", "windows", "transportConfirm", "result", "cancel" ]
 
     InboundPlanStatus:
       type: object
@@ -3161,11 +3166,6 @@ components:
         code:
           type: string
           description: "Код lower_snake.
-                        Проверки перед передачей (I28): shipment_status_not_1062,
-                        shipment_has_id_shipment, shipment_has_no_parcels, parcel_empty,
-                        position_qty_invalid, sku_not_resolved, parcel_measurements_missing,
-                        sender_address_unknown, expiration_date_missing,
-                        parcel_in_confirmed_plan.
                         Шаги в Amazon: amazon_error (отказ Amazon, его текст — в text),
                         expiration_date_required (FBA_INB_0180: введите срок и «Повторить»),
                         outcome_unknown (исход операции узнать не удалось, I9),
@@ -3176,24 +3176,31 @@ components:
                         отменён), options_expired (срок варианта истёк, I31),
                         plan_voided (план аннулирован вне CRM, I32), cancel_refused
                         (Amazon не отменил план).
-                        WARNING Amazon в warnings — с кодом amazon_warning."
-          example: "parcel_measurements_missing"
+                        WARNING Amazon в warnings — с кодом amazon_warning.
+                        Коды проверок перед передачей (I28) — shipment_status_not_1062,
+                        shipment_has_id_shipment, shipment_has_no_parcels, parcel_empty,
+                        position_qty_invalid, sku_not_resolved, parcel_measurements_missing,
+                        sender_address_unknown, expiration_date_missing,
+                        parcel_in_confirmed_plan — в problems не бывают: задача при них
+                        не заводится, они приходят в messages стопа
+                        inbound_plan_checks_failed в форме 'код: подробность'."
+          example: "mixed_packing_group"
         step:
           type: string
           description: "Шаг, на котором возникла проблема (InboundPlanStage.value);
-                        у проверок перед передачей поля нет"
-          example: "plan"
+                        поля нет у проблемы вне шагов — plan_voided сверки (I32)"
+          example: "packing"
         text:
           type: string
           description: "Для человека. У отказа Amazon — его код и текст, например
                         'FBA_INB_0180 Expiration date required'"
-          example: "Коробка 722881: нет веса"
+          example: "Коробка 722881: товары двух групп упаковки"
         skus:
           type: array
           description: "Seller SKU, к которым относится проблема"
           items:
             type: string
-          example: [ "X8LPVfba" ]
+          example: [ "X8LPVfba", "7BNCWfba1" ]
         parcels:
           type: array
           description: "Коробки отправки, к которым относится проблема"
