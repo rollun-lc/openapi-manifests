@@ -23,6 +23,7 @@ tags:
   - name: FbaParcels
   - name: ItemLabels
   - name: CurrentEmployee
+  - name: FbaInboundPlanTasks
 paths:
   "/fbaSrBoxes/{id}/open":
     post:
@@ -1417,6 +1418,236 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  "/fbaInboundPlanTasks":
+    post:
+      tags:
+        - FbaInboundPlanTasks
+      # operationId обязателен по той же причине, что и у /fbaShipments: без него
+      # действие схлопывается в зарезервированное «Post».
+      operationId: fbaInboundPlanTasksCreatePost
+      description: "Кнопка «Передать в Amazon» в карточке Отправки (hmdHHP69).
+                    Проверяет Отправку по I28 и заводит задачу передачи — строку
+                    журнала fba_inbound_plan_tasks со снимком коробок. В Amazon
+                    сам запрос не ходит: с Amazon говорит только крон, раз
+                    в минуту и по одному действию на задачу. Задача идёт до выбора
+                    самого дешёвого варианта и останавливается в awaiting_confirmation;
+                    подтверждение — отдельный модуль, его здесь нет.
+                    Живая попытка у Отправки одна: повторное или одновременное
+                    нажатие возвращает её, а не заводит второй план в Amazon.
+                    До запуска блока (D26) создавать задачи могут только сотрудники
+                    из списка проверки, а без списка — никто."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundPlanTaskCreateRequest'
+      responses:
+        "200":
+          description: "Задача создана либо уже была. Бизнес-стоп приходит этим же
+                        кодом — в messages[].text с level: error:
+                        inbound_plans_off (блок выключен, D26),
+                        inbound_plans_trial_only (до запуска блок открыт только
+                        сотрудникам из списка проверки),
+                        shipment_not_found (Отправки нет),
+                        inbound_plan_task_exists (у Отправки уже есть живая попытка;
+                        data несёт ЕЁ, и блок просто показывает её — экрана ошибки
+                        нет, как у shipment_already_open),
+                        inbound_plan_checks_failed (Отправка не прошла проверки I28:
+                        следом идёт по сообщению на КАЖДУЮ проблему, все сразу,
+                        в форме 'код: подробность', коды — InboundPlanProblem.code;
+                        в Amazon ничего не ушло, задачи нет, data пустая)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboundPlanTaskResponse'
+        "500":
+          description: "Ошибка обработки: employee_not_resolved (сотрудник запроса
+                        не опознан — без него не проверить список D26) либо
+                        непредвиденное исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - FbaInboundPlanTasks
+      # operationId обязателен по той же причине, что и у /currentEmployee.
+      operationId: fbaInboundPlanTasksListGet
+      description: "Задачи передачи одной Отправки, новые сверху, и можно ли сейчас
+                    нажать «Передать в Amazon» (start). Это чтение: Amazon не зовётся,
+                    и при выключенном блоке оно работает тоже."
+      parameters:
+        - in: query
+          name: fbaShipmentId
+          required: true
+          schema:
+            type: string
+          description: "Id Отправки (fba_shipments.Id)"
+          example: "735405"
+      responses:
+        "200":
+          description: "Задачи и start. Стоп: shipment_not_found."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboundPlanTaskListResponse'
+        "500":
+          description: "Ошибка обработки: непредвиденное исключение со свободным
+                        текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaInboundPlanTasks/{id}":
+    get:
+      tags:
+        - FbaInboundPlanTasks
+      operationId: fbaInboundPlanTasksIdGet
+      description: "Одна задача передачи. Блок опрашивает её раз в 10–15 с, пока
+                    виджет открыт и задача идёт. Чтение: Amazon не зовётся,
+                    сверку с Amazon делает крон (I32)."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id задачи (fba_inbound_plan_tasks.id)"
+          example: "17"
+      responses:
+        "200":
+          description: "Задача. Стоп: inbound_plan_task_not_found."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboundPlanTaskResponse'
+        "500":
+          description: "Ошибка обработки: непредвиденное исключение со свободным
+                        текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaInboundPlanTasks/{id}/retry":
+    post:
+      tags:
+        - FbaInboundPlanTasks
+      operationId: fbaInboundPlanTasksIdRetryPost
+      description: "Кнопка «Повторить» у задачи в error. Только условно записывает
+                    пожелание в строку задачи (I7) и сразу отвечает её состоянием;
+                    исполняет его крон на ближайшем проходе: шаг, на котором задача
+                    упала, идёт заново, без слепого повтора операции с неясным
+                    исходом (I9). Сроки годности в теле — те, что Amazon потребовал
+                    отказом FBA_INB_0180: они дополняют и заменяют прежние у тех же
+                    SKU, а шаг плана создаёт новый план со следующей попыткой в имени."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id задачи"
+          example: "17"
+      requestBody:
+        required: true
+        description: "{} — повторить без новых сроков годности"
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundPlanTaskRetryRequest'
+      responses:
+        "200":
+          description: "Пожелание записано либо уже было. Стопы: inbound_plans_off,
+                        inbound_plans_trial_only, inbound_plan_task_not_found,
+                        inbound_plan_wish_not_allowed (в этом состоянии повторять
+                        нечего; data несёт задачу как есть)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboundPlanTaskResponse'
+        "500":
+          description: "Ошибка обработки: employee_not_resolved либо непредвиденное
+                        исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaInboundPlanTasks/{id}/cancel":
+    post:
+      tags:
+        - FbaInboundPlanTasks
+      operationId: fbaInboundPlanTasksIdCancelPost
+      description: "Кнопка «Отменить» у задачи в transferring, awaiting_confirmation
+                    или error. Только пожелание (I7): крон, дождавшись итога текущей
+                    операции Amazon, отменяет план целиком (cancelInboundPlan) —
+                    до подтверждения склада это бесплатно (I5). Плана в Amazon ещё
+                    нет — задача сразу cancelled. Отменённая задача освобождает
+                    Отправку для новой попытки. Тела у запроса нет."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id задачи"
+          example: "17"
+      responses:
+        "200":
+          description: "Пожелание записано либо уже было. Стопы: inbound_plans_off,
+                        inbound_plans_trial_only, inbound_plan_task_not_found,
+                        inbound_plan_wish_not_allowed (задача уже отменена,
+                        подтверждена либо отменяется)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboundPlanTaskResponse'
+        "500":
+          description: "Ошибка обработки: employee_not_resolved либо непредвиденное
+                        исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  "/fbaInboundPlanTasks/{id}/regenerate":
+    post:
+      tags:
+        - FbaInboundPlanTasks
+      operationId: fbaInboundPlanTasksIdRegeneratePost
+      description: "Кнопка «Запросить заново» у задачи в awaiting_confirmation —
+                    например, когда срок вариантов истёк (I31). Только пожелание (I7):
+                    крон запрашивает варианты складов и перевозки заново и выбирает
+                    самый дешёвый снова; подтверждает его опять человек (I21).
+                    Тела у запроса нет."
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "Id задачи"
+          example: "17"
+      responses:
+        "200":
+          description: "Пожелание записано либо уже было. Стопы: inbound_plans_off,
+                        inbound_plans_trial_only, inbound_plan_task_not_found,
+                        inbound_plan_wish_not_allowed (задача не ждёт подтверждения)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboundPlanTaskResponse'
+        "500":
+          description: "Ошибка обработки: employee_not_resolved либо непредвиденное
+                        исключение со свободным текстом."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ## General — по образцу crm_event_handler__v1.yml
@@ -1520,7 +1751,17 @@ components:
                         (POST /fbaShipments/{id}/parcels), «BOX READY» (POST /fbaParcels/{id}/close)
                         and «FINISH PACKING» (POST /fbaShipments/{id}/close) on a shipment of another
                         warehouse than the signed-in employee's. The same three commands now refuse an
-                        employee outside the warehouse map with the 500 warehouse_not_resolved."
+                        employee outside the warehouse map with the 500 warehouse_not_resolved.
+                        hmdHHP69 (передача Отправки в Amazon, тег FbaInboundPlanTasks)
+                        добавляет шесть стопов: inbound_plans_off (блок выключен
+                        до запуска, D26), inbound_plans_trial_only (до запуска блок
+                        открыт только сотрудникам из списка проверки),
+                        inbound_plan_task_exists (у Отправки уже есть живая попытка;
+                        data несёт её, экрана ошибки нет), inbound_plan_task_not_found,
+                        inbound_plan_wish_not_allowed (кнопка в этом состоянии задачи
+                        не действует), inbound_plan_checks_failed (Отправка не прошла
+                        проверки I28; следом — по сообщению на каждую проблему в форме
+                        'код: подробность', коды — InboundPlanProblem.code)."
     ErrorResponse:
       type: object
       properties:
@@ -2485,3 +2726,477 @@ components:
                         the inventory nor the label history knows the RID"
           items:
             $ref: '#/components/schemas/MlnCandidate'
+
+    ## Передача Отправки в Amazon — hmdHHP69, тег FbaInboundPlanTasks
+    InboundPlanTaskCreateRequest:
+      type: object
+      required:
+        - fbaShipmentId
+      properties:
+        fbaShipmentId:
+          type: string
+          minLength: 1
+          description: "Id Отправки (fba_shipments.Id)"
+          example: "735405"
+        expirations:
+          type: array
+          description: "Сроки годности, одна дата на Seller SKU (I15). Если на штуках
+                        разные даты — самая ранняя (D12). Блок спрашивает их у SKU
+                        из start.expirationSkus; у остальных SKU срок не нужен, пока
+                        его не потребует Amazon."
+          items:
+            $ref: '#/components/schemas/InboundPlanExpiration'
+
+    InboundPlanTaskRetryRequest:
+      type: object
+      properties:
+        expirations:
+          type: array
+          description: "Сроки годности, которые Amazon потребовал отказом FBA_INB_0180.
+                        Дополняют и заменяют прежние у тех же SKU."
+          items:
+            $ref: '#/components/schemas/InboundPlanExpiration'
+
+    InboundPlanExpiration:
+      type: object
+      required:
+        - msku
+        - date
+      properties:
+        msku:
+          type: string
+          minLength: 1
+          description: "Seller SKU — тот, что уходит в план Amazon"
+          example: "X8LPVfba"
+        date:
+          type: string
+          format: date
+          description: "Срок годности, YYYY-MM-DD"
+          example: "2027-08-19"
+
+    InboundPlanTaskResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/InboundPlanTask'
+
+    InboundPlanTaskListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/InboundPlanTaskList'
+
+    InboundPlanTaskList:
+      type: object
+      required:
+        - tasks
+        - start
+      properties:
+        tasks:
+          type: array
+          description: "Все попытки передачи Отправки, новые сверху; живая — не больше одной"
+          items:
+            $ref: '#/components/schemas/InboundPlanTask'
+        start:
+          $ref: '#/components/schemas/InboundPlanStart'
+
+    InboundPlanStart:
+      type: object
+      required:
+        - allowed
+        - expirationSkus
+      description: "Можно ли сейчас нажать «Передать в Amazon». Проверяются только
+                    дешёвые условия — выключатель D26 и I23; полную проверку I28
+                    делает само создание задачи."
+      properties:
+        allowed:
+          type: boolean
+          example: true
+        reason:
+          type: string
+          description: "Почему нельзя; при allowed = true поля нет.
+                        disabled — блок выключен (D26);
+                        trial_only — до запуска блок открыт только сотрудникам
+                        из списка проверки;
+                        shipment_status — Отправка не в 1062 Shipment creation on mp (D13);
+                        id_shipment — у Отправки уже есть IdShipment;
+                        live_attempt — у Отправки уже есть живая попытка (I6)."
+          enum:
+            - disabled
+            - trial_only
+            - shipment_status
+            - id_shipment
+            - live_attempt
+          example: live_attempt
+        expirationSkus:
+          type: array
+          description: "SKU Отправки, которым Amazon уже требовал срок годности (D23):
+                        блок спрашивает дату до передачи. Пусто — спрашивать нечего."
+          items:
+            $ref: '#/components/schemas/InboundPlanSku'
+
+    InboundPlanSku:
+      type: object
+      required:
+        - msku
+        - rid
+      properties:
+        msku:
+          type: string
+          description: "Seller SKU"
+          example: "X8LPVfba"
+        fnsku:
+          type: string
+          description: "FNSKU листинга; поля нет, если позиции его не знают"
+          example: "X0021OC3XN"
+        rid:
+          type: string
+          description: "Rollun ID товара"
+          example: "X8LPV"
+
+    InboundPlanTask:
+      type: object
+      description: "Одна попытка передачи Отправки — в форме задачи AD-12: id, stage,
+                    status, createdAt, result."
+      required:
+        - id
+        - stage
+        - status
+        - createdAt
+        - result
+      properties:
+        id:
+          type: string
+          example: "17"
+        stage:
+          $ref: '#/components/schemas/InboundPlanStage'
+        status:
+          $ref: '#/components/schemas/InboundPlanStatus'
+        createdAt:
+          type: string
+          format: date-time
+          description: "Когда задача заведена, UTC, YYYY-MM-DDTHH:MM:SS.uuuuuuZ"
+          example: "2026-11-24T14:05:00.123456Z"
+        result:
+          $ref: '#/components/schemas/InboundPlanTaskResult'
+
+    InboundPlanStage:
+      type: object
+      required:
+        - value
+        - all
+      description: "Шаг цепочки Amazon (context §7). Шаги после choose — подтверждение
+                    и его итог; в этой версии их ещё никто не ставит."
+      properties:
+        value:
+          type: string
+          enum:
+            - prep
+            - plan
+            - packing
+            - packingConfirm
+            - boxes
+            - placement
+            - transport
+            - choose
+            - placementConfirm
+            - transportConfirm
+            - result
+            - cancel
+          example: transport
+        all:
+          type: array
+          description: "Все шаги по порядку"
+          items:
+            type: string
+          example: [ "prep", "plan", "packing", "packingConfirm", "boxes", "placement", "transport", "choose", "placementConfirm", "transportConfirm", "result", "cancel" ]
+
+    InboundPlanStatus:
+      type: object
+      required:
+        - value
+        - all
+      description: "Состояние задачи — автомат AD-12.
+                    transferring — CRM ведёт задачу по шагам;
+                    awaiting_confirmation — выбран самый дешёвый вариант, нужно
+                    «Подтвердить»;
+                    confirming, confirmed, error_after_confirmation — подтверждение
+                    и его итог, в этой версии их ещё никто не ставит;
+                    error — задача остановилась на проблеме, нужны «Повторить» или
+                    «Отменить»;
+                    cancelling — CRM отменяет план в Amazon;
+                    cancelled — отменена, Отправку можно передать заново."
+      properties:
+        value:
+          type: string
+          enum:
+            - transferring
+            - awaiting_confirmation
+            - confirming
+            - confirmed
+            - error
+            - error_after_confirmation
+            - cancelling
+            - cancelled
+          example: awaiting_confirmation
+        all:
+          type: array
+          items:
+            type: string
+          example: [ "transferring", "awaiting_confirmation", "confirming", "confirmed", "error", "error_after_confirmation", "cancelling", "cancelled" ]
+
+    InboundPlanTaskResult:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/InboundPlanTaskData'
+
+    InboundPlanTaskData:
+      type: object
+      required:
+        - fbaShipmentId
+        - attempt
+        - planName
+        - boxes
+        - expirations
+        - problems
+        - warnings
+        - updatedAt
+      properties:
+        fbaShipmentId:
+          type: string
+          example: "735405"
+        attempt:
+          type: integer
+          description: "Номер попытки Отправки, с 1"
+          example: 1
+        planName:
+          type: string
+          description: "Имя плана в Amazon, CRM-<Отправка>-<попытка>; после создания плана
+                        оно же пишется в NmShipment Отправки (I30)"
+          example: "CRM-735405-1"
+        inboundPlanId:
+          type: string
+          description: "Id плана в Amazon; поля нет, пока план не создан"
+          example: "wf1234abcd-1234-abcd-5678-1234abcd5678"
+        stepStartedAt:
+          type: string
+          format: date-time
+          description: "Когда начался текущий шаг — блок показывает, сколько он идёт"
+          example: "2026-11-24T14:06:10.000000Z"
+        wish:
+          type: string
+          description: "Нажатая кнопка, которую крон ещё не исполнил; поля нет, если такой нет"
+          enum:
+            - retry
+            - cancel
+            - regenerate
+          example: cancel
+        expirations:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboundPlanExpiration'
+        boxes:
+          type: array
+          description: "Снимок коробок при передаче (I3): что ушло в Amazon"
+          items:
+            $ref: '#/components/schemas/InboundPlanBox'
+        choice:
+          $ref: '#/components/schemas/InboundPlanChoice'
+        problems:
+          type: array
+          description: "Почему задача остановилась; пусто, пока всё идёт"
+          items:
+            $ref: '#/components/schemas/InboundPlanProblem'
+        warnings:
+          type: array
+          description: "Предупреждения Amazon (WARNING): показываются, но задачу
+                        не останавливают (I27)"
+          items:
+            $ref: '#/components/schemas/InboundPlanProblem'
+        checkedAt:
+          type: string
+          format: date-time
+          description: "Последняя сверка плана с Amazon (I32); поля нет, если сверки не было"
+          example: "2026-11-24T14:30:00.000000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-11-24T14:31:02.000000Z"
+
+    InboundPlanBox:
+      type: object
+      required:
+        - parcelId
+        - weight
+        - length
+        - width
+        - height
+        - items
+      properties:
+        parcelId:
+          type: string
+          description: "Id Коробки отправки (сделка FbaParcel)"
+          example: "722881"
+        weight:
+          type: number
+          description: "Вес, фунты"
+          example: 14.5
+        length:
+          type: number
+          description: "Длина, дюймы"
+          example: 18
+        width:
+          type: number
+          description: "Ширина, дюймы"
+          example: 12
+        height:
+          type: number
+          description: "Высота, дюймы"
+          example: 10
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboundPlanBoxItem'
+
+    InboundPlanBoxItem:
+      type: object
+      required:
+        - msku
+        - rid
+        - qty
+      properties:
+        msku:
+          type: string
+          description: "Seller SKU позиции (I12)"
+          example: "7BNCWfba1"
+        fnsku:
+          type: string
+          description: "FNSKU позиции; поля нет, если позиция его не знает"
+          example: "X00502FYJ1"
+        rid:
+          type: string
+          example: "7BNCW"
+        qty:
+          type: integer
+          minimum: 1
+          example: 3
+
+    InboundPlanChoice:
+      type: object
+      description: "Самый дешёвый вариант, выбранный CRM (I19): плата за склад
+                    (fees − discounts) плюс UPS-партнёр Amazon по всем поставкам
+                    варианта (I18). Подтверждает его человек."
+      required:
+        - placementOptionId
+        - fees
+        - discounts
+        - transportCost
+        - total
+        - currency
+        - expiresAt
+        - shipments
+      properties:
+        placementOptionId:
+          type: string
+          example: "pl1234abcd-1234-abcd-5678-1234abcd5678"
+        fees:
+          type: number
+          example: 0
+        discounts:
+          type: number
+          example: 0
+        transportCost:
+          type: number
+          description: "UPS по всем поставкам варианта"
+          example: 16.43
+        total:
+          type: number
+          example: 16.43
+        currency:
+          type: string
+          example: "USD"
+        expiresAt:
+          type: string
+          format: date-time
+          description: "Когда истекает самое раннее из сроков варианта склада и котировок
+                        перевозки (I31). После него нужно «Запросить заново»."
+          example: "2026-11-27T14:20:00.000000Z"
+        shipments:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboundPlanChoiceShipment'
+
+    InboundPlanChoiceShipment:
+      type: object
+      required:
+        - shipmentId
+        - warehouseId
+        - transportCost
+      properties:
+        shipmentId:
+          type: string
+          description: "Id поставки в плане Amazon (не Shipment ID — тот появится после подтверждения)"
+          example: "sh1234abcd-1234-abcd-5678-1234abcd5678"
+        warehouseId:
+          type: string
+          description: "Склад Amazon назначения"
+          example: "GEU2"
+        transportCost:
+          type: number
+          example: 16.43
+
+    InboundPlanProblem:
+      type: object
+      required:
+        - code
+        - text
+      properties:
+        code:
+          type: string
+          description: "Код lower_snake.
+                        Проверки перед передачей (I28): shipment_status_not_1062,
+                        shipment_has_id_shipment, shipment_has_no_parcels, parcel_empty,
+                        position_qty_invalid, sku_not_resolved, parcel_measurements_missing,
+                        sender_address_unknown, expiration_date_missing,
+                        parcel_in_confirmed_plan.
+                        Шаги в Amazon: amazon_error (отказ Amazon, его текст — в text),
+                        expiration_date_required (FBA_INB_0180: введите срок и «Повторить»),
+                        outcome_unknown (исход операции узнать не удалось, I9),
+                        step_timeout (шаг идёт больше 15 минут),
+                        mixed_packing_group (коробка в нескольких группах упаковки, I13;
+                        план отменён), no_free_packing_option (I29),
+                        no_partnered_small_parcel (нет посылок UPS-партнёром, I18; план
+                        отменён), options_expired (срок варианта истёк, I31),
+                        plan_voided (план аннулирован вне CRM, I32), cancel_refused
+                        (Amazon не отменил план).
+                        WARNING Amazon в warnings — с кодом amazon_warning."
+          example: "parcel_measurements_missing"
+        step:
+          type: string
+          description: "Шаг, на котором возникла проблема (InboundPlanStage.value);
+                        у проверок перед передачей поля нет"
+          example: "plan"
+        text:
+          type: string
+          description: "Для человека. У отказа Amazon — его код и текст, например
+                        'FBA_INB_0180 Expiration date required'"
+          example: "Коробка 722881: нет веса"
+        skus:
+          type: array
+          description: "Seller SKU, к которым относится проблема"
+          items:
+            type: string
+          example: [ "X8LPVfba" ]
+        parcels:
+          type: array
+          description: "Коробки отправки, к которым относится проблема"
+          items:
+            type: string
+          example: [ "722881" ]
